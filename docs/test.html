@@ -1,0 +1,51 @@
+<html>
+<style>
+    .display {
+        display: grid;
+        grid-template-columns: repeat(64, 1fr);
+        border: 1px solid red;
+        width: 512px;
+        aspect-ratio: 1;
+    }
+
+    .memory {
+        display: grid;
+        grid-template-columns: repeat(16, 1fr);
+        border: 1px solid red;
+        width: 512px;
+    }
+    .memory {
+        font-family: monospace;
+    }
+</style>
+<body>
+
+<div id="display" class="display">
+
+</div>
+<script>
+    for (let row = 0; row < 64; row++) {
+        for (let col = 0; col < 64; col++) {
+            let disp = document.querySelector("#display");
+            let scale = (((row + col) % 4) / 3);
+            scale = scale * 255;
+            disp.insertAdjacentHTML('beforeend', `<div style="background: rgb(${scale}, ${scale}, ${scale})"></div>`);
+        }
+    }
+</script>
+<br/>
+<div id="memory" class="memory">
+
+</div>
+<script>
+    for (let cell = 0; cell < 4096; cell++) {
+        let disp = document.querySelector("#memory");
+        if(cell >= 2048){
+            var color = "#aed6f1"
+        }
+        disp.insertAdjacentHTML('beforeend', `<div style="background-color: ${color}">FF</div>`);
+    }
+</script>
+
+</body>
+</html>

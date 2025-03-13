@@ -140,14 +140,133 @@ public class MonTanaMiniComputer {
             }
         } else if (instructionType == 0x2) {
             short stackInstructionType = getBits(12, 4, instruction);
+            short stackReg = getBits(4, 4, instruction);
             if(stackInstructionType == 0x0) {
                 // push
                 short sourceRegister = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
                 // decrement the stack pointer
                 registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
                 // write the value out to the location
                 writeWord(registerFile[stackReg], registerFile[sourceRegister]);
+            } if(stackInstructionType == 0x1) {
+                // pop
+                short sourceRegister = getBits(8, 4, instruction);
+                // save the value into the location
+                registerFile[sourceRegister] = fetchWord(registerFile[stackReg]);
+                // increment the stack pointer
+                registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+            } if(stackInstructionType == 0x3) {
+                short stackOpSubType = getBits(8, 4, instruction);
+                if(stackOpSubType == 0x0) {
+                    // dup
+                    short currentVal = fetchWord(registerFile[stackReg]);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
+                    writeWord(registerFile[stackReg], currentVal);
+                } else if(stackOpSubType == 0x1) {
+                    // swap
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], nextDown);
+                    writeWord(registerFile[stackReg] + WORD_SIZE, currentTop);
+                } else if(stackOpSubType == 0x2) {
+                    // drop
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                } else if(stackOpSubType == 0x3) {
+                    // over
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
+                    // write the value out to the location
+                    writeWord(registerFile[stackReg], nextDown);
+                } else if(stackOpSubType == 0x4) {
+                    // rot
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    short thirdDown = fetchWord(registerFile[stackReg] + 2 * WORD_SIZE);
+                    writeWord(registerFile[stackReg], thirdDown);
+                    writeWord(registerFile[stackReg] + WORD_SIZE, currentTop);
+                    writeWord(registerFile[stackReg] + 2 * WORD_SIZE, nextDown);
+                } else {
+                    // TODO error state
+                }
+            } if(stackInstructionType == 0x4) {
+                short aluOp = getBits(8, 4, instruction);
+                if (aluOp == 0x0) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown + currentTop));
+                } else if (aluOp == 0x1) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown - currentTop));
+                } else if (aluOp == 0x2) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown * currentTop));
+                } else if (aluOp == 0x3) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown / currentTop));
+                } else if (aluOp == 0x4) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown % currentTop));
+                } else if (aluOp == 0x5) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown & currentTop));
+                } else if (aluOp == 0x6) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown | currentTop));
+                } else if (aluOp == 0x7) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown ^ currentTop));
+                } else if (aluOp == 0x8) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown << currentTop));
+                } else if (aluOp == 0x9) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown >>> currentTop));
+                } else if (aluOp == 0xA) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown == currentTop ? 1 : 0));
+                } else if (aluOp == 0xB) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown < currentTop ? 1 : 0));
+                } else if (aluOp == 0xC) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
+                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    writeWord(registerFile[stackReg], (short) (nextDown <= currentTop ? 1 : 0));
+                } else if (aluOp == 0xD) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    writeWord(registerFile[stackReg], (short) ~currentTop);
+                } else if (aluOp == 0xE) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    writeWord(registerFile[stackReg], (short) (currentTop == 0 ? 1 : 0));
+                } else if (aluOp == 0xF) {
+                    short currentTop = fetchWord(registerFile[stackReg]);
+                    writeWord(registerFile[stackReg], (short) -currentTop);
+                }
+            } else {
+                // todo error state
             }
         } else if (instructionType == 0x3) {
             // call
@@ -222,9 +341,10 @@ public class MonTanaMiniComputer {
     public short fetchWord(int address) {
         short upperByte = fetchByte(address);
         byte lowerByte = fetchByte(address + 1);
-        short instruction = (short) (upperByte << 8);
-        instruction = (short) (instruction | lowerByte);
-        return instruction;
+        short value = (short) (upperByte << 8);
+        int i = value | Byte.toUnsignedInt(lowerByte);
+        value = (short) i;
+        return value;
     }
 
     public byte fetchByte(int address) {
@@ -234,7 +354,7 @@ public class MonTanaMiniComputer {
     public void writeWord(int address, short value) {
         byte i = (byte) (value >>> 8);
         writeByte(address, i);
-        writeByte(address + 1, (byte) value);
+        writeByte(address + 1, (byte) (value & 0b11111111));
     }
 
     public void writeByte(int address, byte value) {

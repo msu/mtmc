@@ -321,6 +321,371 @@ public class MonTanaMiniComputerTest {
     }
 
     @Test
+    void testPop() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 0);
+        computer.setRegister(SP, 100);
+        computer.writeWord(100, (short) 10);
+
+        short popInst = 0b0010_0001_0000_1011; // pop t0, sp
+        computer.execInstruction(popInst);
+
+        assertEquals(10, computer.getRegister(T0));
+        assertEquals(102, computer.getRegister(SP));
+    }
+
+    @Test
+    void testDuplicate() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 100);
+        computer.writeWord(100, (short) 10);
+
+        short duplicateInst = 0b0010_0011_0000_1011; // dup sp
+        computer.execInstruction(duplicateInst);
+
+        assertEquals(98, computer.getRegister(SP));
+        assertEquals(10, computer.fetchWord(98));
+    }
+
+    @Test
+    void testSwap() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 10);
+        computer.writeWord(98, (short) 20);
+
+        short swapIns = 0b0010_0011_0001_1011; // swap sp
+        computer.execInstruction(swapIns);
+
+        assertEquals(98, computer.getRegister(SP));
+        assertEquals(10, computer.fetchWord(98));
+        assertEquals(20, computer.fetchWord(100));
+    }
+
+    @Test
+    void testDrop() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 10);
+        computer.writeWord(98, (short) 20);
+
+        short dropInst = 0b0010_0011_0010_1011; // swap sp
+        computer.execInstruction(dropInst);
+
+        assertEquals(100, computer.getRegister(SP));
+    }
+
+    @Test
+    void testOver() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 10);
+        computer.writeWord(98, (short) 20);
+
+        short overInst = 0b0010_0011_0011_1011; // over sp
+        computer.execInstruction(overInst);
+
+        assertEquals(96, computer.getRegister(SP));
+        assertEquals(10, computer.fetchWord(100));
+        assertEquals(20, computer.fetchWord(98));
+        assertEquals(10, computer.fetchWord(96));
+    }
+
+    @Test
+    void testRot() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 96);
+        computer.writeWord(100, (short) 10);
+        computer.writeWord(98, (short) 20);
+        computer.writeWord(96, (short) 30);
+
+        short rotInst = 0b0010_0011_0100_1011; // over sp
+        computer.execInstruction(rotInst);
+
+        assertEquals(96, computer.getRegister(SP));
+        assertEquals(20, computer.fetchWord(100));
+        assertEquals(30, computer.fetchWord(98));
+        assertEquals(10, computer.fetchWord(96));
+    }
+
+    @Test
+    void testSopAdd() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 10);
+        computer.writeWord(98, (short) 20);
+
+        short sopAddInst = 0b0010_0100_0000_1011; // sop add sp
+        computer.execInstruction(sopAddInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(30, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopSub() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 20);
+        computer.writeWord(98, (short) 10);
+
+        short sopSubInst = 0b0010_0100_0001_1011; // sop sub sp
+        computer.execInstruction(sopSubInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(10, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopMul() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 20);
+        computer.writeWord(98, (short) 10);
+
+        short sopMulInst = 0b0010_0100_0010_1011; // sop mul sp
+        computer.execInstruction(sopMulInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(200, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopDiv() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 20);
+        computer.writeWord(98, (short) 10);
+
+        short sopDivInst = 0b0010_0100_0011_1011; // sop div sp
+        computer.execInstruction(sopDivInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(2, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopMod() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 20);
+        computer.writeWord(98, (short) 10);
+
+        short sopModInst = 0b0010_0100_0100_1011; // sop mod sp
+        computer.execInstruction(sopModInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopAnd() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 0b110);
+        computer.writeWord(98, (short) 0b011);
+
+        short sopAndInst = 0b0010_0100_0101_1011; // sop and sp
+        computer.execInstruction(sopAndInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0b010, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopOr() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 0b100);
+        computer.writeWord(98, (short) 0b001);
+
+        short sopOrInst = 0b0010_0100_0110_1011; // sop or sp
+        computer.execInstruction(sopOrInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0b101, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopXor() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 0b110);
+        computer.writeWord(98, (short) 0b011);
+
+        short sopXorInst = 0b0010_0100_0111_1011; // sop xor sp
+        computer.execInstruction(sopXorInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0b101, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopShl() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 0b110);
+        computer.writeWord(98, (short) 1);
+
+        short sopShlInst = 0b0010_0100_1000_1011; // sop shl sp
+        computer.execInstruction(sopShlInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0b1100, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopShr() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 0b110);
+        computer.writeWord(98, (short) 1);
+
+        short sopShrInst = 0b0010_0100_1001_1011; // sop shr sp
+        computer.execInstruction(sopShrInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0b011, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopEqWhenEqual() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 1);
+        computer.writeWord(98, (short) 1);
+
+        short sopEquInst = 0b0010_0100_1010_1011; // sop eq sp
+        computer.execInstruction(sopEquInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(1, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopEqWhenNotEqual() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 1);
+        computer.writeWord(98, (short) 2);
+
+        short sopEquInst = 0b0010_0100_1010_1011; // sop eq sp
+        computer.execInstruction(sopEquInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopLtWhenLt() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 10);
+        computer.writeWord(98, (short) 20);
+
+        short sopLtInst = 0b0010_0100_1011_1011; // sop lt sp
+        computer.execInstruction(sopLtInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(1, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopLtWhenNotLt() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 20);
+        computer.writeWord(98, (short) 10);
+
+        short sopLtInst = 0b0010_0100_1011_1011; // sop lt sp
+        computer.execInstruction(sopLtInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopLteWhenLte() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 10);
+        computer.writeWord(98, (short) 20);
+
+        short sopLteInst = 0b0010_0100_1100_1011; // sop lte sp
+        computer.execInstruction(sopLteInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(1, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopLteWhenNotLte() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(100, (short) 20);
+        computer.writeWord(98, (short) 10);
+
+        short sopLteInst = 0b0010_0100_1100_1011; // sop lte sp
+        computer.execInstruction(sopLteInst);
+
+        assertEquals(100, computer.getRegister(SP));
+        assertEquals(0, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSopBnot() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(98, (short) 0b01010101);
+
+        short sopBnotInst = 0b0010_0100_1101_1011; // sop bnot sp
+        computer.execInstruction(sopBnotInst);
+
+        assertEquals(98, computer.getRegister(SP));
+        assertEquals(~0b01010101, computer.fetchWord(98));
+    }
+
+    @Test
+    void testSopNotWhenNonZero() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(98, (short) 1);
+
+        short sopNotInst = 0b0010_0100_1110_1011; // sop not sp
+        computer.execInstruction(sopNotInst);
+
+        assertEquals(98, computer.getRegister(SP));
+        assertEquals(0, computer.fetchWord(98));
+    }
+
+    @Test
+    void testSopNotWhenZero() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(98, (short) 0);
+
+        short sopNotInst = 0b0010_0100_1110_1011; // sop not sp
+        computer.execInstruction(sopNotInst);
+
+        assertEquals(98, computer.getRegister(SP));
+        assertEquals(1, computer.fetchWord(98));
+    }
+
+    @Test
+    void testSopNeg() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(SP, 98);
+        computer.writeWord(98, (short) 10);
+
+        short sopNegInst = 0b0010_0100_1111_1011; // sop neg sp
+        computer.execInstruction(sopNegInst);
+
+        assertEquals(98, computer.getRegister(SP));
+        assertEquals(-10, computer.fetchWord(98));
+    }
+
+
+    @Test
     void testLoadImmediate() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
 

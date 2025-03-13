@@ -101,7 +101,21 @@ public class MonTanaMiniComputer {
             short value = getBits(12, 12, instruction);
             registerFile[targetRegister] = value;
         } else if (0xC <= instructionType && instructionType <= 0xF) {
-            // load/store
+            // load store
+            short loadStoreType = getBits(14, 2, instruction);
+            short targetRegister = getBits(12, 4, instruction);
+            short addressRegister = getBits(8, 4, instruction);
+            short offsetRegister = getBits(4, 4, instruction);
+            int targetAddress = registerFile[addressRegister] + registerFile[offsetRegister];
+            if(loadStoreType == 0x0) {
+                registerFile[targetRegister] = fetchWord(targetAddress);
+            } else if (loadStoreType == 0x1) {
+                registerFile[targetRegister] = fetchByte(targetAddress);
+            } else if (loadStoreType == 0x2) {
+                writeWord(targetAddress, registerFile[targetRegister]);
+            } else if (loadStoreType == 0x3) {
+                writeByte(targetAddress, (byte) registerFile[targetRegister]);
+            }
         } else {
             status = PERMANENT_ERROR;
         }

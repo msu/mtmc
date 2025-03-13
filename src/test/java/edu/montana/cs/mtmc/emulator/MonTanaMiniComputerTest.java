@@ -93,6 +93,7 @@ public class MonTanaMiniComputerTest {
 
         computer.setRegister(T0, 0);
         computer.execInstruction(jumpIfZeroInst);
+        assertEquals(16, computer.getRegister(PC));
 
     }
 
@@ -109,6 +110,7 @@ public class MonTanaMiniComputerTest {
 
         computer.setRegister(T0, 1);
         computer.execInstruction(jumpIfNotZeroInst);
+        assertEquals(16, computer.getRegister(PC));
 
     }
 
@@ -125,6 +127,111 @@ public class MonTanaMiniComputerTest {
 
         computer.setRegister(T0, 5);
         computer.execInstruction(jumpIfGreaterThanZero);
+        assertEquals(16, computer.getRegister(PC));
+    }
+
+    @Test
+    void testLoadWord() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T1, 100);
+        computer.setRegister(T2, 0);
+        computer.writeWord(100, (short) 10); // value written to memory
+
+        short loadWordInst = (short) 0b1100_0000_0001_0010; // lw t0, t1, t2
+        computer.execInstruction(loadWordInst);
+
+        assertEquals(10, computer.getRegister(T0)); // should be loaded into t0
+    }
+
+    @Test
+    void testLoadWordWithOffset() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T1, 100);
+        computer.setRegister(T2, 5);
+        computer.writeWord(105, (short) 10); // value written to memory
+
+        short loadWordInst = (short) 0b1100_0000_0001_0010; // lw t0, t1, t2
+        computer.execInstruction(loadWordInst);
+
+        assertEquals(10, computer.getRegister(T0)); // should be loaded into t0
+    }
+
+    @Test
+    void testLoadByte() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T1, 100);
+        computer.setRegister(T2, 0);
+        computer.writeByte(100, (byte) 10); // value written to memory
+
+        short loadByteInst = (short) 0b1101_0000_0001_0010; // lb t0, t1, t2
+        computer.execInstruction(loadByteInst);
+
+        assertEquals(10, computer.getRegister(T0)); // should be loaded into t0
+    }
+
+    @Test
+    void testLoadByteWithOffset() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T1, 100);
+        computer.setRegister(T2, 5);
+        computer.writeByte(105, (byte) 10); // value written to memory
+
+        short loadByteInst = (short) 0b1101_0000_0001_0010; // lb t0, t1, t2
+        computer.execInstruction(loadByteInst);
+
+        assertEquals(10, computer.getRegister(T0)); // should be loaded into t0
+    }
+
+    @Test
+    void testSaveWord() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+        computer.setRegister(T1, 100);
+        computer.setRegister(T2, 0);
+
+        short saveWordInst = (short) 0b1110_0000_0001_0010; // sw t0, t1, t2
+        computer.execInstruction(saveWordInst);
+
+        assertEquals(10, computer.fetchWord(100));
+    }
+
+    @Test
+    void testSaveWordWithOffset() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+        computer.setRegister(T1, 100);
+        computer.setRegister(T2, 5);
+
+        short saveWordInst = (short) 0b1110_0000_0001_0010; // sw t0, t1, t2
+        computer.execInstruction(saveWordInst);
+
+        assertEquals(10, computer.fetchWord(105));
+    }
+
+    @Test
+    void testSaveByte() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+        computer.setRegister(T1, 100);
+        computer.setRegister(T2, 0);
+
+        short saveByteInst = (short) 0b1111_0000_0001_0010; // sw t0, t1, t2
+        computer.execInstruction(saveByteInst);
+
+        assertEquals(10, computer.fetchByte(100));
+    }
+
+    @Test
+    void testSaveByteWithOffset() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+        computer.setRegister(T1, 100);
+        computer.setRegister(T2, 5);
+
+        short saveByteInst = (short) 0b1111_0000_0001_0010; // sw t0, t1, t2
+        computer.execInstruction(saveByteInst);
+
+        assertEquals(10, computer.fetchByte(105));
     }
 
 }

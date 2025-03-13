@@ -2,15 +2,29 @@ package edu.montana.cs.mtmc.emulator;
 
 import edu.montana.cs.mtmc.os.MonTanaOperatingSystem;
 
-import java.io.IOException;
-
+import static edu.montana.cs.mtmc.emulator.ComputerStatus.*;
 import static edu.montana.cs.mtmc.emulator.Registers.*;
 
 public class MonTanaMiniComputer {
 
-    short[] registerFile = new short[17];
-    byte[]  memory = new byte[4096];
-    MonTanaOperatingSystem os = new MonTanaOperatingSystem();
+    // constants
+    public static final short WORD_SIZE = 2;
+    public static final int MEMORY_SIZE = 4096;
+    public static final int FRAME_BUFF_START = MEMORY_SIZE / 2;
+
+    // core model
+    short[] registerFile = new short[17]; // 16 user visible + the instruction register
+    byte[]  memory = new byte[MEMORY_SIZE];
+    ComputerStatus status = READY;
+
+    // helpers
+    MonTanaOperatingSystem os = new MonTanaOperatingSystem(this);
+    MTMCConsole console = new MTMCConsole(this);
+    MTMCDisplay display = new MTMCDisplay(this);
+
+    public MonTanaMiniComputer() {
+        registerFile[SP] = FRAME_BUFF_START; // default the stack pointer to the top of normal memory
+    }
 
     public void fetchAndExecute() {
         fetchInstruction();
@@ -18,17 +32,49 @@ public class MonTanaMiniComputer {
     }
 
     public void execInstruction(short instruction) {
-
+        short instructionType = getBits(15, 4, instruction);
+        if (instructionType == 0x0) {
+            short specialInstructionType = getBits(11, 4, instruction);
+            if(specialInstructionType == 0x0) {
+                os.handleSysCall(getBits(7, 8, instruction));
+            } else if(specialInstructionType == 0x1) {
+                // move
+                short targetReg = getBits(7, 4, instruction);
+                short sourceReg = getBits(3, 4, instruction);
+                registerFile[targetReg] = registerFile[sourceReg]; // move value
+            }
+        } else if (instructionType == 0x1) {
+            short aluInstructionType = getBits(11, 4, instruction);
+            if(aluInstructionType == 0x0) {
+                // add
+                short targetReg = getBits(7, 4, instruction);
+                short sourceReg = getBits(3, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] + registerFile[sourceReg]);
+            }
+        } else if (instructionType == 0x2) {
+            short stackInstructionType = getBits(11, 4, instruction);
+            if(stackInstructionType == 0x0) {
+                // push
+                short sourceRegister = getBits(7, 4, instruction);
+                short stackReg = getBits(3, 4, instruction);
+                // decrement the stack pointer
+                registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
+                // write the value out to the location
+                writeWord(registerFile[stackReg], registerFile[sourceRegister]);
+            }
+        } else {
+            status = PERMANENT_ERROR;
+        }
     }
 
-    public short getBits(int start, int end, short instruction) {
-        if (start < end) {
+    public short getBits(int start, int totalBits, short instruction) {
+        if (totalBits <= 0) {
             return 0;
         }
-        int returnValue = instruction >> end;
+        int returnValue = instruction >> (start + 1 - totalBits);
         int mask = 0b1;
-        while(start > 0) {
-            start--;
+        while(totalBits > 1) {
+            totalBits--;
             mask = mask << 1;
             mask = mask + 1;
         }
@@ -39,23 +85,46 @@ public class MonTanaMiniComputer {
         short pc = registerFile[PC];
         short instruction = fetchWord(pc);
         registerFile[IR] = instruction;
-        registerFile[PC]++;
+        registerFile[PC] = (short) (registerFile[PC] + WORD_SIZE);
     }
 
-    private short fetchWord(int address) {
-        short upperBytes = fetchByte(address);
-        byte lowerBytes = fetchByte(address + 1);
-        short instruction = (short) (upperBytes << 8);
-        instruction &= lowerBytes;
+    public short fetchWord(int address) {
+        short upperByte = fetchByte(address);
+        byte lowerByte = fetchByte(address + 1);
+        short instruction = (short) (upperByte << 8);
+        instruction = (short) (instruction | lowerByte);
         return instruction;
     }
 
-    private byte fetchByte(int address) {
+    public byte fetchByte(int address) {
         return memory[address];
     }
 
-    public static void main(String[] args) throws IOException {
-        System.out.println(new java.io.File(".").getCanonicalPath());
+    public void writeWord(int address, short value) {
+        byte i = (byte) (value >>> 8);
+        writeByte(address, i);
+        writeByte(address + 1, (byte) value);
+    }
+
+    public void writeByte(int address, byte value) {
+        memory[address] = value;
+    }
+
+    public void setRegister(int register, int value) {
+        registerFile[register] = (short) value;
+    }
+
+    public short getRegister(int register) {
+        return registerFile[register];
+    }
+
+    private void start() {
+        console.start();                     // start the interactive console
+    }
+
+    public static void main(String[] args) {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.start();
     }
 
 }

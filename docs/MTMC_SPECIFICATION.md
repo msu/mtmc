@@ -72,7 +72,6 @@ Misc (miscellaneous) instructions start with `0000`.  There are three such instr
 | `mv`        | `0000 0001 rrrr ssss` | Moves the value in register `ssss` to `rrrr`                                                                             | `mv t0 t1` |
 | `noop`      | `0000 1111 1111 1111` | Does nothing, useful for labels in compiler generated code                                                               | `noop`     |
 
-
 #### System Codes
 
 Here are the syscodes supported by MTOS
@@ -244,8 +243,3 @@ register by.
 * sp    callee saved
 * args passed in `a0`-`a3`, additional args on stack in reverse order
 * return value placed in `r0`
-
-
-
-
-

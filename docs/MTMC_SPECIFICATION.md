@@ -94,7 +94,6 @@ Here are the syscodes supported by MTOS
 | `fbreset` | 0x0009 | Resets the frame buffer to all zeros                                                                                                                  |
 | `fbstat`  | 0x000A | Sets `r0` to the 2-bit value of the pixel location `a0`, `a1` (out of bounds pixels will always be 0)                                                 |
 | `fbset`   | 0x000B | Sets the 2-bit value of the pixel location `a0`, `a1`, to the value found in `a3` (values may be 0, 1, 2 or 3, all other values will be treated as 0) |
-| `memcopy` | 0x000E | Copy `a0` bytes from the pointer in `a1` to the pointer in `a2`                                                                                       |
 | `error`   | 0x000F | Aborts the current program execution with an error message, `a0` is a pointer to the error message                                                    |
 
 ### ALU 

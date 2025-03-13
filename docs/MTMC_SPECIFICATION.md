@@ -20,6 +20,7 @@ The MonTana state Mini Computer is a small virtual computer intended to show how
   - `11` - #7f860f
 - Console for text input/output & commands
 - Operating System (MTOS)
+- Core data types are signed 16-bit integers & bytes
 
 ## Registers
 
@@ -49,8 +50,11 @@ the blinken-lighten of the computer.
 
 ## Instructions (16 bit)
 
-There are 7 instruction types in the MTSC.  Instruction types can be determined by looking at the four high-order bits
-(nibble) of an instruction.
+There are 7 instruction types in the MTSC, with a total of 37 instructions (52 instructions if you count the stack 
+operations instructions separately).  The MTSC is not a RISC computer, but combines ideas from RISC (MIPS in particular),
+from the [Scott CPU](https://www.youtube.com/watch?v=RRg5hRlywIg) and the [JVM](https://en.wikipedia.org/wiki/Java_virtual_machine) 
+
+Instruction types can be determined by looking at the four high-order bits (nibble) of an instruction.
 
 | top nibble | hex   | type           |
 |------------|-------|----------------|
@@ -82,7 +86,7 @@ Here are the syscodes supported by MTOS
 | `rint`    | 0x0001 | Reads an int value from the console into `r0`                                                                                                         |
 | `wint`    | 0x0002 | Writes the int value in `a0` to the console                                                                                                           |
 | `rstr`    | 0x0003 | Reads a string into the memory location pointed to by `a0` of max length `a1` from the console.  The bytes read are left in `r0`.                     |
-| `wstr`    | 0x0004 | Writes a string to the console from the memory location pointed to by `a0`                                                                            |
+| `wstr`    | 0x0004 | Writes a null terminated string to the console from the memory location pointed to by `a0`                                                            |
 | `rfile`   | 0x0005 | Reads a file into the memory location pointed to by `a0` of max length `a1` from the file whose name is in `a2`.  The bytes read are left in `r0`.    |
 | `wfile`   | 0x0006 | Writes the bytes from the memory location pointed to by `a0` of length `a1` into teh file whose name is in `a2`.                                      |
 | `rnd`     | 0x0007 | Puts a random number between `a0` and `a1` (inclusive) into `r0`                                                                                      |

@@ -1,10 +1,10 @@
 package edu.montana.cs.mtmc.emulator;
 
-import edu.montana.cs.mtmc.os.MonTanaOperatingSystem;
+import edu.montana.cs.mtmc.os.MTOS;
 
 import java.util.Arrays;
 
-import static edu.montana.cs.mtmc.emulator.ComputerStatus.*;
+import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
 import static edu.montana.cs.mtmc.emulator.Registers.*;
 
 public class MonTanaMiniComputer {
@@ -20,7 +20,7 @@ public class MonTanaMiniComputer {
     ComputerStatus status = READY;
 
     // helpers
-    MonTanaOperatingSystem os = new MonTanaOperatingSystem(this);
+    MTOS os = new MTOS(this);
     MTMCConsole console = new MTMCConsole(this);
     MTMCDisplay display = new MTMCDisplay(this);
 
@@ -378,4 +378,22 @@ public class MonTanaMiniComputer {
         computer.start();
     }
 
+    public MTMCConsole getConsole() {
+        return console;
+    }
+
+    public byte[] getBytes(int address, int length) {
+        return Arrays.copyOfRange(memory, address, address + length);
+    }
+
+    public byte[] getMemory() {
+        return memory;
+    }
+
+    public enum ComputerStatus {
+        READY,
+        EXECUTING,
+        PERMANENT_ERROR,
+        WAITING
+    }
 }

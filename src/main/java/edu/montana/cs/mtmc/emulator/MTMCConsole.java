@@ -4,22 +4,32 @@ import edu.montana.cs.mtmc.web.WebServer;
 
 import java.awt.*;
 import java.io.Console;
-import java.net.URI;
+
+import static edu.montana.cs.mtmc.emulator.MTMCConsole.Mode.INTERACTIVE;
+import static edu.montana.cs.mtmc.emulator.MTMCConsole.Mode.NON_INTERACTIVE;
 
 public class MTMCConsole {
 
+    Mode mode = NON_INTERACTIVE;
+    Console sysConsole = null;
     private final MonTanaMiniComputer computer;
+
+    // non-interactive data
+    private StringBuffer output = new StringBuffer();
+    private short shortValue;
+    private String stringValue;
 
     public MTMCConsole(MonTanaMiniComputer computer) {
         this.computer = computer;
     }
 
     public void start() {
-        Console console = System.console();
-        print("Welcome to the MTMC console!  Type ? for help, q to quit...");
+        mode = INTERACTIVE;
+        sysConsole = System.console();
+        println("Welcome to the MTMC console!  Type ? for help, q to quit...");
         while(true) {
             try {
-                String command = console.readLine("mtmc > ").strip();
+                String command = sysConsole.readLine("mtmc > ").strip();
                 if (!command.isEmpty()) {
                     if (command.equals("q")) {
                         System.exit(1);
@@ -27,20 +37,61 @@ public class MTMCConsole {
                         WebServer server = WebServer.getInstance(computer);
                         Desktop.getDesktop().browse(server.getURL());
                     } else {
-                      print("Unknown command: " + command);
+                      println("Unknown command: " + command);
                     }
                 }
             } catch (Exception e) {
-                print("Error: " + e.getMessage());
+                println("Error: " + e.getMessage());
             }
         }
     }
 
-    private static void print(String x) {
-        System.out.println(x);
+    public void println(String x) {
+        print(x);
+        print("\n");
     }
 
-    private static void printerr(String x) {
-        System.err.println(x);
+    public void print(String x) {
+        output.append(x);
+        if(mode == INTERACTIVE) {
+            System.out.print(x);
+        }
+    }
+
+    public short readInt() {
+        if (mode == INTERACTIVE) {
+            return Short.parseShort(sysConsole.readLine());
+        } else {
+            return shortValue;
+        }
+    }
+
+    public void setShortValue(short shortValue) {
+        this.shortValue = shortValue;
+    }
+
+    public String getOutput() {
+        return output.toString();
+    }
+
+    public void writeInt(short value) {
+        print(value + "");
+    }
+
+    public void setStringValue(String stringValue) {
+        this.stringValue = stringValue;
+    }
+
+    public String readString() {
+        if(mode == INTERACTIVE) {
+            return sysConsole.readLine();
+        } else {
+            return stringValue;
+        }
+    }
+
+    public enum Mode {
+        NON_INTERACTIVE,
+        INTERACTIVE,
     }
 }

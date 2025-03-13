@@ -74,9 +74,13 @@ public class MonTanaMiniComputer {
             }
         } else if (instructionType == 0x3) {
             // call
+            short value = getBits(12, 12, instruction);
+            registerFile[RA] = (short) (registerFile[PC] + WORD_SIZE);
+            registerFile[PC] = value;
         } else if (0x4 <= instructionType && instructionType <= 0x7) {
             // jumps
         } else if (0x8 <= instructionType && instructionType <= 0xB) {
+            // load immediate
             short targetRegister = getBits(14, 2, instruction);
             short value = getBits(12, 12, instruction);
             registerFile[targetRegister] = value;

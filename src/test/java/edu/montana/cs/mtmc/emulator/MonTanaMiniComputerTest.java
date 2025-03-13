@@ -2,6 +2,7 @@ package edu.montana.cs.mtmc.emulator;
 
 import org.junit.jupiter.api.Test;
 
+import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.WORD_SIZE;
 import static edu.montana.cs.mtmc.emulator.Registers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,7 +42,7 @@ public class MonTanaMiniComputerTest {
         short addInst = 0b0010_0000_0000_1011; // push t0, sp
         computer.execInstruction(addInst);
 
-        int newStackAddress = MonTanaMiniComputer.FRAME_BUFF_START - MonTanaMiniComputer.WORD_SIZE;
+        int newStackAddress = MonTanaMiniComputer.FRAME_BUFF_START - WORD_SIZE;
         assertEquals(newStackAddress, computer.getRegister(SP));
         assertEquals(5, computer.fetchWord(newStackAddress));
     }
@@ -54,6 +55,18 @@ public class MonTanaMiniComputerTest {
         computer.execInstruction(addInst);
 
         assertEquals(5, computer.getRegister(T0));
+    }
+
+    @Test
+    void testCall() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(PC, 50);
+
+        short addInst = (short) 0b0011_0000_0001_0000; // call 16
+        computer.execInstruction(addInst);
+
+        assertEquals(16, computer.getRegister(PC));
+        assertEquals(50 + WORD_SIZE, computer.getRegister(RA));
     }
 
 }

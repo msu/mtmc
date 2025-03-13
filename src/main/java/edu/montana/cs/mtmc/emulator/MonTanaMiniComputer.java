@@ -52,6 +52,10 @@ public class MonTanaMiniComputer {
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
                 registerFile[targetReg] = registerFile[sourceReg]; // move value
+            } else if(specialInstructionType == 0xF && getBits(8, 8, instruction) == 0xFF) {
+                // no op
+            } else {
+                // todo error state?
             }
         } else if (instructionType == 0x1) {
             // alu

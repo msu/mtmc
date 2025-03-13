@@ -2,6 +2,8 @@ package edu.montana.cs.mtmc.emulator;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
 import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.WORD_SIZE;
 import static edu.montana.cs.mtmc.emulator.Registers.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,6 +21,22 @@ public class MonTanaMiniComputerTest {
 
         assertEquals(10, computer.getRegister(T0));
         assertEquals(10, computer.getRegister(T1));
+    }
+
+    @Test
+    void testNoOp() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+
+        short[] originalRegisters = Arrays.copyOf(computer.registerFile, computer.registerFile.length);
+        byte[] originalMemory = Arrays.copyOf(computer.memory, computer.memory.length);
+
+        short noop = 0b0000_1111_1111_1111; // no-op
+        computer.execInstruction(noop);
+
+        boolean registersEqual = Arrays.equals(originalRegisters, computer.registerFile);
+        assertTrue(registersEqual);
+        boolean memoryEqual = Arrays.equals(originalMemory, computer.memory);
+        assertTrue(memoryEqual);
     }
 
     @Test

@@ -32,31 +32,31 @@ public class MonTanaMiniComputer {
     }
 
     public void execInstruction(short instruction) {
-        short instructionType = getBits(15, 4, instruction);
+        short instructionType = getBits(16, 4, instruction);
         if (instructionType == 0x0) {
-            short specialInstructionType = getBits(11, 4, instruction);
+            short specialInstructionType = getBits(12, 4, instruction);
             if(specialInstructionType == 0x0) {
-                os.handleSysCall(getBits(7, 8, instruction));
+                os.handleSysCall(getBits(8, 8, instruction));
             } else if(specialInstructionType == 0x1) {
                 // move
-                short targetReg = getBits(7, 4, instruction);
-                short sourceReg = getBits(3, 4, instruction);
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
                 registerFile[targetReg] = registerFile[sourceReg]; // move value
             }
         } else if (instructionType == 0x1) {
-            short aluInstructionType = getBits(11, 4, instruction);
+            short aluInstructionType = getBits(12, 4, instruction);
             if(aluInstructionType == 0x0) {
                 // add
-                short targetReg = getBits(7, 4, instruction);
-                short sourceReg = getBits(3, 4, instruction);
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
                 registerFile[targetReg] = (short) (registerFile[targetReg] + registerFile[sourceReg]);
             }
         } else if (instructionType == 0x2) {
-            short stackInstructionType = getBits(11, 4, instruction);
+            short stackInstructionType = getBits(12, 4, instruction);
             if(stackInstructionType == 0x0) {
                 // push
-                short sourceRegister = getBits(7, 4, instruction);
-                short stackReg = getBits(3, 4, instruction);
+                short sourceRegister = getBits(8, 4, instruction);
+                short stackReg = getBits(4, 4, instruction);
                 // decrement the stack pointer
                 registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
                 // write the value out to the location
@@ -71,9 +71,9 @@ public class MonTanaMiniComputer {
         if (totalBits <= 0) {
             return 0;
         }
-        int returnValue = instruction >> (start + 1 - totalBits);
-        int mask = 0b1;
-        while(totalBits > 1) {
+        int returnValue = instruction >> (start - totalBits);
+        int mask = 0;
+        while(totalBits > 0) {
             totalBits--;
             mask = mask << 1;
             mask = mask + 1;

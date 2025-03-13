@@ -2,6 +2,8 @@ package edu.montana.cs.mtmc.emulator;
 
 import edu.montana.cs.mtmc.os.MonTanaOperatingSystem;
 
+import java.util.Arrays;
+
 import static edu.montana.cs.mtmc.emulator.ComputerStatus.*;
 import static edu.montana.cs.mtmc.emulator.Registers.*;
 
@@ -13,8 +15,8 @@ public class MonTanaMiniComputer {
     public static final int FRAME_BUFF_START = MEMORY_SIZE / 2;
 
     // core model
-    short[] registerFile = new short[17]; // 16 user visible + the instruction register
-    byte[]  memory = new byte[MEMORY_SIZE];
+    short[] registerFile; // 16 user visible + the instruction register
+    byte[]  memory;
     ComputerStatus status = READY;
 
     // helpers
@@ -23,7 +25,15 @@ public class MonTanaMiniComputer {
     MTMCDisplay display = new MTMCDisplay(this);
 
     public MonTanaMiniComputer() {
+        initMemory();
+    }
+
+    private void initMemory() {
+        registerFile = new short[17];
+        memory = new byte[MEMORY_SIZE];
         registerFile[SP] = FRAME_BUFF_START; // default the stack pointer to the top of normal memory
+        registerFile[ZERO] = 0;
+        registerFile[ONE] = 1;
     }
 
     public void fetchAndExecute() {
@@ -64,11 +74,13 @@ public class MonTanaMiniComputer {
             }
         } else if (instructionType == 0x3) {
             // call
-        } else if (0x4 <= instruction && instruction <= 0x7) {
+        } else if (0x4 <= instructionType && instructionType <= 0x7) {
             // jumps
-        } else if (0x8 <= instruction && instruction <= 0xB) {
-            // load immediate
-        } else if (0xC <= instruction && instruction <= 0xF) {
+        } else if (0x8 <= instructionType && instructionType <= 0xB) {
+            short targetRegister = getBits(14, 2, instruction);
+            short value = getBits(12, 12, instruction);
+            registerFile[targetRegister] = value;
+        } else if (0xC <= instructionType && instructionType <= 0xF) {
             // load/store
         } else {
             status = PERMANENT_ERROR;

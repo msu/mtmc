@@ -46,4 +46,14 @@ public class MonTanaMiniComputerTest {
         assertEquals(5, computer.fetchWord(newStackAddress));
     }
 
+    @Test
+    void testLoadImmediate() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+
+        short addInst = (short) 0b1000_0000_0000_0101; // ldi t0, 5
+        computer.execInstruction(addInst);
+
+        assertEquals(5, computer.getRegister(T0));
+    }
+
 }

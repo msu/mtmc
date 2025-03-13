@@ -62,6 +62,14 @@ public class MonTanaMiniComputer {
                 // write the value out to the location
                 writeWord(registerFile[stackReg], registerFile[sourceRegister]);
             }
+        } else if (instructionType == 0x3) {
+            // call
+        } else if (0x4 <= instruction && instruction <= 0x7) {
+            // jumps
+        } else if (0x8 <= instruction && instruction <= 0xB) {
+            // load immediate
+        } else if (0xC <= instruction && instruction <= 0xF) {
+            // load/store
         } else {
             status = PERMANENT_ERROR;
         }

@@ -54,12 +54,85 @@ public class MonTanaMiniComputer {
                 registerFile[targetReg] = registerFile[sourceReg]; // move value
             }
         } else if (instructionType == 0x1) {
+            // alu
             short aluInstructionType = getBits(12, 4, instruction);
             if(aluInstructionType == 0x0) {
                 // add
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
                 registerFile[targetReg] = (short) (registerFile[targetReg] + registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x1) {
+                // sub
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] - registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x2) {
+                // mul
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] * registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x3) {
+                // div
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] / registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x4) {
+                // mod
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] % registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x5) {
+                // and
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] & registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x6) {
+                // or
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] | registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x7) {
+                // xor
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] ^ registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x8) {
+                // shift left
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] << registerFile[sourceReg]);
+            } else if(aluInstructionType == 0x9) {
+                // shift right
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] >>> registerFile[sourceReg]);
+            } else if(aluInstructionType == 0xA) {
+                // eq
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] == registerFile[sourceReg] ? 1 : 0);
+            } else if(aluInstructionType == 0xB) {
+                // lt
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] < registerFile[sourceReg] ? 1 : 0);
+            } else if(aluInstructionType == 0xC) {
+                // lte
+                short targetReg = getBits(8, 4, instruction);
+                short sourceReg = getBits(4, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] <= registerFile[sourceReg] ? 1 : 0);
+            } else if(aluInstructionType == 0xD) {
+                // bitwise not
+                short targetReg = getBits(8, 4, instruction);
+                registerFile[targetReg] = (short) ~registerFile[targetReg];
+            } else if(aluInstructionType == 0xE) {
+                // logical not
+                short targetReg = getBits(8, 4, instruction);
+                registerFile[targetReg] = (short) (registerFile[targetReg] == 0 ? 1 : 0);
+            } else if(aluInstructionType == 0xF) {
+                // negate
+                short targetReg = getBits(8, 4, instruction);
+                registerFile[targetReg] = (short) -registerFile[targetReg];
             }
         } else if (instructionType == 0x2) {
             short stackInstructionType = getBits(12, 4, instruction);

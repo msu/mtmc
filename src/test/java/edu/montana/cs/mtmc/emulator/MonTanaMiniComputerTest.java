@@ -35,6 +35,261 @@ public class MonTanaMiniComputerTest {
     }
 
     @Test
+    void testSub() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+        computer.setRegister(T1, 5);
+
+        short subInst = 0b0001_0001_0000_0001; // sub t0, t1
+        computer.execInstruction(subInst);
+
+        assertEquals(5, computer.getRegister(T0));
+        assertEquals(5, computer.getRegister(T1));
+    }
+
+    @Test
+    void testMul() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+        computer.setRegister(T1, 5);
+
+        short mulInst = 0b0001_0010_0000_0001; // mul t0, t1
+        computer.execInstruction(mulInst);
+
+        assertEquals(50, computer.getRegister(T0));
+        assertEquals(5, computer.getRegister(T1));
+    }
+
+    @Test
+    void testDiv() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+        computer.setRegister(T1, 5);
+
+        short divInst = 0b0001_0011_0000_0001; // div t0, t1
+        computer.execInstruction(divInst);
+
+        assertEquals(2, computer.getRegister(T0));
+        assertEquals(5, computer.getRegister(T1));
+    }
+
+    @Test
+    void testMod() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+        computer.setRegister(T1, 5);
+
+        short modInst = 0b0001_0100_0000_0001; // mod t0, t1
+        computer.execInstruction(modInst);
+
+        assertEquals(0, computer.getRegister(T0));
+        assertEquals(5, computer.getRegister(T1));
+    }
+
+    @Test
+    void testAnd() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 0b110);
+        computer.setRegister(T1, 0b011);
+
+        short andInst = 0b0001_0101_0000_0001; // and t0, t1
+        computer.execInstruction(andInst);
+
+        assertEquals(0b010, computer.getRegister(T0));
+        assertEquals(0b011, computer.getRegister(T1));
+    }
+
+    @Test
+    void testOr() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 0b100);
+        computer.setRegister(T1, 0b001);
+
+        short orInst = 0b0001_0110_0000_0001; // or t0, t1
+        computer.execInstruction(orInst);
+
+        assertEquals(0b101, computer.getRegister(T0));
+        assertEquals(0b001, computer.getRegister(T1));
+    }
+
+    @Test
+    void testXor() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 0b101);
+        computer.setRegister(T1, 0b011);
+
+        short xorInst = 0b0001_0111_0000_0001; // xor t0, t1
+        computer.execInstruction(xorInst);
+
+        assertEquals(0b110, computer.getRegister(T0));
+        assertEquals(0b011, computer.getRegister(T1));
+    }
+
+    @Test
+    void testShiftLeft() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 0b0101);
+        computer.setRegister(T1, 1);
+
+        short shiftLeftInst = 0b0001_1000_0000_0001; // shl t0, t1
+        computer.execInstruction(shiftLeftInst);
+
+        assertEquals(0b01010, computer.getRegister(T0));
+        assertEquals(1, computer.getRegister(T1));
+    }
+
+    @Test
+    void testShiftRight() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 0b0101);
+        computer.setRegister(T1, 1);
+
+        short shiftLeftInst = 0b0001_1001_0000_0001; // shr t0, t1
+        computer.execInstruction(shiftLeftInst);
+
+        assertEquals(0b0010, computer.getRegister(T0));
+        assertEquals(1, computer.getRegister(T1));
+    }
+
+    @Test
+    void testEqualsResultsInOneWhenEqual() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 1);
+        computer.setRegister(T1, 1);
+
+        short eqInst = 0b0001_1010_0000_0001; // eq t0, t1
+        computer.execInstruction(eqInst);
+
+        assertEquals(1, computer.getRegister(T0));
+        assertEquals(1, computer.getRegister(T1));
+    }
+
+    @Test
+    void testEqualsResultsInZeroWhenNotEqual() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 1);
+        computer.setRegister(T1, 2);
+
+        short eqInst = 0b0001_1010_0000_0001; // eq t0, t1
+        computer.execInstruction(eqInst);
+
+        assertEquals(0, computer.getRegister(T0));
+        assertEquals(2, computer.getRegister(T1));
+    }
+
+    @Test
+    void testLessThanResultsInOneWhenLessThan() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 1);
+        computer.setRegister(T1, 2);
+
+        short lessThanInst = 0b0001_1011_0000_0001; // lt t0, t1
+        computer.execInstruction(lessThanInst);
+
+        assertEquals(1, computer.getRegister(T0));
+        assertEquals(2, computer.getRegister(T1));
+    }
+
+    @Test
+    void testLessThanResultsInZeroWhenNotLessThan() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 2);
+        computer.setRegister(T1, 1);
+
+        short lessThanInst = 0b0001_1011_0000_0001; // lt t0, t1
+        computer.execInstruction(lessThanInst);
+
+        assertEquals(0, computer.getRegister(T0));
+        assertEquals(1, computer.getRegister(T1));
+    }
+
+    @Test
+    void testLessOrEqualThanResultsInOneWhenLessThan() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 1);
+        computer.setRegister(T1, 2);
+
+        short lessThanInst = 0b0001_1100_0000_0001; // lteq t0, t1
+        computer.execInstruction(lessThanInst);
+
+        assertEquals(1, computer.getRegister(T0));
+        assertEquals(2, computer.getRegister(T1));
+    }
+
+    @Test
+    void testLessOrEqualThanResultsInOneWhenEqual() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 1);
+        computer.setRegister(T1, 1);
+
+        short lessThanInst = 0b0001_1100_0000_0001; // lteq t0, t1
+        computer.execInstruction(lessThanInst);
+
+        assertEquals(1, computer.getRegister(T0));
+        assertEquals(1, computer.getRegister(T1));
+    }
+
+    @Test
+    void testLessOrEqualThanResultsInZeroWhenNotLessThanOrEqual() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 1);
+        computer.setRegister(T1, 0);
+
+        short lessThanInst = 0b0001_1100_0000_0001; // lteq t0, t1
+        computer.execInstruction(lessThanInst);
+
+        assertEquals(0, computer.getRegister(T0));
+        assertEquals(0, computer.getRegister(T1));
+    }
+
+    @Test
+    void testBitwiseNot() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 0b010101);
+
+        short bitwiseNotInst = 0b0001_1101_0000_0000; // bnot t0
+        computer.execInstruction(bitwiseNotInst);
+
+        assertEquals(~0b010101, computer.getRegister(T0));
+    }
+
+    @Test
+    void testNotWithZero() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 0);
+
+        short notInst = 0b0001_1110_0000_0000; // not t0
+        computer.execInstruction(notInst);
+
+        assertEquals(1, computer.getRegister(T0));
+    }
+
+    @Test
+    void testNotWithNonZeros() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 1);
+
+        short notInst = 0b0001_1110_0000_0000; // not t0
+        computer.execInstruction(notInst);
+        assertEquals(0, computer.getRegister(T0));
+
+        computer.setRegister(T0, 10);
+        computer.execInstruction(notInst);
+        assertEquals(0, computer.getRegister(T0));
+    }
+
+    @Test
+    void testNegate() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(T0, 10);
+
+        short negInst = 0b0001_1111_0000_0000; // neg t0
+        computer.execInstruction(negInst);
+
+        assertEquals(-10, computer.getRegister(T0));
+    }
+
+    @Test
     void testPush() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegister(T0, 5);

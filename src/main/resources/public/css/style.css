@@ -1,0 +1,38 @@
+main {
+    display: grid;
+    grid-template-columns: 1fr 1fr 512px;
+}
+
+#right {
+    display: grid;
+    grid-template-rows: 16px 512px 1fr;
+    max-height: 100vh;
+}
+
+#editors {
+    display: grid;
+    grid-template-rows: 1fr 1fr 1fr 1fr;
+    max-height: 100vh;
+}
+
+#memory {
+}
+
+.display {
+    display: grid;
+    grid-template-columns: repeat(64, 1fr);
+    border: 1px solid red;
+    width: 512px;
+    aspect-ratio: 1;
+}
+
+.memory {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    border: 1px solid red;
+    width: 512px;
+}
+
+.memory {
+    font-family: monospace;
+}

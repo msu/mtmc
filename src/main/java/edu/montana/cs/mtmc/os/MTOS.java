@@ -1,7 +1,10 @@
 package edu.montana.cs.mtmc.os;
 
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
+import edu.montana.cs.mtmc.web.WebServer;
 import kotlin.text.Charsets;
+
+import java.awt.*;
 
 import static edu.montana.cs.mtmc.emulator.Registers.*;
 
@@ -46,5 +49,23 @@ public class MTOS {
             String outputString = new String(computer.getMemory(), pointer, length, Charsets.US_ASCII);
             computer.getConsole().print(outputString);
         }
+    }
+
+    public void processCommand(String command) {
+        try {
+            if (!command.isEmpty()) {
+                if (command.equals("q")) {
+                    System.exit(1);
+                } else if(command.equals("web")) {
+                    WebServer server = WebServer.getInstance(computer);
+                    Desktop.getDesktop().browse(server.getURL());
+                } else {
+                    computer.getConsole().println("Unknown command: " + command);
+                }
+            }
+        } catch (Exception e) {
+            computer.getConsole().println("Error: " + e.getMessage());
+        }
+
     }
 }

@@ -1,0 +1,51 @@
+<html>
+<head>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<main>
+    <div id="editors">
+        <div style="padding: 12px">
+            Sea Editor
+            <textarea style="width: 100%">
+            </textarea>
+        </div>
+        <div style="padding: 12px">
+            Assembly Editor
+            <textarea style="width: 100%">
+            </textarea>
+        </div>
+    </div>
+    <div id="center">
+        <div id="registers">
+            Registers
+        </div>
+        <div id="console">
+            Console
+        </div>
+    </div>
+    <div id="right">
+        <div>Display</div>
+        <div id="display" class="display">
+            {% for row in display.rows %}
+            {% for col in display.columns %}
+            <div id="display_{{row}}_{{col}}" style="background:{{display.colorFor(row, col)}}"></div>
+            {% endfor %}
+            {% endfor %}
+        </div>
+
+        <br/>
+        Memory
+        <div id="memory" class="memory">
+            {% for addr in computer.memoryAddresses %}
+            <div>{{computer.getHex(addr)}}</div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+</main>
+
+</body>
+</html>

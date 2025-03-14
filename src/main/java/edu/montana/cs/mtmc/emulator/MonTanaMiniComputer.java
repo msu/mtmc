@@ -3,6 +3,8 @@ package edu.montana.cs.mtmc.emulator;
 import edu.montana.cs.mtmc.os.MTOS;
 
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.stream.IntStream;
 
 import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
 import static edu.montana.cs.mtmc.emulator.Registers.*;
@@ -373,11 +375,6 @@ public class MonTanaMiniComputer {
         console.start();                     // start the interactive console
     }
 
-    public static void main(String[] args) {
-        MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        computer.start();
-    }
-
     public MTMCConsole getConsole() {
         return console;
     }
@@ -390,10 +387,32 @@ public class MonTanaMiniComputer {
         return memory;
     }
 
+    public MTOS getOS() {
+        return os;
+    }
+
+    public MTMCDisplay getDisplay() {
+        return display;
+    }
+
+    public String getHex(int address) {
+        byte byteVal = fetchByte(address);
+        return String.format("%02X ", byteVal);
+    }
+
+    public Iterable<Integer> getMemoryAddresses() {
+        return () -> IntStream.range(0, MEMORY_SIZE).iterator();
+    }
+
     public enum ComputerStatus {
         READY,
         EXECUTING,
         PERMANENT_ERROR,
         WAITING
+    }
+
+    public static void main(String[] args) {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.start();
     }
 }

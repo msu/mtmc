@@ -28,21 +28,8 @@ public class MTMCConsole {
         sysConsole = System.console();
         println("Welcome to the MTMC console!  Type ? for help, q to quit...");
         while(true) {
-            try {
-                String command = sysConsole.readLine("mtmc > ").strip();
-                if (!command.isEmpty()) {
-                    if (command.equals("q")) {
-                        System.exit(1);
-                    } else if(command.equals("web")) {
-                        WebServer server = WebServer.getInstance(computer);
-                        Desktop.getDesktop().browse(server.getURL());
-                    } else {
-                      println("Unknown command: " + command);
-                    }
-                }
-            } catch (Exception e) {
-                println("Error: " + e.getMessage());
-            }
+            String cmd = sysConsole.readLine("mtmc > ");
+            computer.getOS().processCommand(cmd);
         }
     }
 

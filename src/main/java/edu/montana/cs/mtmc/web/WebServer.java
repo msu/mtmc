@@ -33,9 +33,8 @@ public class WebServer {
         });
 
         // paths
-        javalinApp.get("/", ctx -> ctx.html(render("index.html",
-                "computer", computer,
-                "display", computer.getDisplay())));
+        javalinApp.get("/", ctx -> ctx.html(
+                render("index.html", "computer", new MTMCWebView(computer))));
 
         // start server
         javalinApp.start(PORT);

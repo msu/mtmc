@@ -9,9 +9,9 @@ The MonTana state Mini Computer is a small virtual computer intended to show how
 - 2 byte words
 - 4k of Memory 
   - 4096 bytes/addresses
-  - Upper 2k is a frame buffer for a display
+  - Upper 1k is a frame buffer for a display
   - 2048 total words
-  - 1024 words/2048 bytes free excluding frame buffer
+  - 1536 words/3072 bytes free excluding frame buffer
 - 16 Registers (see below)
 - 64x64 2-bit green scale display
   - `00` - #2a453b

@@ -58,4 +58,27 @@ public class MTOSTest {
         assertEquals("Hello world!", computer.getConsole().getOutput());
     }
 
+    @Test
+    public void testRnd() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(A0, 10);
+        computer.setRegister(A1, 20);
+        short inst = 0b0000_0000_0000_0111; // sys rnd
+        computer.execInstruction(inst);
+        short returnVal = computer.getRegister(R0);
+        assertTrue(10 <= returnVal && returnVal <= 20);
+    }
+
+    @Test
+    public void testSleep() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegister(A0, 100);
+        long start = System.currentTimeMillis();
+        short inst = 0b0000_0000_0000_1000; // sys sleep
+        computer.execInstruction(inst);
+        long end = System.currentTimeMillis();
+        long duration = end - start;
+        assertTrue(duration > 100, "Duration should be greater than 100 : " + duration);
+    }
+
 }

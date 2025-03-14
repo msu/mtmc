@@ -5,12 +5,15 @@ import edu.montana.cs.mtmc.web.WebServer;
 import kotlin.text.Charsets;
 
 import java.awt.*;
+import java.util.Random;
+import java.util.random.RandomGenerator;
 
 import static edu.montana.cs.mtmc.emulator.Registers.*;
 
 public class MTOS {
 
     private final MonTanaMiniComputer computer;
+    Random random = new Random();
 
     public MTOS(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -48,6 +51,37 @@ public class MTOS {
             }
             String outputString = new String(computer.getMemory(), pointer, length, Charsets.US_ASCII);
             computer.getConsole().print(outputString);
+        } else if (syscallNumber == 0x0007) {
+            // rnd
+            short low = computer.getRegister(A0);
+            short high = computer.getRegister(A1);
+            computer.setRegister(R0, random.nextInt(low, high + 1));
+        } else if (syscallNumber == 0x0008) {
+            // sleep
+            short millis = computer.getRegister(A0);
+            try {
+                Thread.sleep(millis);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (syscallNumber == 0x0009) {
+            // fbreset
+            byte[] memory = computer.getMemory();
+            for (int i = MonTanaMiniComputer.FRAME_BUFF_START; i < memory.length; i++) {
+                memory[i] = 0;
+            }
+        } else if (syscallNumber == 0x000A) {
+            // fbstat
+            short row = computer.getRegister(A0);
+            short column = computer.getRegister(A1);
+            short val = computer.getDisplay().getValueFor(row, column);
+            computer.setRegister(R0, val);
+        } else if (syscallNumber == 0x000A) {
+            // fbset
+            short row = computer.getRegister(A0);
+            short column = computer.getRegister(A1);
+            short color = computer.getRegister(A3);
+            computer.getDisplay().setValueFor(row, column, color);
         }
     }
 
@@ -59,6 +93,14 @@ public class MTOS {
                 } else if(command.equals("web")) {
                     WebServer server = WebServer.getInstance(computer);
                     Desktop.getDesktop().browse(server.getURL());
+                } else if(command.equals("fuzz")) {
+                    Iterable<Integer> rows = computer.getDisplay().getRows();
+                    Iterable<Integer> cols = computer.getDisplay().getColumns();
+                    for (Integer row : rows) {
+                        for (Integer col : cols) {
+                            computer.getDisplay().setValueFor(row.shortValue(), col.shortValue(), (short) random.nextInt(0, 4));
+                        }
+                    }
                 } else {
                     computer.getConsole().println("Unknown command: " + command);
                 }

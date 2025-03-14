@@ -33,6 +33,10 @@ main {
     width: 512px;
 }
 
+.frameBuffer {
+    background-color: cornflowerblue;
+}
+
 .memory {
     font-family: monospace;
 }

@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.web;
 
+import edu.montana.cs.mtmc.emulator.MTMCDisplay;
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.emulator.Registers;
 import kotlin.text.Charsets;
@@ -76,15 +77,17 @@ public class MTMCWebView {
     }
 
     public String colorForPixel(int row, int column) {
-        short valueFor = computer.getDisplay().getValueFor((short) row, (short) column);
+        short x = (short) column;
+        short y = (short) row;
+        short valueFor = computer.getDisplay().getValueFor(x, y);
         if (valueFor == 0) {
-            return "#2a453b";
+            return "#" + MTMCDisplay.DARK;
         } else if (valueFor == 1) {
-            return "#365d48";
+            return "#" + MTMCDisplay.MEDIUM;
         } else if (valueFor == 2) {
-            return "#577c44";
+            return "#" + MTMCDisplay.LIGHT;
         } else if (valueFor == 3) {
-            return "#7f860f";
+            return "#" + MTMCDisplay.WHITE;
         }
         throw new IllegalStateException("Bad display value: "  + valueFor);
     }

@@ -40,3 +40,21 @@ main {
 .memory {
     font-family: monospace;
 }
+
+#blinkenlighten {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+}
+
+#blinkenlighten div {
+    height: 12px;
+    width: 12px;
+}
+
+#blinkenlighten div.on {
+    background-color: red;
+}
+
+#blinkenlighten div.off {
+    background-color: #5c0119;
+}

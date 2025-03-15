@@ -7,6 +7,8 @@ import kotlin.text.Charsets;
 
 import java.lang.reflect.Field;
 
+import static edu.montana.cs.mtmc.emulator.Registers.IR;
+
 public class MTMCWebView {
 
     private final MonTanaMiniComputer computer;
@@ -19,6 +21,17 @@ public class MTMCWebView {
         return computer.getMemoryAddresses();
     }
 
+    public String blinkenLighten(int i) {
+        short value = computer.getRegister(IR);
+        int mask = 0b1 << i;
+        value = (short) (value & mask);
+        if (value == 0) {
+            return "off";
+        } else {
+            return "on";
+        }
+    }
+
     public String regHex(String reg) {
         try {
             short value = getRegisterValue(reg);
@@ -29,6 +42,7 @@ public class MTMCWebView {
             return "No such register: " + reg;
         }
     }
+
     public String regBin(String reg) {
         try {
             short value = getRegisterValue(reg);

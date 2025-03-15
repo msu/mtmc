@@ -1,12 +1,9 @@
 package edu.montana.cs.mtmc.emulator;
 
-import edu.montana.cs.mtmc.web.WebServer;
-
-import java.awt.*;
 import java.io.Console;
 
-import static edu.montana.cs.mtmc.emulator.MTMCConsole.Mode.INTERACTIVE;
-import static edu.montana.cs.mtmc.emulator.MTMCConsole.Mode.NON_INTERACTIVE;
+import static edu.montana.cs.mtmc.emulator.MTMCConsole.Mode.*;
+import edu.montana.cs.mtmc.os.shell.Shell;
 
 public class MTMCConsole {
 
@@ -23,10 +20,11 @@ public class MTMCConsole {
         this.computer = computer;
     }
 
+    // TODO invert so shell is driving and console is just IO
     public void start() {
         mode = INTERACTIVE;
         sysConsole = System.console();
-        println("Welcome to the MTMC console!  Type ? for help, q to quit...");
+        Shell.printShellWelcome(computer);
         while(true) {
             String cmd = sysConsole.readLine("mtmc > ");
             computer.getOS().processCommand(cmd);

@@ -387,13 +387,12 @@ public class MTMCTokenizer {
     public String collapseTokensAsString() {
         if (more()) {
             StringBuilder sb = new StringBuilder();
-            MTMCToken last = consume();
-            MTMCToken next = currentToken();
-            while (more() && last.end + 1 == next.start) {
-                sb.append(last.getStringValue());
+            MTMCToken last, next;
+            do {
                 last = consume();
+                sb.append(last.getStringValue());
                 next = currentToken();
-            }
+            } while (more() && last.end == next.start);
             return sb.toString();
         } else {
             return "";

@@ -66,6 +66,8 @@ public class DisplayCommand extends ShellCommand {
                                 computer.getDisplay().setValueFor((short) (x + xpad), (short) (y + ypad), (short) twoBitValue);
                             }
                         }
+                    } else {
+                        usageException();
                     }
                 }
                 default -> usageException();

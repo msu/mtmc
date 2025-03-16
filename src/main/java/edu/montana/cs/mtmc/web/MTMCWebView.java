@@ -5,7 +5,7 @@ import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.emulator.Registers;
 import kotlin.text.Charsets;
 
-import java.lang.reflect.Field;
+import java.util.stream.IntStream;
 
 import static edu.montana.cs.mtmc.emulator.Registers.IR;
 
@@ -21,9 +21,13 @@ public class MTMCWebView {
         return computer.getMemoryAddresses();
     }
 
-    public String blinkenLighten(int i) {
-        short value = computer.getRegister(IR);
-        int mask = 0b1 << i;
+    public Iterable blinkenIndexes() {
+        return () -> IntStream.range(0, 16).iterator();
+    }
+
+    public String blinken(int bit, int register) {
+        short value = computer.getRegister(register);
+        int mask = 0b1 << bit;
         value = (short) (value & mask);
         if (value == 0) {
             return "off";
@@ -43,24 +47,35 @@ public class MTMCWebView {
         }
     }
 
-    public String regBin(String reg) {
-        try {
-            short value = getRegisterValue(reg);
-            String binaryString = Integer.toBinaryString(value);
-            String string = "%1$16s".formatted(binaryString).replaceAll(" ", "0");
-            string = string.replaceAll("....", "$0 ");
-            return string;
-        } catch (Exception e) {
-            return "No such register: " + reg;
+    public String regBlinken(String reg) {
+        Integer regIndex = Registers.toInteger(reg);
+        StringBuilder blinken = new StringBuilder();
+        for (int i = 0; i < 16; i++) {
+            blinken.append("<div class='blinken ");
+            boolean space = i != 0 && (i + 1) % 4 == 0;
+            if (space) {
+                blinken.append(" space ");
+            }
+            blinken.append(blinken(15 - i, regIndex)).append("'></div>");
+
         }
+        return blinken.toString();
     }
 
-    private short getRegisterValue(String reg) throws NoSuchFieldException, IllegalAccessException {
-        Field field = Registers.class.getField(reg);
-        Integer index = (Integer) field.get(null);
+    public String regBin(String reg) {
+        short value = getRegisterValue(reg);
+        String binaryString = Integer.toBinaryString(value);
+        String string = "%1$16s".formatted(binaryString).replaceAll(" ", "0");
+        string = string.replaceAll("....", "$0 ");
+        return string;
+    }
+
+    private short getRegisterValue(String reg) {
+        Integer index = Registers.toInteger(reg);
         short register = computer.getRegister(index);
         return register;
     }
+
 
     public String classFor(int address) {
         if (address >= MonTanaMiniComputer.FRAME_BUFF_START) {

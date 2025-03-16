@@ -1,5 +1,7 @@
 package edu.montana.cs.mtmc.emulator;
 
+import java.lang.reflect.Field;
+
 public class Registers {
     public static final int T0 = 0;
     public static final int T1 = 1;
@@ -18,4 +20,13 @@ public class Registers {
     public static final int ZERO = 14;
     public static final int ONE = 15;
     public static final int IR = 16;
+    public static Integer toInteger(String reg) {
+        try {
+            Field field = Registers.class.getField(reg);
+            Integer index = (Integer) field.get(null);
+            return index;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("No such register: " + reg);
+        }
+    }
 }

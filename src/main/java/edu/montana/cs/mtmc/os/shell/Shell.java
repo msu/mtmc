@@ -1,11 +1,11 @@
 package edu.montana.cs.mtmc.os.shell;
 
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
+import edu.montana.cs.mtmc.os.shell.builtins.*;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 import static edu.montana.cs.mtmc.tokenizer.MTMCToken.TokenType.*;
 import edu.montana.cs.mtmc.tokenizer.MTMCTokenizer;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -14,6 +14,7 @@ public class Shell {
     static {
         COMMANDS.put("help", new HelpCommand());
         COMMANDS.put("exit", new ExitCommand());
+        COMMANDS.put("set", new SetCommand());
         COMMANDS.put("web", new WebCommand());
         COMMANDS.put("display", new DisplayCommand());
     }

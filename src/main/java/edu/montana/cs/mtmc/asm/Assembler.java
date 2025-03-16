@@ -1,11 +1,9 @@
-package edu.montana.cs.mtmc.assembler;
+package edu.montana.cs.mtmc.asm;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
-import static edu.montana.cs.mtmc.assembler.Assembler.ASMMode.*;
+import static edu.montana.cs.mtmc.asm.Assembler.ASMMode.*;
 
 public class Assembler {
 

@@ -1,4 +1,4 @@
-package edu.montana.cs.mtmc.assembler;
+package edu.montana.cs.mtmc.asm;
 
 public class InstructionBuilder {
     private InstructionType type;

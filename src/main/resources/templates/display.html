@@ -1,0 +1,12 @@
+<div class="panel">
+    Display
+    <div>
+        <div id="display" class="display">
+            {% for row in computer.displayRows %}
+            {% for col in computer.displayCols %}
+            <div id="display_{{row}}_{{col}}" style="background:{{computer.colorForPixel(row, col)}}"></div>
+            {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+</div>

@@ -1,90 +1,25 @@
 <html>
 <head>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/fixi-0.6.5.js"></script>
+    <script src="/js/main.js"></script>
 </head>
 <body>
 
 <main>
-    <div id="editors">
-        <div style="padding: 12px">
-            Sea Editor
-            <textarea style="width: 100%">
-            </textarea>
-        </div>
-        <div style="padding: 12px">
-            Assembly Editor
-            <textarea style="width: 100%">
-            </textarea>
-        </div>
+    <div id="left">
+        {% include 'templates/control.html' %}
+        {% include 'templates/registers.html' %}
+        {% include 'templates/console.html' %}
     </div>
     <div id="center">
-        Blinken
-        <div id="blinkenlighten">
-            <div class="{{'asdf' + computer.blinkenLighten(0)}}"></div>
-            <div class="{{computer.blinkenLighten(1)}}"></div>
-            <div class="{{computer.blinkenLighten(2)}}"></div>
-            <div class="{{computer.blinkenLighten(3)}}"></div>
-            <div class="{{computer.blinkenLighten(4)}}"></div>
-            <div class="{{computer.blinkenLighten(5)}}"></div>
-            <div class="{{computer.blinkenLighten(6)}}"></div>
-            <div class="{{computer.blinkenLighten(7)}}"></div>
-            <div class="{{computer.blinkenLighten(8)}}"></div>
-            <div class="{{computer.blinkenLighten(9)}}"></div>
-            <div class="{{computer.blinkenLighten(10)}}"></div>
-            <div class="{{computer.blinkenLighten(11)}}"></div>
-            <div class="{{computer.blinkenLighten(12)}}"></div>
-            <div class="{{computer.blinkenLighten(13)}}"></div>
-            <div class="{{computer.blinkenLighten(14)}}"></div>
-            <div class="{{computer.blinkenLighten(15)}}"></div>
-        </div>
-        <div id="registers">
-            Registers
-            <table>
-                <tr><th>reg</th><th>binary</th><th>hex</th></tr>
-                <tr><td>t0</td><td>{{computer.regBin('T0')}}</td><td>{{computer.regHex('T0')}}</td></tr>
-                <tr><td>t1</td><td>{{computer.regBin('T1')}}</td><td>{{computer.regHex('T1')}}</td></tr>
-                <tr><td>t2</td><td>{{computer.regBin('T2')}}</td><td>{{computer.regHex('T2')}}</td></tr>
-                <tr><td>t3</td><td>{{computer.regBin('T3')}}</td><td>{{computer.regHex('T3')}}</td></tr>
-                <tr><td>a0</td><td>{{computer.regBin('A0')}}</td><td>{{computer.regHex('A0')}}</td></tr>
-                <tr><td>a1</td><td>{{computer.regBin('A1')}}</td><td>{{computer.regHex('A1')}}</td></tr>
-                <tr><td>a2</td><td>{{computer.regBin('A2')}}</td><td>{{computer.regHex('A2')}}</td></tr>
-                <tr><td>a3</td><td>{{computer.regBin('A3')}}</td><td>{{computer.regHex('A3')}}</td></tr>
-                <tr><td>r0</td><td>{{computer.regBin('R0')}}</td><td>{{computer.regHex('R0')}}</td></tr>
-                <tr><td>ra</td><td>{{computer.regBin('RA')}}</td><td>{{computer.regHex('RA')}}</td></tr>
-                <tr><td>fp</td><td>{{computer.regBin('FP')}}</td><td>{{computer.regHex('FP')}}</td></tr>
-                <tr><td>sp</td><td>{{computer.regBin('SP')}}</td><td>{{computer.regHex('SP')}}</td></tr>
-                <tr><td>bp</td><td>{{computer.regBin('BP')}}</td><td>{{computer.regHex('BP')}}</td></tr>
-                <tr><td>pc</td><td>{{computer.regBin('PC')}}</td><td>{{computer.regHex('PC')}}</td></tr>
-                <tr><td>zero</td><td>{{computer.regBin('ZERO')}}</td><td>{{computer.regHex('ZERO')}}</td></tr>
-                <tr><td>one</td><td>{{computer.regBin('ONE')}}</td><td>{{computer.regHex('ONE')}}</td></tr>
-                <tr><td>ir</td><td>{{computer.regBin('IR')}}</td><td>{{computer.regHex('IR')}}</td></tr>
-            </table>
-        </div>
-        <div id="console">
-            Console
-        </div>
+        {% include 'templates/display.html' %}
+        {% include 'templates/joystick.html' %}
+        {% include 'templates/memory.html' %}
     </div>
     <div id="right">
-        <div>Display</div>
-        <div id="display" class="display">
-            {% for row in computer.displayRows %}
-            {% for col in computer.displayCols %}
-            <div id="display_{{row}}_{{col}}" style="background:{{computer.colorForPixel(row, col)}}"></div>
-            {% endfor %}
-            {% endfor %}
-        </div>
-
-        <br/>
-        Memory
-        <div id="memory" class="memory">
-            {% for addr in computer.memoryAddresses %}
-            <div class="{{computer.classFor(addr)}}">{{computer.hexValue(addr) | raw }}</div>
-            {% endfor %}
-        </div>
-
+        {% include 'templates/editors.html' %}
     </div>
-
 </main>
-
 </body>
 </html>

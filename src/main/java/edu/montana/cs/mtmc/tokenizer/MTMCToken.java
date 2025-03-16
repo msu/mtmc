@@ -48,6 +48,14 @@ public class MTMCToken {
     public Integer getIntegerValue() {
         if (type == TokenType.INTEGER) {
             return Integer.parseInt(stringValue);
+        } else if (type == TokenType.HEX) {
+            String stripped = stringValue.substring(2);
+            short i = Short.parseShort(stripped, 16);
+            return (int) i;
+        } else if (type == TokenType.BINARY) {
+            String stripped = stringValue.substring(2);
+            short i = Short.parseShort(stripped.replaceAll("_", ""), 2);
+            return (int) i;
         } else {
             throw new UnsupportedOperationException("Cannot return int for type " + getType());
         }

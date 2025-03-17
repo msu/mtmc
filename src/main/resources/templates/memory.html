@@ -1,10 +1,8 @@
-<div class="panel">
-    Memory
-    <div>
-        <div id="memory" class="memory">
-            {% for addr in computer.memoryAddresses %}
-            <div class="{{computer.classFor(addr)}}">{{computer.hexValue(addr) | raw }}</div>
-            {% endfor %}
-        </div>
+<div class="panel" id="memory-panel">
+    Memory <button>jump</button>
+    <div id="memory" class="memory">
+        {% for addr in computer.memoryAddresses %}
+        <div class="{{computer.classFor(addr)}}">{{computer.hexValue(addr) | raw }}</div>
+        {% endfor %}
     </div>
 </div>

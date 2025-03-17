@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.web;
 
+import com.google.gson.Gson;
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import io.javalin.Javalin;
 import io.javalin.http.sse.SseClient;
@@ -26,6 +27,7 @@ public class WebServer {
     PebbleEngine templateEngine = new PebbleEngine.Builder().cacheActive(false).build();
     private final MTMCWebView computerView;
     Queue<SseClient> sseClients = new ConcurrentLinkedQueue<SseClient>();
+    Gson json = new Gson();
 
     public WebServer(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -46,10 +48,8 @@ public class WebServer {
                 })
                 .post("/cmd", ctx -> {
                     computer.getOS().processCommand(ctx.formParam("cmd"));
+                    updateUi();
                     ctx.html("");
-                    sseClients.forEach(c -> {
-                        c.sendEvent("console", render("templates/display.html"));
-                    });
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();
@@ -59,6 +59,15 @@ public class WebServer {
 
         // start server
         javalinApp.start(PORT);
+    }
+
+    public void updateUi() {
+        var map = Map.of("register-panel", render("templates/registers.html"),
+                         "memory-panel", render("templates/memory.html"),
+                         "display-panel", render("templates/display.html"));
+        sseClients.forEach(c -> {
+            c.sendEvent("update", json.toJson(map));
+        });
     }
 
     private String render(String templateName) {

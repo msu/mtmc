@@ -51,6 +51,8 @@ public class Shell {
                         for (short inst : result.code()) {
                             computer.execInstruction(inst);
                         }
+                    } else {
+                        computer.getConsole().println(result.printErrors());
                     }
                 } else {
                     printShellHelp(computer);

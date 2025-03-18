@@ -24,10 +24,10 @@ public class StackInstruction extends Instruction {
             output[getLocation()] = (byte) (0b0010_0000_0000_0000 | target << 4 | stackReg);
         } else if (getType() == InstructionType.POP) {
             int target = Registers.toInteger(targetToken.getStringValue());
-            output[getLocation()] = (byte) (0b0010_0001_0000_0000 | target << 4 | stackReg);
+            output[getLocation()] = (short) (0b0010_0001_0000_0000 | target << 4 | stackReg);
         } else if (getType() == InstructionType.SOP) {
             int aluOp = ALUInstruction.getALUOpcode(aluOpToken.getStringValue());
-            output[getLocation()] = (byte) (0b0010_0100_0000_0000 | aluOp << 4 | stackReg);
+            output[getLocation()] = (short) (0b0010_0100_0000_0000 | aluOp << 4 | stackReg);
         } else {
             int stackOp;
             switch (getType()) {
@@ -38,7 +38,7 @@ public class StackInstruction extends Instruction {
                 case ROT -> stackOp = 0b0100;
                 case null, default -> stackOp = 0b0000;
             }
-            output[getLocation()] = (byte) (0b0010_0011_0000_0000 | stackOp << 4 | stackReg);
+            output[getLocation()] = (short) (0b0010_0000_0000_0000 | stackOp << 4 | stackReg);
         }
     }
 

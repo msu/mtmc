@@ -9,7 +9,7 @@ public class StackImmediateInstruction extends Instruction {
         super(type, label, instructionToken);
     }
 
-    public static final int MAX = 2^8 - 1;
+    public static final int MAX = (2 << 8) - 1;
 
     private MTMCToken stackRegisterToken;
     private MTMCToken valueToken;
@@ -21,7 +21,7 @@ public class StackImmediateInstruction extends Instruction {
             stackReg = Registers.toInteger(stackRegisterToken.getStringValue());
         }
         int value = valueToken.getIntegerValue();
-        output[getLocation()] = (byte) (0b0010_0011_0000_0000 | value << 8 | stackReg);
+        output[getLocation()] = (short) (0b0011_0000_0000_0000 | stackReg << 8 | value);
     }
 
     public void setStackRegister(MTMCToken stackRegister) {

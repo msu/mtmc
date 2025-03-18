@@ -151,9 +151,9 @@ public class MonTanaMiniComputer {
                 writeWord(registerFile[stackReg], registerFile[sourceRegister]);
             } if(stackInstructionType == 0x1) {
                 // pop
-                short sourceRegister = getBits(8, 4, instruction);
+                short targetRegister = getBits(8, 4, instruction);
                 // save the value into the location
-                registerFile[sourceRegister] = fetchWord(registerFile[stackReg]);
+                registerFile[targetRegister] = fetchWord(registerFile[stackReg]);
                 // increment the stack pointer
                 registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
             } if(stackInstructionType == 0x3) {
@@ -273,8 +273,8 @@ public class MonTanaMiniComputer {
             // pushi
             short stackReg = getBits(12, 4, instruction);
             short value = getBits(8, 8, instruction);
-            registerFile[stackReg] = (short) (registerFile[PC] - WORD_SIZE);
-            registerFile[stackReg] = value;
+            registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
+            writeWord(registerFile[stackReg], value);
         } else if (0x4 <= instructionType && instructionType <= 0x7) {
             // load store
             short loadStoreType = getBits(14, 2, instruction);

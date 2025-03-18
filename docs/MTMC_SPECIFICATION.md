@@ -62,9 +62,9 @@ Instruction types can be determined by looking at the four high-order bits (nibb
 | `0001`     | `1`   | ALU             |
 | `0010`     | `2`   | STACK           |
 | `0011`     | `3`   | STACK IMMEDIATE |
-| `01xx`     | `8-B` | LOAD/STORE      |
-| `11xx`     | `C-F` | LOAD IMMEDIATE  |
-| `10xx`     | `4-7` | JUMPS           |
+| `01xx`     | `4-7` | LOAD/STORE      |
+| `10xx`     | `8-B` | LOAD IMMEDIATE  |
+| `11xx`     | `C-F` | JUMP            |
 
 ### MISC
 

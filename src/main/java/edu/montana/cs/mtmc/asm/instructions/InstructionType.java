@@ -35,6 +35,7 @@ public enum InstructionType {
     LB("lb", LOAD),
     SW("sw", LOAD),
     SB("sb", LOAD),
+    LDI("ldi", LOAD_IMMEDIATE),
     J("j", JUMP),
     JZ("jz", JUMP),
     JNZ("jnz", JUMP),

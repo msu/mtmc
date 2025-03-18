@@ -20,7 +20,15 @@ public class Assembler {
     List<Data> data = new ArrayList<>();
     MTMCTokenizer tokenizer;
 
-    public record AssemblyResult(short[] code, short[] data, List<Instruction.Error> errors, String source) {}
+    public record AssemblyResult(short[] code, short[] data, List<Instruction.Error> errors, String source) {
+        public String printErrors() {
+            StringBuilder builder = new StringBuilder("Errors:");
+            for (Instruction.Error error : errors) {
+                builder.append("  Line " + error.token().getLine() + ": " + error.error());
+            }
+            return builder.toString();
+        }
+    }
 
     public AssemblyResult assemble(String asm) {
         tokenizer = new MTMCTokenizer(asm, "#");
@@ -151,12 +159,12 @@ public class Assembler {
             MTMCToken tempRegister = requireTempRegister(tokens, loadImmediateInst);
             loadImmediateInst.setTempRegister(tempRegister);
 
-            MTMCToken valueToken = requireIntegerToken(tokens, loadImmediateInst, StackImmediateInstruction.MAX);
+            MTMCToken valueToken = requireIntegerToken(tokens, loadImmediateInst, LoadImmediateInstruction.MAX);
             loadImmediateInst.setValue(valueToken);
             instructions.add(loadImmediateInst);
         } else if (type.getInstructionClass() == JUMP) {
             JumpInstruction stackImmediateInst = new JumpInstruction(type, label, instruction);
-            MTMCToken valueToken = requireIntegerToken(tokens, stackImmediateInst, StackImmediateInstruction.MAX);
+            MTMCToken valueToken = requireIntegerToken(tokens, stackImmediateInst, JumpInstruction.MAX);
             stackImmediateInst.setAddressToken(valueToken);
             instructions.add(stackImmediateInst);
         }

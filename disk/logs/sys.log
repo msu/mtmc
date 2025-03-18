@@ -1,9 +1,9 @@
 [main] INFO io.javalin.Javalin - Starting Javalin ...
 [main] INFO org.eclipse.jetty.server.Server - jetty-11.0.24; built: 2024-08-26T18:11:22.448Z; git: 5dfc59a691b748796f922208956bd1f2794bcd16; jvm 23+37-2369
 [main] INFO org.eclipse.jetty.server.session.DefaultSessionIdManager - Session workerName=node0
-[main] INFO org.eclipse.jetty.server.handler.ContextHandler - Started o.e.j.s.ServletContextHandler@4264b240{/,null,AVAILABLE}
-[main] INFO org.eclipse.jetty.server.AbstractConnector - Started ServerConnector@1fdf1c5{HTTP/1.1, (http/1.1)}{0.0.0.0:8080}
-[main] INFO org.eclipse.jetty.server.Server - Started Server@362045c0{STARTING}[11.0.24,sto=0] @2961ms
+[main] INFO org.eclipse.jetty.server.handler.ContextHandler - Started o.e.j.s.ServletContextHandler@2b43529a{/,null,AVAILABLE}
+[main] INFO org.eclipse.jetty.server.AbstractConnector - Started ServerConnector@614df0a4{HTTP/1.1, (http/1.1)}{0.0.0.0:8080}
+[main] INFO org.eclipse.jetty.server.Server - Started Server@5a9d6f02{STARTING}[11.0.24,sto=0] @2567ms
 [main] INFO io.javalin.Javalin - 
        __                  ___           _____
       / /___ __   ______ _/ (_)___      / ___/
@@ -13,7 +13,7 @@
 
        https://javalin.io/documentation
 
-[main] INFO io.javalin.Javalin - Javalin started in 179ms \o/
+[main] INFO io.javalin.Javalin - Javalin started in 198ms \o/
 [main] INFO io.javalin.Javalin - Static file handler added: StaticFileConfig(hostedPath=/, directory=public, location=CLASSPATH, precompress=false, aliasCheck=null, headers={Cache-Control=max-age=0}, skipFileFunction=Function1<jakarta.servlet.http.HttpServletRequest, java.lang.Boolean>, mimeTypes={}). File system location: 'file:///Users/carson/Projects/msu/demo/MontanaMiniComputer/target/classes/public/'
 [main] INFO io.javalin.Javalin - Listening on http://localhost:8080/
 [main] INFO io.javalin.Javalin - You are running Javalin 6.5.0 (released March 9, 2025).

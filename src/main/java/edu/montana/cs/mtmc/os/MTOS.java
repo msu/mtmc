@@ -85,9 +85,8 @@ public class MTOS {
     }
 
     public void processCommand(String command) {
-        MTMCTokenizer tokens = new MTMCTokenizer(command, "#");
-        if (tokens.more()) {
-            Shell.execCommand(tokens, computer);
+        if (!command.trim().isEmpty()) {
+            Shell.execCommand(command, computer);
         }
     }
 

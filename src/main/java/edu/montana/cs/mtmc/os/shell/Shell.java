@@ -1,5 +1,7 @@
 package edu.montana.cs.mtmc.os.shell;
 
+import edu.montana.cs.mtmc.asm.Assembler;
+import edu.montana.cs.mtmc.asm.instructions.Instruction;
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.os.shell.builtins.*;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
@@ -23,7 +25,8 @@ public class Shell {
         return COMMANDS.containsKey(cmd);
     }
 
-    public static void execCommand(MTMCTokenizer tokens, MonTanaMiniComputer computer) {
+    public static void execCommand(String command, MonTanaMiniComputer computer) {
+        MTMCTokenizer tokens = new MTMCTokenizer(command, "#");
         try {
             MTMCToken identifier = tokens.matchAndConsume(IDENTIFIER);
             String cmd;
@@ -41,9 +44,17 @@ public class Shell {
             if (isCommand(cmd)) {
                 COMMANDS.get(cmd).exec(tokens, computer);
             } else {
-                //TODO - handle asm instructions
-                //TODO - handle path executables
-                printShellHelp(computer);
+                if (Instruction.isInstruction(cmd)) {
+                    Assembler assembler = new Assembler();
+                    Assembler.AssemblyResult result = assembler.assemble(command);
+                    if (result.errors().isEmpty()) {
+                        for (short inst : result.code()) {
+                            computer.execInstruction(inst);
+                        }
+                    }
+                } else {
+                    printShellHelp(computer);
+                }
             }
         } catch (Exception e) {
             computer.getConsole().println(e.getMessage());

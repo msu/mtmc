@@ -18,8 +18,12 @@ public class SetCommand extends ShellCommand {
             if (register == null) usageException();
             MTMCToken value = tokens.matchAndConsume(INTEGER, HEX, BINARY);
             if (value == null) usageException();
-            Integer reg = Registers.toInteger(register.getStringValue().toUpperCase());
-            computer.setRegister(reg, value.getIntegerValue());
+            int reg = Registers.toInteger(register.getStringValue());
+            if (reg >= 0) {
+                computer.setRegister(reg, value.getIntegerValue());
+            } else {
+                throw new IllegalArgumentException("Bad register: " + register.getStringValue());
+            }
         } else {
             MTMCToken value = tokens.matchAndConsume(INTEGER, HEX, BINARY, STRING);
             if (value == null) usageException();

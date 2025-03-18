@@ -56,15 +56,15 @@ from the [Scott CPU](https://www.youtube.com/watch?v=RRg5hRlywIg) and the [JVM](
 
 Instruction types can be determined by looking at the four high-order bits (nibble) of an instruction.
 
-| top nibble | hex   | type           |
-|------------|-------|----------------|
-| `0000`     | `0`   | MISC           |
-| `0001`     | `1`   | ALU            |
-| `0010`     | `2`   | STACK          |
-| `0011`     | `3`   | CALL           |
-| `01xx`     | `4-7` | JUMPS          |
-| `10xx`     | `8-B` | LOAD IMMEDIATE |
-| `11xx`     | `C-F` | LOAD/STORE     |
+| top nibble | hex   | type            |
+|------------|-------|-----------------|
+| `0000`     | `0`   | MISC            |
+| `0001`     | `1`   | ALU             |
+| `0010`     | `2`   | STACK           |
+| `0011`     | `3`   | STACK IMMEDIATE |
+| `01xx`     | `8-B` | LOAD/STORE      |
+| `11xx`     | `C-F` | LOAD IMMEDIATE  |
+| `10xx`     | `4-7` | JUMPS           |
 
 ### MISC
 
@@ -193,30 +193,29 @@ Note also that `sop add` and other stack ALU operations can be abbreviated to `s
 | `rot`       | `0010 0011 0100 ssss` | Rotates the third word to the top of the stack pointed to by `ssss`.                                                                                  | `sop add`, can be written in shorthand simply as `sadd` |
 | `sop`       | `0010 0100 oooo ssss` | Applies the ALU operation `oooo` to the stack pointed at by the `ssss` register.                                                                      | `sop add`, can be written in shorthand simply as `sadd` |
 
-### CALL
+### STACK IMMEDIATE
 
-The call instruction starts with the nibble `0011`.  This instruction is used to implement function calls.  It sets
-the program counter to the address encoded in the lower three bytes of the instruction, while setting the `ra` 
-register to the address of the instruction after itself.
+Stack immediate instructions start with the nibble `0011`.  They push the value of the lower byte of the instruction
+onto the stack referred to by the register in the second nibble.
 
-| Instruction | Form                  | Description                                                                                       | Example                                   |
-|-------------|-----------------------|---------------------------------------------------------------------------------------------------|-------------------------------------------|
-| `call`      | `0011 vvvv vvvv vvvv` | Sets `ra` to the address of the next instruction (`pc` + 1) and sets the `pc` to `vvvv vvvv vvvv` | `jump square` (jump to function `square()`) |
+| Instruction | Form                  | Description                                                      | Example    |
+|-------------|-----------------------|------------------------------------------------------------------|------------|
+| `pushi`     | `0011 ssss vvvv vvvv` | Pushes the value `vvvv vvvv` onto the stack pointed to by `ssss` | `pushi 22` |
 
-### JUMPS
+### LOAD/STORE
 
-The MTMC supports four jump commands, which all start with the first two bits `01`.  The next two bits specify the type
-of jump, followed by 12-bits that specify the address to jump to.
+The MTMC allows you to load and store words and bytes in memory with "load" and "store" instructions.  These instructions
+start with the two bits `01`. The next two bits then specify which type of load/store instruction it is.  The next
+byte specifies a register holding the address to save to or read from.  The next byte specifies the register with the
+address of the memory location.  The final byte specified an offset register, which holds a value to offset the address
+register by.
 
-All conditional jumps are based on the value in `t0`.
-
-| Instruction | Form                  | Description                                                      | Example     |
-|-------------|-----------------------|------------------------------------------------------------------|-------------|
-| `j`         | `0100 vvvv vvvv vvvv` | Jumps unconditionally to the location `vvvv vvvv vvvv`           | `jump loop` |
-| `jz`        | `0101 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` is 0              | `jz end`    |
-| `jnz`       | `0110 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` not 0             | `jnz end`   |
-| `jgz`       | `0111 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` is greater than 0 | `jgz end`   |
-
+| Instruction | Form                  | Description                                                                                        | Example       |
+|-------------|-----------------------|----------------------------------------------------------------------------------------------------|---------------|
+| `lw`        | `0100 rrrr ssss tttt` | Loads the word (16-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr` | `lw t0 fp t4` |
+| `lb`        | `0101 rrrr ssss tttt` | Loads the byte (8-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr`  | `lb t0 fp t4` |
+| `sw`        | `0110 rrrr ssss tttt` | Saves the word (16-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`    | `sw t0 fp t4` |
+| `sb`        | `0111 rrrr ssss tttt` | Saves the byte (8-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`     | `sw t0 fp t4` |
 
 ### LOAD IMMEDIATE
 
@@ -229,20 +228,23 @@ another register.
 |-------------|-----------------------|----------------------------------------------------------------|--------------|
 | `ldi`       | `10rr vvvv vvvv vvvv` | Puts the signed value `vvvv vvvv vvvv` into temp register `rr` | `ldi t0 22`  |
 
-### LOAD/STORE
+### JUMPS
 
-The MTMC allows you to load and store words and bytes in memory with "load" and "store" instructions.  These instructions
-start with the two bits `11`. The next two bits then specify which type of load/store instruction it is.  The next
-byte specifies a register holding the address to save to or read from.  The next byte specifies the register with the
-address of the memory location.  The final byte specified an offset register, which holds a value to offset the address
-register by.
+The MTMC supports four jump commands, which all start with the first two bits `11`.  The next two bits specify the type
+of jump, followed by 12-bits that specify the address to jump to.
 
-| Instruction | Form                  | Description                                                                                        | Example       |
-|-------------|-----------------------|----------------------------------------------------------------------------------------------------|---------------|
-| `lw`        | `1100 rrrr ssss tttt` | Loads the word (16-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr` | `lw t0 fp t4` |
-| `lb`        | `1101 rrrr ssss tttt` | Loads the byte (8-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr`  | `lb t0 fp t4` |
-| `sw`        | `1110 rrrr ssss tttt` | Saves the word (16-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`    | `sw t0 fp t4` |
-| `sb`        | `1111 rrrr ssss tttt` | Saves the byte (8-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`     | `sw t0 fp t4` |
+All conditional jumps are based on the value in `t0`.
+
+The Jump & Link (`jal`) instruction is used to implement function calls.  It sets
+the program counter to the address encoded in the lower three bytes of the instruction, while setting the `ra`
+register to the address of the instruction after itself.
+
+| Instruction | Form                  | Description                                                      | Example                                    |
+|-------------|-----------------------|------------------------------------------------------------------|--------------------------------------------|
+| `j`         | `1100 vvvv vvvv vvvv` | Jumps unconditionally to the location `vvvv vvvv vvvv`           | `jump loop`                                |
+| `jz`        | `1101 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` is 0              | `jz end`                                   |
+| `jnz`       | `1110 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` not 0             | `jnz end`                                  |
+| `jal`       | `1111 vvvv vvvv vvvv` | Sets `ra` to the address of the next instruction (`pc` + 1) and sets the `pc` to `vvvv vvvv vvvv` | `jal square` (jump to function `square()`) |
 
 ## MTMC Calling Convention
 

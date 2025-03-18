@@ -3,7 +3,6 @@ package edu.montana.cs.mtmc.emulator;
 import edu.montana.cs.mtmc.os.MTOS;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.stream.IntStream;
 
 import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
@@ -271,34 +270,12 @@ public class MonTanaMiniComputer {
                 // todo error state
             }
         } else if (instructionType == 0x3) {
-            // call
-            short value = getBits(12, 12, instruction);
-            registerFile[RA] = (short) (registerFile[PC] + WORD_SIZE);
-            registerFile[PC] = value;
+            // pushi
+            short stackReg = getBits(12, 4, instruction);
+            short value = getBits(8, 8, instruction);
+            registerFile[stackReg] = (short) (registerFile[PC] - WORD_SIZE);
+            registerFile[stackReg] = value;
         } else if (0x4 <= instructionType && instructionType <= 0x7) {
-            short jumpType = getBits(14, 2, instruction);
-            short location = getBits(12, 12, instruction);
-            if(jumpType == 0x0) {
-                registerFile[PC] = location;
-            } else if (jumpType == 0x1) {
-                if (registerFile[T0] == 0) {
-                    registerFile[PC] = location;
-                }
-            } else if (jumpType == 0x2) {
-                if (registerFile[T0] != 0) {
-                    registerFile[PC] = location;
-                }
-            } else if (jumpType == 0x3) {
-                if (registerFile[T0] > 0) {
-                    registerFile[PC] = location;
-                }
-            }
-        } else if (0x8 <= instructionType && instructionType <= 0xB) {
-            // load immediate
-            short targetRegister = getBits(14, 2, instruction);
-            short value = getBits(12, 12, instruction);
-            registerFile[targetRegister] = value;
-        } else if (0xC <= instructionType && instructionType <= 0xF) {
             // load store
             short loadStoreType = getBits(14, 2, instruction);
             short targetRegister = getBits(12, 4, instruction);
@@ -313,6 +290,28 @@ public class MonTanaMiniComputer {
                 writeWord(targetAddress, registerFile[targetRegister]);
             } else if (loadStoreType == 0x3) {
                 writeByte(targetAddress, (byte) registerFile[targetRegister]);
+            }
+        } else if (0x8 <= instructionType && instructionType <= 0xB) {
+            // load immediate
+            short targetRegister = getBits(14, 2, instruction);
+            short value = getBits(12, 12, instruction);
+            registerFile[targetRegister] = value;
+        } else if (0xC <= instructionType && instructionType <= 0xF) {
+            short jumpType = getBits(14, 2, instruction);
+            short location = getBits(12, 12, instruction);
+            if(jumpType == 0x0) {
+                registerFile[PC] = location;
+            } else if (jumpType == 0x1) {
+                if (registerFile[T0] == 0) {
+                    registerFile[PC] = location;
+                }
+            } else if (jumpType == 0x2) {
+                if (registerFile[T0] != 0) {
+                    registerFile[PC] = location;
+                }
+            } else if (jumpType == 0x3) {
+                registerFile[RA] = (short) (registerFile[PC] + WORD_SIZE);
+                registerFile[PC] = location;
             }
         } else {
             status = PERMANENT_ERROR;

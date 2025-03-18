@@ -1,4 +1,4 @@
-package edu.montana.cs.mtmc.asm;
+package edu.montana.cs.mtmc.asm.data;
 
 public class Data {
     private String label;

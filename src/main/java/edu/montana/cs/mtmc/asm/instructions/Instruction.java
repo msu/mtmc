@@ -1,11 +1,13 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
+import edu.montana.cs.mtmc.asm.HasLocation;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Instruction {
+public abstract class Instruction implements HasLocation {
 
     private final MTMCToken label;
     private final InstructionType type;
@@ -33,6 +35,10 @@ public abstract class Instruction {
         return instructionToken;
     }
 
+    public void validateLabel(Assembler assembler) {
+        // default does nothing
+    }
+
     public record Error(MTMCToken token, String error) {}
 
     public Instruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
@@ -56,5 +62,10 @@ public abstract class Instruction {
         return type;
     }
 
-    public abstract void genCode(short[] output);
+    public abstract void genCode(byte[] output, Assembler assembler);
+
+    @Override
+    public int getSizeInBytes() {
+        return 2;
+    }
 }

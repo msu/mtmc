@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
@@ -14,20 +15,23 @@ public class StackInstruction extends Instruction {
     private MTMCToken aluOpToken;
 
     @Override
-    public void genCode(short[] output) {
+    public void genCode(byte[] output, Assembler assembler) {
         int stackReg = Registers.SP;
         if(stackRegisterToken != null) {
             stackReg = Registers.toInteger(stackRegisterToken.getStringValue());
         }
         if (getType() == InstructionType.PUSH) {
             int target = Registers.toInteger(targetToken.getStringValue());
-            output[getLocation()] = (byte) (0b0010_0000_0000_0000 | target << 4 | stackReg);
+            output[getLocation()] = 0b0010_0000;
+            output[getLocation() + 1] = (byte) (target << 4 | stackReg);
         } else if (getType() == InstructionType.POP) {
             int target = Registers.toInteger(targetToken.getStringValue());
-            output[getLocation()] = (short) (0b0010_0001_0000_0000 | target << 4 | stackReg);
+            output[getLocation()] = 0b0010_0001;
+            output[getLocation() + 1] = (byte) (target << 4 | stackReg);
         } else if (getType() == InstructionType.SOP) {
             int aluOp = ALUInstruction.getALUOpcode(aluOpToken.getStringValue());
-            output[getLocation()] = (short) (0b0010_0100_0000_0000 | aluOp << 4 | stackReg);
+            output[getLocation()] = 0b0010_0100;
+            output[getLocation() + 1] = (byte) (aluOp << 4 | stackReg);
         } else {
             int stackOp;
             switch (getType()) {
@@ -38,7 +42,8 @@ public class StackInstruction extends Instruction {
                 case ROT -> stackOp = 0b0100;
                 case null, default -> stackOp = 0b0000;
             }
-            output[getLocation()] = (short) (0b0010_0000_0000_0000 | stackOp << 4 | stackReg);
+            output[getLocation()] = 0b0010_0011;
+            output[getLocation()] = (byte) (stackOp << 4 | stackReg);
         }
     }
 

@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
@@ -14,13 +15,13 @@ public class LoadInstruction extends Instruction {
     private MTMCToken offsetToken;
 
     @Override
-    public void genCode(short[] output) {
+    public void genCode(byte[] output, Assembler assembler) {
         int opcode = 0;
         switch (getType()) {
-            case LW -> opcode = 0b00;
-            case LB -> opcode = 0b01;
-            case SW -> opcode = 0b10;
-            case SB -> opcode = 0b11;
+            case LW -> opcode = 0b0100;
+            case LB -> opcode = 0b0101;
+            case SW -> opcode = 0b0110;
+            case SB -> opcode = 0b0111;
         }
         int target = Registers.toInteger(targetToken.getStringValue());
         int pointer = Registers.toInteger(pointerToken.getStringValue());
@@ -28,7 +29,8 @@ public class LoadInstruction extends Instruction {
         if (offsetToken != null) {
             offset = Registers.toInteger(offsetToken.getStringValue());
         }
-        output[getLocation()] = (short) (0b0100_0000_0000_0000 | opcode << 12 | target << 8 | pointer << 4 | offset);
+        output[getLocation()] = (byte) (opcode << 4 | target);
+        output[getLocation() + 1] = (byte) (pointer << 4 | offset);
     }
 
     public void setTargetToken(MTMCToken targetToken) {

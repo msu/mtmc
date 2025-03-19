@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
 public class ErrorInstruction extends Instruction {
@@ -9,7 +10,7 @@ public class ErrorInstruction extends Instruction {
     }
 
     @Override
-    public void genCode(short[] output) {
+    public void genCode(byte[] output, Assembler assembler) {
         // do nothing
     }
 }

@@ -1,9 +1,9 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,15 +39,18 @@ public class MiscInstruction extends Instruction {
     }
 
     @Override
-    public void genCode(short[] output) {
+    public void genCode(byte[] output, Assembler assembler) {
         if (getType() == InstructionType.SYS) {
-            output[getLocation()] = SYSCALLS.get(this.syscallType.getStringValue()).shortValue();
+            output[getLocation()] = 0b0000_0000;
+            output[getLocation() + 1] = SYSCALLS.get(this.syscallType.getStringValue()).byteValue();
         } else if (getType() == InstructionType.MV) {
             int to = Registers.toInteger(toRegister.getStringValue());
             int from = Registers.toInteger(fromRegister.getStringValue());
-            output[getLocation()] = (short) (0b0000_0001_0000_0000 | to << 4 | from);
+            output[getLocation()] = 0b0000_0001;
+            output[getLocation() + 1] = (byte) (to << 4 | from);
         } else if(getType() == InstructionType.NOOP) {
-            output[getLocation()] = (short) (0b0000_1111_1111_1111);
+            output[getLocation()] = (byte) (0b0000_1111);
+            output[getLocation() + 1] = (byte) (0b1111_1111);
         }
     }
 

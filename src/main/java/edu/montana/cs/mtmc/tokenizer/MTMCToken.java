@@ -61,6 +61,10 @@ public class MTMCToken {
         }
     }
 
+    public String getLabelValue() {
+        return stringValue.substring(0, stringValue.length() - 1);
+    }
+
     public enum TokenType {
         LEFT_PAREN,
         RIGHT_PAREN,

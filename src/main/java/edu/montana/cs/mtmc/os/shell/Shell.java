@@ -1,6 +1,7 @@
 package edu.montana.cs.mtmc.os.shell;
 
 import edu.montana.cs.mtmc.asm.Assembler;
+import edu.montana.cs.mtmc.asm.AssemblyResult;
 import edu.montana.cs.mtmc.asm.instructions.Instruction;
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.os.shell.builtins.*;
@@ -46,7 +47,7 @@ public class Shell {
             } else {
                 if (Instruction.isInstruction(cmd)) {
                     Assembler assembler = new Assembler();
-                    Assembler.AssemblyResult result = assembler.assemble(command);
+                    AssemblyResult result = assembler.assemble(command);
                     if (result.errors().isEmpty()) {
                         for (short inst : result.code()) {
                             computer.execInstruction(inst);

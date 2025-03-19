@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
@@ -15,13 +16,14 @@ public class StackImmediateInstruction extends Instruction {
     private MTMCToken valueToken;
 
     @Override
-    public void genCode(short[] output) {
+    public void genCode(byte[] output, Assembler assembler) {
         int stackReg = Registers.SP;
         if(stackRegisterToken != null) {
             stackReg = Registers.toInteger(stackRegisterToken.getStringValue());
         }
         int value = valueToken.getIntegerValue();
-        output[getLocation()] = (short) (0b0011_0000_0000_0000 | stackReg << 8 | value);
+        output[getLocation()] = (byte) (0b0011_0000 | stackReg);
+        output[getLocation() + 1] = (byte) value;
     }
 
     public void setStackRegister(MTMCToken stackRegister) {

@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
@@ -15,15 +16,34 @@ public class LoadImmediateInstruction extends Instruction {
     private MTMCToken valueToken;
 
     @Override
-    public void genCode(short[] output) {
+    public void genCode(byte[] output, Assembler assembler) {
         int reg = Registers.toInteger(tempRegisterToken.getStringValue());
-        int value = valueToken.getIntegerValue();
-        output[getLocation()] = (short) (0b1000_0000_0000_0000 | reg << 12 | value);
+        int value = resolveValue(assembler);
+        output[getLocation()] = (byte) (0b1000_0000 | reg << 4 | value >>> 8);
+        output[getLocation() + 1] = (byte) (value);
     }
 
     public void setTempRegister(MTMCToken stackRegister) {
         this.tempRegisterToken = stackRegister;
     }
+
+    @Override
+    public void validateLabel(Assembler assembler) {
+        if (valueToken.getType() == MTMCToken.TokenType.IDENTIFIER) {
+            if (!assembler.hasLabel(valueToken.getStringValue())) {
+                addError("Unresolved label: " + valueToken.getStringValue());
+            }
+        }
+    }
+
+    private Integer resolveValue(Assembler assembler) {
+        if (valueToken.getType() == MTMCToken.TokenType.IDENTIFIER) {
+            return assembler.resolveLabel(valueToken.getStringValue());
+        } else {
+            return valueToken.getIntegerValue();
+        }
+    }
+
 
     public void setValue(MTMCToken valueToken) {
         this.valueToken = valueToken;

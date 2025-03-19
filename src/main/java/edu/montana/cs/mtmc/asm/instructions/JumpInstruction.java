@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
 public class JumpInstruction extends Instruction {
@@ -12,7 +13,7 @@ public class JumpInstruction extends Instruction {
     }
 
     @Override
-    public void genCode(short[] output) {
+    public void genCode(byte[] output, Assembler assembler) {
         int opcode = 0;
         switch (getType()) {
             case J -> opcode = 0b1100;
@@ -20,8 +21,26 @@ public class JumpInstruction extends Instruction {
             case JNZ -> opcode = 0b1110;
             case JAL -> opcode = 0b1111;
         }
-        int address = addressToken.getIntegerValue();
-        output[getLocation()] = (short) (opcode << 12 | address);
+        int address = resolveTargetAddress(assembler);
+        output[getLocation()] = (byte) (opcode << 4 | address >>> 8);
+        output[getLocation()+1] = (byte) address;
+    }
+
+    @Override
+    public void validateLabel(Assembler assembler) {
+        if (addressToken.getType() == MTMCToken.TokenType.IDENTIFIER) {
+            if (!assembler.hasLabel(addressToken.getStringValue())) {
+                addError("Unresolved label: " + addressToken.getStringValue());
+            }
+        }
+    }
+
+    private Integer resolveTargetAddress(Assembler assembler) {
+        if (addressToken.getType() == MTMCToken.TokenType.IDENTIFIER) {
+            return assembler.resolveLabel(addressToken.getStringValue());
+        } else {
+            return addressToken.getIntegerValue();
+        }
     }
 
     public void setAddressToken(MTMCToken addressToken) {

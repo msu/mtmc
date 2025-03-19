@@ -1,5 +1,6 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
+import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
@@ -45,14 +46,15 @@ public class ALUInstruction extends Instruction {
     private MTMCToken fromToken;
 
     @Override
-    public void genCode(short[] output) {
+    public void genCode(byte[] output, Assembler assembler) {
         int opCode = getALUOpcode(getInstructionToken().getStringValue());
         int to = Registers.toInteger(toToken.getStringValue());
         int from = 0;
         if (fromToken != null) {
             from = Registers.toInteger(fromToken.getStringValue());
         }
-        output[getLocation()] = (short) (0b0001_0000_0000_0000 | opCode << 8 | to << 4 | from);
+        output[getLocation()] = (byte) (0b0001_0000 | opCode);
+        output[getLocation() + 1] = (byte) (to << 4 | from);
     }
 
     public void setTo(MTMCToken to) {

@@ -26,7 +26,7 @@ There are 16 user-facing registers usable by name in assembly:
 | 5     | `a1`   | arg register 1, holds the second argument for a function call         |
 | 6     | `a2`   | arg register 2, holds the third argument for a function call          |
 | 7     | `a3`   | arg register 3, holds the fourth argument for a function call         |
-| 8     | `r0`   | return value register 0, holds the return value for a function call   |
+| 8     | `rv`   | return value register 0, holds the return value for a function call   |
 | 9     | `ra`   | return address register, holds the return address for a function call |
 | 10    | `fp`   | frame pointer, points to the top of the current function frame        |
 | 11    | `sp`   | stack pointer, points to the bottom of the current function frame     |

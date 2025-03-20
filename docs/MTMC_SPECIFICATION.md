@@ -36,7 +36,7 @@ The MTMC has a total of 16 user-facing register.  They are outlined below.
 | 5     | `a1`   | arg register 1, holds the second argument for a function call         |
 | 6     | `a2`   | arg register 2, holds the third argument for a function call          |
 | 7     | `a3`   | arg register 3, holds the fourth argument for a function call         |
-| 8     | `r0`   | return value register 0, holds the return value for a function call   |
+| 8     | `rv`   | return value register, holds the return value for a function call     |
 | 9     | `ra`   | return address register, holds the return address for a function call |
 | 10    | `fp`   | frame pointer, points to the top of the current function frame        |
 | 11    | `sp`   | stack pointer, points to the bottom of the current function frame     |
@@ -83,16 +83,16 @@ Here are the syscodes supported by MTOS
 | Syscall   | Hex    | Description                                                                                                                                           |
 |-----------|--------|:------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `exit`    | 0x0000 | Causes the current program to exit, exit code in `a0`                                                                                                 |
-| `rint`    | 0x0001 | Reads an int value from the console into `r0`                                                                                                         |
+| `rint`    | 0x0001 | Reads an int value from the console into `rv`                                                                                                         |
 | `wint`    | 0x0002 | Writes the int value in `a0` to the console                                                                                                           |
-| `rstr`    | 0x0003 | Reads a string into the memory location pointed to by `a0` of max length `a1` from the console.  The bytes read are left in `r0`.                     |
+| `rstr`    | 0x0003 | Reads a string into the memory location pointed to by `a0` of max length `a1` from the console.  The bytes read are left in `rv`.                     |
 | `wstr`    | 0x0004 | Writes a null terminated string to the console from the memory location pointed to by `a0`                                                            |
-| `rfile`   | 0x0005 | Reads a file into the memory location pointed to by `a0` of max length `a1` from the file whose name is in `a2`.  The bytes read are left in `r0`.    |
+| `rfile`   | 0x0005 | Reads a file into the memory location pointed to by `a0` of max length `a1` from the file whose name is in `a2`.  The bytes read are left in `rv`.    |
 | `wfile`   | 0x0006 | Writes the bytes from the memory location pointed to by `a0` of length `a1` into teh file whose name is in `a2`.                                      |
-| `rnd`     | 0x0007 | Puts a random number between `a0` and `a1` (inclusive) into `r0`                                                                                      |
+| `rnd`     | 0x0007 | Puts a random number between `a0` and `a1` (inclusive) into `rv`                                                                                      |
 | `sleep`   | 0x0008 | Sleeps the system for the number of milliseconds found in `a0`                                                                                        |
 | `fbreset` | 0x0009 | Resets the frame buffer to all zeros                                                                                                                  |
-| `fbstat`  | 0x000A | Sets `r0` to the 2-bit value of the pixel location `a0`, `a1` (out of bounds pixels will always be 0)                                                 |
+| `fbstat`  | 0x000A | Sets `rv` to the 2-bit value of the pixel location `a0`, `a1` (out of bounds pixels will always be 0)                                                 |
 | `fbset`   | 0x000B | Sets the 2-bit value of the pixel location `a0`, `a1`, to the value found in `a3` (values may be 0, 1, 2 or 3, all other values will be treated as 0) |
 | `error`   | 0x000F | Aborts the current program execution with an error message, `a0` is a pointer to the error message                                                    |
 
@@ -249,4 +249,4 @@ register to the address of the instruction after itself.
 * t0-fp caller saved
 * sp    callee saved
 * args passed in `a0`-`a3`, additional args on stack in reverse order
-* return value placed in `r0`
+* return value placed in `rv`

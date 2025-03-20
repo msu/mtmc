@@ -3,6 +3,8 @@ package edu.montana.cs.mtmc.emulator;
 import java.lang.reflect.Field;
 
 public class Registers {
+
+    //=== user facing
     public static final int T0 = 0;
     public static final int T1 = 1;
     public static final int T2 = 2;
@@ -19,7 +21,12 @@ public class Registers {
     public static final int PC = 13;
     public static final int ZERO = 14;
     public static final int ONE = 15;
+
+    //=== non user-facing
     public static final int IR = 16;
+    public static final int CODE = 17;
+    public static final int DATA = 18;
+
     public static int toInteger(String reg) {
         try {
             Field field = Registers.class.getField(reg.toUpperCase());

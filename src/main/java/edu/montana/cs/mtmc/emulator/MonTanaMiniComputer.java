@@ -29,13 +29,38 @@ public class MonTanaMiniComputer {
         initMemory();
     }
 
-    private void initMemory() {
-        registerFile = new short[17];
+    public void initMemory() {
+        registerFile = new short[19];
         memory = new byte[MEMORY_SIZE];
         registerFile[SP] = FRAME_BUFF_START; // default the stack pointer to the top of normal memory
         registerFile[ZERO] = 0;
         registerFile[ONE] = 1;
     }
+
+    public void load(byte[] code, byte[] data) {
+        int codeBoundary = code.length;
+        System.arraycopy(code, 0, memory, 0, codeBoundary);
+        setRegister(CODE, codeBoundary);
+
+        int dataBoundary = codeBoundary + data.length;
+        System.arraycopy(data, 0, memory, codeBoundary, data.length);
+        setRegister(DATA, dataBoundary);
+
+        // base pointer starts at the end of the data boundary
+        setRegister(BP, dataBoundary);
+    }
+
+    public void run() {
+        status = EXECUTING;
+        while (status == EXECUTING) {
+            fetchAndExecute();
+        }
+    }
+
+    public void setStatus(ComputerStatus status) {
+        this.status = status;
+    }
+
 
     public void fetchAndExecute() {
         fetchInstruction();
@@ -322,10 +347,11 @@ public class MonTanaMiniComputer {
         if (totalBits <= 0) {
             return 0;
         }
-        int returnValue = instruction >> (start - totalBits);
+        int returnValue = (instruction & 0xffff) >>> (start - totalBits);
         int mask = 0;
-        while(totalBits > 0) {
-            totalBits--;
+        int toShift = totalBits;
+        while(toShift > 0) {
+            toShift--;
             mask = mask << 1;
             mask = mask + 1;
         }
@@ -407,6 +433,7 @@ public class MonTanaMiniComputer {
         READY,
         EXECUTING,
         PERMANENT_ERROR,
+        HALTED,
         WAITING
     }
 

@@ -5,9 +5,8 @@ import edu.montana.cs.mtmc.asm.instructions.*;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 import edu.montana.cs.mtmc.tokenizer.MTMCTokenizer;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -24,13 +23,14 @@ public class Assembler {
     int dataSize = 0;
     HashMap<String, HasLocation> labels = new HashMap<>();
 
+    ASMMode mode = ASMMode.CODE;
     MTMCTokenizer tokenizer;
 
     public AssemblyResult assemble(String asm) {
         tokenizer = new MTMCTokenizer(asm, "#");
         parseAssembly();
         resolveLocations();
-        List<Instruction.Error> errors = collectErrors();
+        List<ASMError> errors = collectErrors();
         byte[] code = null, data = null;
         if(errors.isEmpty()) {
             code = codeGen();
@@ -48,7 +48,7 @@ public class Assembler {
     private byte[] dataGen() {
         byte[] dataBytes = new byte[dataSize];
         for (Data dataElt : data) {
-            dataElt.genCode(dataBytes, this);
+            dataElt.genData(dataBytes, this);
         }
         return dataBytes;
     }
@@ -61,8 +61,8 @@ public class Assembler {
         return code;
     }
 
-    private List<Instruction.Error> collectErrors() {
-        List<Instruction.Error> errors = new ArrayList<>();
+    private List<ASMError> collectErrors() {
+        List<ASMError> errors = new ArrayList<>();
         for (Instruction instruction : instructions) {
             errors.addAll(instruction.getErrors());
         }
@@ -89,9 +89,77 @@ public class Assembler {
 
 
     private void parseLine() {
-
         LinkedList<MTMCToken> tokens = getTokensForLine();
-        MTMCToken labelToken = maybeGetLabel(tokens);
+        ASMMode newMode = parseModeFlag(tokens);
+        if (newMode != null) {
+            mode = newMode;
+        } else {
+            MTMCToken labelToken = maybeGetLabel(tokens);
+            if (mode == ASMMode.CODE) {
+                parseInstruction(tokens, labelToken);
+            } else {
+                parseData(tokens, labelToken);
+            }
+        }
+    }
+
+    private ASMMode parseModeFlag(LinkedList<MTMCToken> tokens) {
+        if (tokens.size() == 2
+                && tokens.get(0).getType() == DOT
+                && tokens.get(1).getType() == IDENTIFIER
+                && tokens.get(0).getEnd() == tokens.get(1).getStart()
+                && (tokens.get(1).getStringValue().equals("data") ||
+                tokens.get(1).getStringValue().equals("code"))) {
+            return ASMMode.valueOf(tokens.get(1).getStringValue().toUpperCase());
+        }
+        return null;
+    }
+
+    private void parseData(LinkedList<MTMCToken> tokens, MTMCToken labelToken) {
+        MTMCToken dataToken = tokens.poll();
+        Data dataElt = new Data(labelToken);
+        if (dataToken == null) {
+            dataElt.addError(labelToken, "Expected data");
+        } else {
+            if (dataToken.getType() == STRING) {
+                byte[] stringBytes = dataToken.getStringValue().getBytes(StandardCharsets.US_ASCII);
+                byte[] nullTerminated = new byte[stringBytes.length + 1];
+                System.arraycopy(stringBytes, 0, nullTerminated, 0, stringBytes.length);
+                nullTerminated[stringBytes.length] = '\0';
+                dataElt.setValue(nullTerminated);
+            } else if (dataToken.getType() == INTEGER || dataToken.getType() == HEX || dataToken.getType() == BINARY) {
+                int integerValue = dataToken.getIntegerValue();
+                if (integerValue > Short.MAX_VALUE) {
+                    dataElt.addError(dataToken, "Number is too large");
+                }
+                dataElt.setValue(new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+            } else if(dataToken.getType() == MINUS) {
+                MTMCToken nextToken = tokens.poll(); // get next
+                if (nextToken == null || (nextToken.getType() != INTEGER && nextToken.getType() != HEX && nextToken.getType() != BINARY)) {
+                    dataElt.addError(dataToken, "Number is too negative");
+                } else {
+                    int integerValue = -1 * nextToken.getIntegerValue();
+                    if (integerValue < Short.MIN_VALUE) {
+                        dataElt.addError(dataToken, "Number is too negative");
+                    }
+                    dataElt.setValue(new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+                }
+            } else {
+                dataElt.addError(dataToken, "Unknown token type");
+            }
+        }
+
+        if (labelToken != null) {
+            if (hasLabel(labelToken.getStringValue())) {
+                dataElt.addError(tokens.poll(), "Label already defined: " + labelToken.getStringValue());
+            } else {
+                labels.put(labelToken.getLabelValue(), dataElt);
+            }
+        }
+        data.add(dataElt);
+    }
+
+    private void parseInstruction(LinkedList<MTMCToken> tokens, MTMCToken labelToken) {
         MTMCToken instructionToken = tokens.poll();
 
         if (instructionToken == null || instructionToken.getType() != IDENTIFIER) {
@@ -337,6 +405,10 @@ public class Assembler {
 
     public int resolveLabel(String label) {
         return labels.get(label).getLocation();
+    }
+
+    public int getInstructionsSizeInBytes() {
+        return instructionsSize;
     }
 
     enum ASMMode {

@@ -90,7 +90,7 @@ public class MTMCScanner {
                             sb.append(nextChar);
                         }
                     }
-                } else {
+                } else if(c != '"') {
                     sb.append(c);
                 }
             } while (c != '"');

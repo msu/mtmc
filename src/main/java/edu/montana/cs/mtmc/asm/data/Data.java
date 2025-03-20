@@ -1,32 +1,31 @@
 package edu.montana.cs.mtmc.asm.data;
 
+import edu.montana.cs.mtmc.asm.ASMElement;
 import edu.montana.cs.mtmc.asm.Assembler;
-import edu.montana.cs.mtmc.asm.HasLocation;
+import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
-public class Data implements HasLocation {
-    private String label;
-    private int location = -1;
+public class Data extends ASMElement {
+
     private byte[] value;
 
-    public Data(byte[] value) {
-        this.value = value;
-    }
-
-    @Override
-    public int getLocation() {
-        return location;
+    public Data(MTMCToken label) {
+        super(label);
     }
 
     @Override
     public int getSizeInBytes() {
-        return 0;
+        return value.length;
     }
 
-    public void setLocation(int offset) {
-        location = offset;
+    public void genData(byte[] dataBytes, Assembler assembler) {
+        int offset = getLocation() - assembler.getInstructionsSizeInBytes();
+        for (int i = 0; i < value.length; i++) {
+            byte dataByte = value[i];
+            dataBytes[offset + i] = dataByte;
+        }
     }
 
-    public void genCode(byte[] dataBytes, Assembler assembler) {
-
+    public void setValue(byte[] value) {
+        this.value = value;
     }
 }

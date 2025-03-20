@@ -4,6 +4,7 @@ import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.os.shell.ShellCommand;
 import edu.montana.cs.mtmc.os.utils.ImageUtils;
 import edu.montana.cs.mtmc.tokenizer.MTMCTokenizer;
+import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -54,7 +55,7 @@ public class DisplayCommand extends ShellCommand {
                 case "image" -> {
                     if (tokens.more()) {
                         String imagePath = tokens.collapseTokensAsString();
-                        File file = new File("disk/" + imagePath);
+                        File file = computer.getOS().loadFile(imagePath);
                         BufferedImage img = ImageIO.read(file);
                         Dimension scaleDimensions = ImageUtils.getScaledDimension(img, 64, 64);
                         BufferedImage scaledImage = ImageUtils.scaleImage(img, scaleDimensions);
@@ -81,6 +82,12 @@ public class DisplayCommand extends ShellCommand {
         } else {
             usageException();
         }
+    }
+
+    @NotNull
+    private static File loadFile(String imagePath) {
+        File file = new File("disk/" + imagePath);
+        return file;
     }
 
     @Override

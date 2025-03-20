@@ -5,6 +5,7 @@ import edu.montana.cs.mtmc.os.shell.Shell;
 import edu.montana.cs.mtmc.tokenizer.MTMCTokenizer;
 import kotlin.text.Charsets;
 
+import java.io.File;
 import java.util.Random;
 
 import static edu.montana.cs.mtmc.emulator.Registers.*;
@@ -20,7 +21,7 @@ public class MTOS {
 
     public void handleSysCall(short syscallNumber) {
         if (syscallNumber == 0x0000) {
-            // TODO end currently executing program
+            computer.setStatus(MonTanaMiniComputer.ComputerStatus.HALTED);
         } else if (syscallNumber == 0x0001) {
             // rint
             short val = computer.getConsole().readInt();
@@ -90,4 +91,8 @@ public class MTOS {
         }
     }
 
+    public File loadFile(String path) {
+        File file = new File("disk/" + path);
+        return file;
+    }
 }

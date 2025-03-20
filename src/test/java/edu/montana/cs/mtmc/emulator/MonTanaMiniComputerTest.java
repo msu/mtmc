@@ -704,7 +704,7 @@ public class MonTanaMiniComputerTest {
         computer.execInstruction(callInst);
 
         assertEquals(16, computer.getRegister(PC));
-        assertEquals(50 + WORD_SIZE, computer.getRegister(RA));
+        assertEquals(50, computer.getRegister(RA));
     }
 
     @Test

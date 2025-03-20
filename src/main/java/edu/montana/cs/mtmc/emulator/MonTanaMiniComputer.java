@@ -335,7 +335,7 @@ public class MonTanaMiniComputer {
                     registerFile[PC] = location;
                 }
             } else if (jumpType == 0x3) {
-                registerFile[RA] = (short) (registerFile[PC] + WORD_SIZE);
+                registerFile[RA] = registerFile[PC];
                 registerFile[PC] = location;
             }
         } else {

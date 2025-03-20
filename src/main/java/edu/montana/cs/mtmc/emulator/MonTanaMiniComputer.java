@@ -40,11 +40,11 @@ public class MonTanaMiniComputer {
     public void load(byte[] code, byte[] data) {
         int codeBoundary = code.length;
         System.arraycopy(code, 0, memory, 0, codeBoundary);
-        setRegister(CODE, codeBoundary);
+        setRegister(CB, codeBoundary);
 
         int dataBoundary = codeBoundary + data.length;
         System.arraycopy(data, 0, memory, codeBoundary, data.length);
-        setRegister(DATA, dataBoundary);
+        setRegister(DB, dataBoundary);
 
         // base pointer starts at the end of the data boundary
         setRegister(BP, dataBoundary);

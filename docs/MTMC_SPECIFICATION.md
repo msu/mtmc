@@ -180,18 +180,16 @@ Note that stacks always grow _down_ in memory on the MTMC.
 Stack assembly instructions do not require you specify a stack pointer register.  If it is omitted then the assembler 
 will assume you want to use the `sp` register.
 
-Note also that `sop add` and other stack ALU operations can be abbreviated to `sadd`
-
-| Instruction | Form                  | Description                                                                                                                                           | Example                                                 |
-|-------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|
-| `push`      | `0010 0000 rrrr ssss` | Pushes the word value of `rrrr` onto the stack pointed at by `ssss`, `ssss` is decrement by 2 bytes and the value in `rrrr` is saved to that location | `push t0` (`sp` is implied)                             |
-| `pop`       | `0010 0001 rrrr ssss` | Pops the word at the top of the stack pointed at by `ssss` into `rrrr`, `ssss` is incremented by 2 bytes.                                             | `pop ra, t4` (explicit stack pointer `t4`)              |
-| `dup`       | `0010 0011 0000 ssss` | Duplicates the word at the top of the stack pointed to by `ssss`.                                                                                     | `sop add`, can be written in shorthand simply as `sadd` |
-| `swap`      | `0010 0011 0001 ssss` | Swaps the two words at the top of the stack pointed to by `ssss`.                                                                                     | `sop add`, can be written in shorthand simply as `sadd` |
-| `drop`      | `0010 0011 0010 ssss` | Drops the top word of the stack pointed to by `ssss`.                                                                                                 | `sop add`, can be written in shorthand simply as `sadd` |
-| `over`      | `0010 0011 0011 ssss` | Copies the second word to the top of the stack pointed to by `ssss`.                                                                                  | `sop add`, can be written in shorthand simply as `sadd` |
-| `rot`       | `0010 0011 0100 ssss` | Rotates the third word to the top of the stack pointed to by `ssss`.                                                                                  | `sop add`, can be written in shorthand simply as `sadd` |
-| `sop`       | `0010 0100 oooo ssss` | Applies the ALU operation `oooo` to the stack pointed at by the `ssss` register.                                                                      | `sop add`, can be written in shorthand simply as `sadd` |
+| Instruction | Form                  | Description                                                                                                                                           | Example                                    |
+|-------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
+| `push`      | `0010 0000 rrrr ssss` | Pushes the word value of `rrrr` onto the stack pointed at by `ssss`, `ssss` is decrement by 2 bytes and the value in `rrrr` is saved to that location | `push t0` (`sp` is implied)                |
+| `pop`       | `0010 0001 rrrr ssss` | Pops the word at the top of the stack pointed at by `ssss` into `rrrr`, `ssss` is incremented by 2 bytes.                                             | `pop ra, t4` (explicit stack pointer `t4`) |
+| `dup`       | `0010 0011 0000 ssss` | Duplicates the word at the top of the stack pointed to by `ssss`.                                                                                     | `dup`                                      |
+| `swap`      | `0010 0011 0001 ssss` | Swaps the two words at the top of the stack pointed to by `ssss`.                                                                                     | `swap`                                     |
+| `drop`      | `0010 0011 0010 ssss` | Drops the top word of the stack pointed to by `ssss`.                                                                                                 | `drop`                                     |
+| `over`      | `0010 0011 0011 ssss` | Copies the second word to the top of the stack pointed to by `ssss`.                                                                                  | `over`                                     |
+| `rot`       | `0010 0011 0100 ssss` | Rotates the third word to the top of the stack pointed to by `ssss`.                                                                                  | `rot`                                      |
+| `sop`       | `0010 0100 oooo ssss` | Applies the ALU operation `oooo` to the stack pointed at by the `ssss` register.                                                                      | `sop add`                                  |
 
 ### STACK IMMEDIATE
 

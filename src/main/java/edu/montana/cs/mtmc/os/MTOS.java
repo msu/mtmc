@@ -2,7 +2,6 @@ package edu.montana.cs.mtmc.os;
 
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.os.shell.Shell;
-import edu.montana.cs.mtmc.tokenizer.MTMCTokenizer;
 import kotlin.text.Charsets;
 
 import java.io.File;
@@ -25,7 +24,7 @@ public class MTOS {
         } else if (syscallNumber == 0x0001) {
             // rint
             short val = computer.getConsole().readInt();
-            computer.setRegister(R0, val);
+            computer.setRegister(RV, val);
         } else if (syscallNumber == 0x0002) {
             // wint
             short value = computer.getRegister(A0);
@@ -41,7 +40,7 @@ public class MTOS {
                 byte aByte = bytes[i];
                 computer.writeByte(pointer + i, aByte);
             }
-            computer.setRegister(R0, bytesToRead);
+            computer.setRegister(RV, bytesToRead);
         } else if (syscallNumber == 0x0004) {
             // wstr
             short pointer = computer.getRegister(A0);
@@ -55,7 +54,7 @@ public class MTOS {
             // rnd
             short low = computer.getRegister(A0);
             short high = computer.getRegister(A1);
-            computer.setRegister(R0, random.nextInt(low, high + 1));
+            computer.setRegister(RV, random.nextInt(low, high + 1));
         } else if (syscallNumber == 0x0008) {
             // sleep
             short millis = computer.getRegister(A0);
@@ -75,7 +74,7 @@ public class MTOS {
             short x = computer.getRegister(A0);
             short y = computer.getRegister(A1);
             short val = computer.getDisplay().getValueFor(x, y);
-            computer.setRegister(R0, val);
+            computer.setRegister(RV, val);
         } else if (syscallNumber == 0x000A) {
             // fbset
             short x = computer.getRegister(A0);

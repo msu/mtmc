@@ -16,7 +16,7 @@ public class MTOSTest {
         computer.getConsole().setShortValue((short) 10);
         short inst = 0b0000_0000_0000_0001; // sys rint
         computer.execInstruction(inst);
-        assertEquals(10, computer.getRegister(R0));
+        assertEquals(10, computer.getRegister(RV));
     }
 
     @Test
@@ -41,7 +41,7 @@ public class MTOSTest {
         String str = new String(bytes, Charsets.US_ASCII);
 
         assertEquals("hello", str);
-        assertEquals(5, computer.getRegister(R0));
+        assertEquals(5, computer.getRegister(RV));
     }
 
     @Test
@@ -65,7 +65,7 @@ public class MTOSTest {
         computer.setRegister(A1, 20);
         short inst = 0b0000_0000_0000_0111; // sys rnd
         computer.execInstruction(inst);
-        short returnVal = computer.getRegister(R0);
+        short returnVal = computer.getRegister(RV);
         assertTrue(10 <= returnVal && returnVal <= 20);
     }
 

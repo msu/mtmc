@@ -4,28 +4,28 @@ import java.lang.reflect.Field;
 
 public class Registers {
 
-    //=== user facing
-    public static final int T0 = 0;
+    //=== user-facing registers
+    public static final int T0 = 0;  // temp registers
     public static final int T1 = 1;
     public static final int T2 = 2;
     public static final int T3 = 3;
-    public static final int A0 = 4;
+    public static final int A0 = 4;  // arg registers
     public static final int A1 = 5;
     public static final int A2 = 6;
     public static final int A3 = 7;
-    public static final int R0 = 8;
-    public static final int RA = 9;
-    public static final int FP = 10;
-    public static final int SP = 11;
-    public static final int BP = 12;
-    public static final int PC = 13;
-    public static final int ZERO = 14;
-    public static final int ONE = 15;
+    public static final int RV = 8;  // return value
+    public static final int RA = 9;  // return address
+    public static final int FP = 10; // frame pointer
+    public static final int SP = 11; // stack pointer
+    public static final int BP = 12; // break pointer
+    public static final int PC = 13; // program counter
+    public static final int ZERO = 14; // always zero
+    public static final int ONE = 15;  // always one
 
-    //=== non user-facing
-    public static final int IR = 16;
-    public static final int CODE = 17;
-    public static final int DATA = 18;
+    //=== non-user-facing registers
+    public static final int IR = 16; // instruction register
+    public static final int CB = 17; // code boundary
+    public static final int DB = 18; // data boundary
 
     public static int toInteger(String reg) {
         try {

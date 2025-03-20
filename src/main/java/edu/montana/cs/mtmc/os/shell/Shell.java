@@ -49,7 +49,11 @@ public class Shell {
                     Assembler assembler = new Assembler();
                     AssemblyResult result = assembler.assemble(command);
                     if (result.errors().isEmpty()) {
-                        for (short inst : result.code()) {
+                        byte[] code = result.code();
+                        for (int i = 0; i < code.length; i = i + 2) {
+                            int instCodeUpper = code[i] << 8;
+                            byte instCodeLower = code[i + 1];
+                            short inst = (short) (instCodeUpper | instCodeLower);
                             computer.execInstruction(inst);
                         }
                     } else {

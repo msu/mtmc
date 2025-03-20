@@ -44,4 +44,24 @@ public class MTMCDisplay {
         int finalVal = resetCurrentValue | shiftedVal;
         computer.writeByte(startingByte, (byte) finalVal);
     }
+
+    public void drawLine(short startX, short startY, short endX, short endY) {
+        int diffX = endX - startX;
+        int diffY = endY - startY;
+        int steps = Math.max(Math.abs(diffX), Math.abs(diffY));
+        int scaledX = startX * 64;
+        int scaledY = startY * 64;
+        int step = 0;
+        while (step <= steps) {
+            step++;
+            int normalizedX = scaledX/64;
+            int normalizedY = scaledY/64;
+            if (0 <= normalizedX && normalizedX < 64 &&
+                    0 <= normalizedY && normalizedY < 64) {
+                setValueFor((short) normalizedX, (short) normalizedY, (short) 3);
+            }
+            scaledX += (diffX * 64) / steps;
+            scaledY += (diffY * 64) / steps;
+        }
+    }
 }

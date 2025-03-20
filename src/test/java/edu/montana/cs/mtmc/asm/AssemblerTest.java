@@ -1,6 +1,7 @@
 package edu.montana.cs.mtmc.asm;
 
 import edu.montana.cs.mtmc.asm.instructions.MiscInstruction;
+import edu.montana.cs.mtmc.os.SysCalls;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
@@ -14,18 +15,18 @@ public class AssemblerTest {
     @Test
     public void bootstrapAssembly() {
         Assembler assembler = new Assembler();
-        AssemblyResult result = assembler.assemble("sys exit");
+        AssemblyResult result = assembler.assemble("sys halt");
         assertArrayEquals(new byte[]{0b0000_0000, 0b0000_0000}, result.code());
     }
 
     @Test
     public void sysCalls() {
-        Map<String, Integer> syscalls = MiscInstruction.SYSCALLS;
-        for (String sysCall : syscalls.keySet()) {
+        SysCalls[] syscalls = SysCalls.values();
+        for (SysCalls sysCall : syscalls) {
             Assembler assembler = new Assembler();
-            Integer value = syscalls.get(sysCall);
+            byte value = sysCall.getValue();
             AssemblyResult result = assembler.assemble("sys " + sysCall);
-            assertArrayEquals(new byte[]{0b0000_0000, value.byteValue()}, result.code());
+            assertArrayEquals(new byte[]{0b0000_0000, value}, result.code());
         }
     }
 

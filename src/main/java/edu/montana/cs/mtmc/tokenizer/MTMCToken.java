@@ -1,51 +1,18 @@
 package edu.montana.cs.mtmc.tokenizer;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class MTMCToken {
-
-    int start;
-    int end;
-    int line;
-    int lineOffset;
-    String stringValue;
-    TokenType type;
-
-    public MTMCToken(TokenType tokenType, String stringValue, int start, int end, int line, int lineOffset) {
-        this.start = start;
-        this.end = end;
-        this.type = tokenType;
-        this.stringValue = stringValue;
-        this.line = line;
-        this.lineOffset = lineOffset;
-    }
-
-    public int getStart() {
-        return start;
-    }
-
-    public int getEnd() {
-        return end;
-    }
-
-    public int getLine() {
-        return line;
-    }
-
-    public int getLineOffset() {
-        return lineOffset;
-    }
-
-    public String getStringValue() {
+public record MTMCToken(
+        int start,
+        int end,
+        int line,
+        int lineOffset,
+        String stringValue,
+        TokenType type
+) {
+    public String stringValue() {
         return stringValue;
     }
 
-    public TokenType getType() {
-        return type;
-    }
-
-    public Integer getIntegerValue() {
+    public Integer intValue() {
         if (type == TokenType.INTEGER) {
             return Integer.parseInt(stringValue);
         } else if (type == TokenType.HEX) {
@@ -57,11 +24,11 @@ public class MTMCToken {
             short i = Short.parseShort(stripped.replaceAll("_", ""), 2);
             return (int) i;
         } else {
-            throw new UnsupportedOperationException("Cannot return int for type " + getType());
+            throw new UnsupportedOperationException("Cannot return int for type " + type());
         }
     }
 
-    public String getLabelValue() {
+    public String labelValue() {
         return stringValue.substring(0, stringValue.length() - 1);
     }
 

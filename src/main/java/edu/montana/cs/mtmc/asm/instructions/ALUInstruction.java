@@ -47,11 +47,11 @@ public class ALUInstruction extends Instruction {
 
     @Override
     public void genCode(byte[] output, Assembler assembler) {
-        int opCode = getALUOpcode(getInstructionToken().getStringValue());
-        int to = Registers.toInteger(toToken.getStringValue());
+        int opCode = getALUOpcode(getInstructionToken().stringValue());
+        int to = Registers.toInteger(toToken.stringValue());
         int from = 0;
         if (fromToken != null) {
-            from = Registers.toInteger(fromToken.getStringValue());
+            from = Registers.toInteger(fromToken.stringValue());
         }
         output[getLocation()] = (byte) (0b0001_0000 | opCode);
         output[getLocation() + 1] = (byte) (to << 4 | from);
@@ -66,6 +66,6 @@ public class ALUInstruction extends Instruction {
     }
 
     public boolean isBinary() {
-        return !UNARY_OPS.contains(getInstructionToken().getStringValue());
+        return !UNARY_OPS.contains(getInstructionToken().stringValue());
     }
 }

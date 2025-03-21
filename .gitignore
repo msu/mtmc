@@ -1,4 +1,3 @@
-disk/
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -34,3 +33,7 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Disk ###
+disk/usr/
+# TODO: remove other disk entires so student's don't commit them!

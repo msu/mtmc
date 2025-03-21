@@ -1,7 +1,6 @@
 package edu.montana.cs.mtmc.tokenizer;
 
 import edu.montana.cs.mtmc.tokenizer.MTMCToken.TokenType;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedList;
 import java.util.stream.Stream;
@@ -28,7 +27,7 @@ public class MTMCTokenizer {
     }
 
     public String consumeAsString() {
-        return tokens.get(currentToken++).getStringValue();
+        return tokens.get(currentToken++).stringValue();
     }
 
     public MTMCToken matchAndConsume(TokenType... type) {
@@ -40,8 +39,8 @@ public class MTMCTokenizer {
     }
 
     public boolean matchAndConsume(String identifier) {
-        if (currentToken().getType().equals(IDENTIFIER) &&
-                currentToken().getStringValue().equals(identifier)) {
+        if (currentToken().type().equals(IDENTIFIER) &&
+                currentToken().stringValue().equals(identifier)) {
             return true;
         } else {
             return false;
@@ -50,7 +49,7 @@ public class MTMCTokenizer {
 
     public boolean match(TokenType... type) {
         for (TokenType tokenType : type) {
-            if (currentToken().getType().equals(tokenType)) {
+            if (currentToken().type().equals(tokenType)) {
                 return true;
             }
         }
@@ -62,7 +61,7 @@ public class MTMCTokenizer {
     }
 
     public boolean more() {
-        return !currentToken().getType().equals(EOF);
+        return !currentToken().type().equals(EOF);
     }
 
     public MTMCToken previousToken() {
@@ -81,7 +80,7 @@ public class MTMCTokenizer {
             if (i == currentToken) {
                 sb.append("-->[");
             }
-            sb.append(token.getStringValue());
+            sb.append(token.stringValue());
             if (i == currentToken) {
                 sb.append("]<--");
             }
@@ -97,9 +96,9 @@ public class MTMCTokenizer {
             MTMCToken last, next;
             do {
                 last = consume();
-                sb.append(last.getStringValue());
+                sb.append(last.stringValue());
                 next = currentToken();
-            } while (more() && last.end == next.start);
+            } while (more() && last.end() == next.start());
             return sb.toString();
         } else {
             return "";
@@ -107,7 +106,7 @@ public class MTMCTokenizer {
     }
 
     public Integer consumeAsInteger() {
-        return consume().getIntegerValue();
+        return consume().intValue();
     }
 
     public MTMCToken require(TokenType tokenType, Runnable notFound) {

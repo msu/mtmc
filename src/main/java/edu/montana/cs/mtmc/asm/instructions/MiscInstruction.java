@@ -5,9 +5,6 @@ import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.os.SysCalls;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class MiscInstruction extends Instruction {
 
     private MTMCToken syscallType;
@@ -22,10 +19,10 @@ public class MiscInstruction extends Instruction {
     public void genCode(byte[] output, Assembler assembler) {
         if (getType() == InstructionType.SYS) {
             output[getLocation()] = 0b0000_0000;
-            output[getLocation() + 1] = SysCalls.getValue(this.syscallType.getStringValue());
+            output[getLocation() + 1] = SysCalls.getValue(this.syscallType.stringValue());
         } else if (getType() == InstructionType.MV) {
-            int to = Registers.toInteger(toRegister.getStringValue());
-            int from = Registers.toInteger(fromRegister.getStringValue());
+            int to = Registers.toInteger(toRegister.stringValue());
+            int from = Registers.toInteger(fromRegister.stringValue());
             output[getLocation()] = 0b0000_0001;
             output[getLocation() + 1] = (byte) (to << 4 | from);
         } else if(getType() == InstructionType.NOOP) {

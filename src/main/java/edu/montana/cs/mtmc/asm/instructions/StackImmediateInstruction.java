@@ -19,9 +19,9 @@ public class StackImmediateInstruction extends Instruction {
     public void genCode(byte[] output, Assembler assembler) {
         int stackReg = Registers.SP;
         if(stackRegisterToken != null) {
-            stackReg = Registers.toInteger(stackRegisterToken.getStringValue());
+            stackReg = Registers.toInteger(stackRegisterToken.stringValue());
         }
-        int value = valueToken.getIntegerValue();
+        int value = valueToken.intValue();
         output[getLocation()] = (byte) (0b0011_0000 | stackReg);
         output[getLocation() + 1] = (byte) value;
     }

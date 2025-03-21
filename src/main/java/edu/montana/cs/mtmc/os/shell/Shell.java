@@ -20,6 +20,8 @@ public class Shell {
         COMMANDS.put("set", new SetCommand());
         COMMANDS.put("web", new WebCommand());
         COMMANDS.put("display", new DisplayCommand());
+        COMMANDS.put("assemble", new AssembleCommand());
+        COMMANDS.put("load", new LoadCommand());
     }
 
     public static boolean isCommand(String cmd) {
@@ -40,7 +42,7 @@ public class Shell {
                     return;
                 }
             } else {
-                cmd = identifier.getStringValue();
+                cmd = identifier.stringValue();
             }
             if (isCommand(cmd)) {
                 COMMANDS.get(cmd).exec(tokens, computer);

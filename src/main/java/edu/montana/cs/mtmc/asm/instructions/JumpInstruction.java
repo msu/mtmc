@@ -28,18 +28,18 @@ public class JumpInstruction extends Instruction {
 
     @Override
     public void validateLabel(Assembler assembler) {
-        if (addressToken.getType() == MTMCToken.TokenType.IDENTIFIER) {
-            if (!assembler.hasLabel(addressToken.getStringValue())) {
-                addError("Unresolved label: " + addressToken.getStringValue());
+        if (addressToken.type() == MTMCToken.TokenType.IDENTIFIER) {
+            if (!assembler.hasLabel(addressToken.stringValue())) {
+                addError("Unresolved label: " + addressToken.stringValue());
             }
         }
     }
 
     private Integer resolveTargetAddress(Assembler assembler) {
-        if (addressToken.getType() == MTMCToken.TokenType.IDENTIFIER) {
-            return assembler.resolveLabel(addressToken.getStringValue());
+        if (addressToken.type() == MTMCToken.TokenType.IDENTIFIER) {
+            return assembler.resolveLabel(addressToken.stringValue());
         } else {
-            return addressToken.getIntegerValue();
+            return addressToken.intValue();
         }
     }
 

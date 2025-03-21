@@ -18,20 +18,20 @@ public class SetCommand extends ShellCommand {
             if (register == null) usageException();
             MTMCToken value = tokens.matchAndConsume(INTEGER, HEX, BINARY);
             if (value == null) usageException();
-            int reg = Registers.toInteger(register.getStringValue());
+            int reg = Registers.toInteger(register.stringValue());
             if (reg >= 0) {
-                computer.setRegister(reg, value.getIntegerValue());
+                computer.setRegister(reg, value.intValue());
             } else {
-                throw new IllegalArgumentException("Bad register: " + register.getStringValue());
+                throw new IllegalArgumentException("Bad register: " + register.stringValue());
             }
         } else {
             MTMCToken value = tokens.matchAndConsume(INTEGER, HEX, BINARY, STRING);
             if (value == null) usageException();
-            if (value.getType() == INTEGER || value.getType() == BINARY || value.getType() == HEX) {
-                computer.writeWord(memLocation.getIntegerValue(), value.getIntegerValue().shortValue());
+            if (value.type() == INTEGER || value.type() == BINARY || value.type() == HEX) {
+                computer.writeWord(memLocation.intValue(), value.intValue().shortValue());
             } else {
-                byte[] bytes = value.getStringValue().getBytes();
-                Integer start = memLocation.getIntegerValue();
+                byte[] bytes = value.stringValue().getBytes();
+                Integer start = memLocation.intValue();
                 for (int i = 0; i < bytes.length; i++) {
                     byte aByte = bytes[i];
                     computer.writeByte(start + i, aByte);

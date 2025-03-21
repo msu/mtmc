@@ -23,11 +23,11 @@ public class LoadInstruction extends Instruction {
             case SW -> opcode = 0b0110;
             case SB -> opcode = 0b0111;
         }
-        int target = Registers.toInteger(targetToken.getStringValue());
-        int pointer = Registers.toInteger(pointerToken.getStringValue());
+        int target = Registers.toInteger(targetToken.stringValue());
+        int pointer = Registers.toInteger(pointerToken.stringValue());
         int offset = Registers.ZERO;
         if (offsetToken != null) {
-            offset = Registers.toInteger(offsetToken.getStringValue());
+            offset = Registers.toInteger(offsetToken.stringValue());
         }
         output[getLocation()] = (byte) (opcode << 4 | target);
         output[getLocation() + 1] = (byte) (pointer << 4 | offset);

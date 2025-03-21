@@ -6,7 +6,7 @@ public record AssemblyResult(byte[] code, byte[] data, List<ASMError> errors, St
     public String printErrors() {
         StringBuilder builder = new StringBuilder("Errors:");
         for (ASMError error : errors) {
-            builder.append("  Line " + error.token().getLine() + ": " + error.error());
+            builder.append("  Line " + error.token().line() + ": " + error.error());
         }
         return builder.toString();
     }

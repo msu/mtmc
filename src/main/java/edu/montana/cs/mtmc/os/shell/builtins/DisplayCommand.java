@@ -76,8 +76,8 @@ public class DisplayCommand extends ShellCommand {
             }
         } else if (tokens.match(INTEGER)) {
             Integer row = tokens.consumeAsInteger();
-            Integer col = tokens.require(INTEGER, this::usageException).getIntegerValue();
-            Integer color = tokens.require(INTEGER, this::usageException).getIntegerValue();
+            Integer col = tokens.require(INTEGER, this::usageException).intValue();
+            Integer color = tokens.require(INTEGER, this::usageException).intValue();
             computer.getDisplay().setValueFor(row.shortValue(), col.shortValue(), color.shortValue());
         } else {
             usageException();

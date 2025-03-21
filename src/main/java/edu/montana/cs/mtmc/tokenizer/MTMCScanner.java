@@ -172,8 +172,8 @@ public class MTMCScanner {
     }
 
     @NotNull
-    private MTMCToken makeToken(MTMCToken.TokenType decimal, String stringValue, int startPosition) {
-        return new MTMCToken(decimal, stringValue, startPosition, position, line, lineOffset);
+    private MTMCToken makeToken(MTMCToken.TokenType type, String stringValue, int startPosition) {
+        return new MTMCToken(startPosition, position, line, lineOffset, stringValue, type);
     }
 
     @NotNull

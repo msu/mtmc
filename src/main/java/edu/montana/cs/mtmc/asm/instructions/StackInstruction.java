@@ -18,18 +18,18 @@ public class StackInstruction extends Instruction {
     public void genCode(byte[] output, Assembler assembler) {
         int stackReg = Registers.SP;
         if(stackRegisterToken != null) {
-            stackReg = Registers.toInteger(stackRegisterToken.getStringValue());
+            stackReg = Registers.toInteger(stackRegisterToken.stringValue());
         }
         if (getType() == InstructionType.PUSH) {
-            int target = Registers.toInteger(targetToken.getStringValue());
+            int target = Registers.toInteger(targetToken.stringValue());
             output[getLocation()] = 0b0010_0000;
             output[getLocation() + 1] = (byte) (target << 4 | stackReg);
         } else if (getType() == InstructionType.POP) {
-            int target = Registers.toInteger(targetToken.getStringValue());
+            int target = Registers.toInteger(targetToken.stringValue());
             output[getLocation()] = 0b0010_0001;
             output[getLocation() + 1] = (byte) (target << 4 | stackReg);
         } else if (getType() == InstructionType.SOP) {
-            int aluOp = ALUInstruction.getALUOpcode(aluOpToken.getStringValue());
+            int aluOp = ALUInstruction.getALUOpcode(aluOpToken.stringValue());
             output[getLocation()] = 0b0010_0100;
             output[getLocation() + 1] = (byte) (aluOp << 4 | stackReg);
         } else {

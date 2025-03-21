@@ -26,6 +26,7 @@ public class Shell {
         COMMANDS.put("assemble", new AssembleCommand());
         COMMANDS.put("load", new LoadCommand());
         COMMANDS.put("step", new StepCommand());
+        COMMANDS.put("run", new RunCommand());
     }
 
     public static boolean isCommand(String cmd) {

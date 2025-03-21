@@ -36,4 +36,5 @@ build/
 
 ### Disk ###
 disk/usr/
+disk/logs/
 # TODO: remove other disk entires so student's don't commit them!

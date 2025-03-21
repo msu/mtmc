@@ -6,7 +6,9 @@ import edu.montana.cs.mtmc.asm.instructions.Instruction;
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.os.shell.builtins.*;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
+
 import static edu.montana.cs.mtmc.tokenizer.MTMCToken.TokenType.*;
+
 import edu.montana.cs.mtmc.tokenizer.MTMCTokenizer;
 
 import java.util.LinkedHashMap;
@@ -14,6 +16,7 @@ import java.util.Map;
 
 public class Shell {
     private static final Map<String, ShellCommand> COMMANDS = new LinkedHashMap<>();
+
     static {
         COMMANDS.put("help", new HelpCommand());
         COMMANDS.put("exit", new ExitCommand());
@@ -22,6 +25,7 @@ public class Shell {
         COMMANDS.put("display", new DisplayCommand());
         COMMANDS.put("assemble", new AssembleCommand());
         COMMANDS.put("load", new LoadCommand());
+        COMMANDS.put("step", new StepCommand());
     }
 
     public static boolean isCommand(String cmd) {

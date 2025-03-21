@@ -61,6 +61,9 @@ public class MonTanaMiniComputer {
         this.status = status;
     }
 
+    public ComputerStatus getStatus() {
+        return status;
+    }
 
     public void fetchAndExecute() {
         fetchInstruction();

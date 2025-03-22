@@ -1,13 +1,15 @@
 <div class="panel" id="controls">
     <div>
-        <div>
-            msu - MTMC-16
+        <div id="control-header">
+            <span>m</span><span>s</span><span>u</span> &nbsp;&nbsp;<i>MTMC-16</i>
         </div>
-        <div>
+        <div id="control-secondary">
             Montana sTate Mini-Computer
         </div>
-        <div>
-            <button>reset</button>
+        <div id="control-buttons">
+            <button fx-action="/control/reset" fx-method="post" fx-swap="none">
+                reset
+            </button>
         </div>
     </div>
 </div>

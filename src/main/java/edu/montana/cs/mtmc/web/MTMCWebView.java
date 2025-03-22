@@ -7,11 +7,12 @@ import kotlin.text.Charsets;
 
 import java.util.stream.IntStream;
 
-import static edu.montana.cs.mtmc.emulator.Registers.IR;
-
 public class MTMCWebView {
 
     private final MonTanaMiniComputer computer;
+
+    private DisplayFormat registerFormat = DisplayFormat.HEX;
+    private DisplayFormat memoryFormat = DisplayFormat.HEX;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -36,12 +37,25 @@ public class MTMCWebView {
         }
     }
 
-    public String regHex(String reg) {
+    public String regDisplay(String reg) {
         try {
             short value = getRegisterValue(reg);
-            String hexString = Integer.toHexString(value);
-            String paddedHexString = "%1$4s".formatted(hexString).replaceAll(" ", "0");
-            return "0x" + paddedHexString;
+            switch (registerFormat) {
+                case HEX -> {
+                    String str = Integer.toHexString(value & 0xffff);
+                    String padded = "%1$4s".formatted(str).replace(" ", "0");
+                    return "0x" + padded;
+                }
+                case DEC -> {
+                    return "" + value;
+                }
+                case ASCII -> {
+                    return new String(new byte[]{(byte) (value >> 8), (byte) value});
+                }
+                case null, default -> {
+                    return "<error>";
+                }
+            }
         } catch (Exception e) {
             return "No such register: " + reg;
         }
@@ -62,14 +76,6 @@ public class MTMCWebView {
         return blinken.toString();
     }
 
-    public String regBin(String reg) {
-        short value = getRegisterValue(reg);
-        String binaryString = Integer.toBinaryString(value);
-        String string = "%1$16s".formatted(binaryString).replaceAll(" ", "0");
-        string = string.replaceAll("....", "$0 ");
-        return string;
-    }
-
     private short getRegisterValue(String reg) {
         Integer index = Registers.toInteger(reg);
         short register = computer.getRegister(index);
@@ -80,16 +86,35 @@ public class MTMCWebView {
     public String classFor(int address) {
         if (address >= MonTanaMiniComputer.FRAME_BUFF_START) {
             return "frameBuffer";
-        } else if (address > computer.getRegister(Registers.SP)) {
+        } else if (address >= computer.getRegister(Registers.SP)) {
             return "stack";
+        } else if (address == computer.getRegister(Registers.PC)) {
+            return "currentInst";
+        } else if (address <= computer.getRegister(Registers.CB)) {
+            return "code";
+        } else if (address <= computer.getRegister(Registers.DB)) {
+            return "data";
+        } else if (address <= computer.getRegister(Registers.BP)) {
+            return "heap";
         } else {
-            // TODO - color stack pointer, frame pointer, etc. cells, color text, data and heap segs
             return "";
         }
     }
 
-    public String hexValue(int address) {
-        return computer.getHex(address);
+    public String displayValue(int address) {
+        if (memoryFormat == DisplayFormat.HEX) {
+            byte byteVal = computer.fetchByte(address);
+            return String.format("%02X ", byteVal);
+        } else if (memoryFormat == DisplayFormat.DEC) {
+            if (address % 2 == 1) {
+                return "" + computer.fetchWord(address - 1);
+            } else {
+                return "";
+            }
+        } else {
+            byte value = computer.fetchByte(address);
+            return new String(new byte[]{value});
+        }
     }
 
     public String asciiValue(int address) {
@@ -121,4 +146,25 @@ public class MTMCWebView {
         throw new IllegalStateException("Bad display value: "  + valueFor);
     }
 
+    public String getRegisterFormat() {
+        return registerFormat.toString().toLowerCase();
+    }
+
+    public void toggleRegisterFormat() {
+        registerFormat = DisplayFormat.values()[(registerFormat.ordinal() + 1) % 3];
+    }
+
+    public String getMemoryFormat() {
+        return memoryFormat.toString().toLowerCase();
+    }
+
+    public void toggleMemoryFormat() {
+        memoryFormat = DisplayFormat.values()[(memoryFormat.ordinal() + 1) % 3];
+    }
+
+    enum DisplayFormat {
+        HEX,
+        DEC,
+        ASCII
+    }
 }

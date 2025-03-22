@@ -7,11 +7,14 @@ import io.javalin.http.sse.SseClient;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -24,18 +27,36 @@ public class WebServer {
 
     private final MonTanaMiniComputer computer;
     private Javalin javalinApp;
-    PebbleEngine templateEngine = new PebbleEngine.Builder().cacheActive(false).build();
+    PebbleEngine templateEngine;
+
     private final MTMCWebView computerView;
     Queue<SseClient> sseClients = new ConcurrentLinkedQueue<SseClient>();
     Gson json = new Gson();
 
     public WebServer(MonTanaMiniComputer computer) {
+        touchLogFile(computer);
         this.computer = computer;
         this.computerView = new MTMCWebView(computer);
+        this.templateEngine = new PebbleEngine.Builder().cacheActive(false).build();
         initRoutes();
     }
 
+    private void touchLogFile(MonTanaMiniComputer computer) {
+        try {
+            File file = computer.getOS().loadFile("/logs/sys.log");
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                Files.createFile(file.toPath());
+            }
+        } catch (FileAlreadyExistsException e) {
+            // ignore
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void initRoutes() {
+
         // config
         this.javalinApp = Javalin.create(cfg -> {
             cfg.staticFiles.add("public");
@@ -50,6 +71,20 @@ public class WebServer {
                     computer.getOS().processCommand(ctx.formParam("cmd"));
                     updateUi();
                     ctx.html("");
+                })
+                .post("/control/{action}", ctx -> {
+                    if (ctx.pathParam("action").equals("reset")) {
+                        computer.initMemory();
+                    }
+                    updateUi();
+                })
+                .post("/registerFormat", ctx -> {
+                    computerView.toggleRegisterFormat();
+                    updateUi();
+                })
+                .post("/memFormat", ctx -> {
+                    computerView.toggleMemoryFormat();
+                    updateUi();
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();

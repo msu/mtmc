@@ -38,16 +38,22 @@ public class MonTanaMiniComputer {
     }
 
     public void load(byte[] code, byte[] data) {
+        // reset memory
+        initMemory();
+
         int codeBoundary = code.length;
         System.arraycopy(code, 0, memory, 0, codeBoundary);
-        setRegister(CB, codeBoundary);
+        setRegister(CB, codeBoundary - 1);
 
         int dataBoundary = codeBoundary + data.length;
         System.arraycopy(data, 0, memory, codeBoundary, data.length);
-        setRegister(DB, dataBoundary);
+        setRegister(DB, dataBoundary - 1);
 
-        // base pointer starts at the end of the data boundary
+        // base pointer starts just past the end of the data boundary
         setRegister(BP, dataBoundary);
+
+        // reset computer status
+        status = READY;
     }
 
     public void run() {
@@ -421,11 +427,6 @@ public class MonTanaMiniComputer {
 
     public MTMCDisplay getDisplay() {
         return display;
-    }
-
-    public String getHex(int address) {
-        byte byteVal = fetchByte(address);
-        return String.format("%02X ", byteVal);
     }
 
     public Iterable<Integer> getMemoryAddresses() {

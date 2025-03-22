@@ -1,8 +1,13 @@
 <div class="panel" id="memory-panel">
-    Memory <button>jump</button>
+    <button>jump</button>
+    <button fx-action="/memFormat"
+            fx-method="post"
+            fx-swap="none">
+        {{computer.getMemoryFormat()}}
+    </button>
     <div id="memory" class="memory">
         {% for addr in computer.memoryAddresses %}
-        <div class="{{computer.classFor(addr)}}">{{computer.hexValue(addr) | raw }}</div>
+        <div title="{{addr}}" class="{{computer.classFor(addr)}}">{{computer.displayValue(addr) | raw }}</div>
         {% endfor %}
     </div>
 </div>

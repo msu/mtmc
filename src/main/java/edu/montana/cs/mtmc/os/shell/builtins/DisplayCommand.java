@@ -64,8 +64,11 @@ public class DisplayCommand extends ShellCommand {
                         for (int x = 0; x < scaledImage.getWidth(); x++) {
                             for (int y = 0; y < scaledImage.getHeight(); y++) {
                                 int rgb = scaledImage.getRGB(x, y);
-                                int twoBitValue = ImageUtils.findClosestDisplayColor(rgb);
-                                computer.getDisplay().setValueFor((short) (x + xpad), (short) (y + ypad), (short) twoBitValue);
+                                int alpha = (rgb >> 24) & 0xff;
+                                if (alpha > 128) {
+                                    int twoBitValue = ImageUtils.findClosestDisplayColor(rgb);
+                                    computer.getDisplay().setValueFor((short) (x + xpad), (short) (y + ypad), (short) twoBitValue);
+                                }
                             }
                         }
                     } else {

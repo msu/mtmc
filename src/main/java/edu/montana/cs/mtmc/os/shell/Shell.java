@@ -87,6 +87,6 @@ public class Shell {
     }
 
     public static void printShellWelcome(MonTanaMiniComputer computer) {
-        computer.getConsole().println("Welcome to MTMC Shell!  Type ? for help");
+        computer.getConsole().println("Welcome to MtOS!  Type ? for help");
     }
 }

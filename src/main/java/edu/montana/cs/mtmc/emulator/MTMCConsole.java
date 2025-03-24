@@ -75,6 +75,10 @@ public class MTMCConsole {
         }
     }
 
+    public void resetOutput() {
+        output.delete(0, output.length());
+    }
+
     public enum Mode {
         NON_INTERACTIVE,
         INTERACTIVE,

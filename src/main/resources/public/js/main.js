@@ -1,7 +1,7 @@
 // connect to sse endpoint
-const eventSource = new EventSource("/sse", {withCredentials:true});
+const sseSource = new EventSource("/sse", {withCredentials:true});
 
-eventSource.addEventListener("update", (e) => {
+sseSource.addEventListener("update", (e) => {
     let updateInfo = JSON.parse(e.data);
     for(let id in updateInfo) {
         let element = document.querySelector("#" + id);
@@ -9,6 +9,6 @@ eventSource.addEventListener("update", (e) => {
     }
 })
 
-eventSource.onerror = (err) => {
+sseSource.onerror = (err) => {
     console.error("EventSource failed:", err);
 };

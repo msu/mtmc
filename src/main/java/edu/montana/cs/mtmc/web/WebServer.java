@@ -68,7 +68,13 @@ public class WebServer {
                     ctx.html(render("templates/index.html"));
                 })
                 .post("/cmd", ctx -> {
-                    computer.getOS().processCommand(ctx.formParam("cmd"));
+                    Map vals = json.fromJson(ctx.body(), Map.class);
+                    String cmd = (String) vals.get("cmd");
+                    computer.getConsole().resetOutput();
+                    computer.getOS().processCommand(cmd);
+                    String output = computer.getConsole().getOutput();
+                    sendEvent("console-output", output);
+                    sendEvent("console-ready", "{}");
                     updateUi();
                     ctx.html("");
                 })
@@ -100,8 +106,12 @@ public class WebServer {
         var map = Map.of("register-panel", render("templates/registers.html"),
                          "memory-panel", render("templates/memory.html"),
                          "display-panel", render("templates/display.html"));
+        sendEvent("update", json.toJson(map));
+    }
+
+    private void sendEvent(String update, String data) {
         sseClients.forEach(c -> {
-            c.sendEvent("update", json.toJson(map));
+            c.sendEvent(update, data);
         });
     }
 

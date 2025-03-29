@@ -46,4 +46,20 @@ public abstract class Instruction extends ASMElement {
     public int getSizeInBytes() {
         return 2;
     }
+
+    public static String disassembleInstruction(short instruction) {
+        String aluOp = ALUInstruction.disassemble(instruction);
+        if (aluOp != null) {
+            return aluOp;
+        }
+        String ldi = LoadImmediateInstruction.disassemble(instruction);
+        if (ldi != null) {
+            return ldi;
+        }
+        String jump = JumpInstruction.disassemble(instruction);
+        if (jump != null) {
+            return jump;
+        }
+        return "<unknown>";
+    }
 }

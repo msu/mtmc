@@ -28,6 +28,7 @@ public class Assembler {
 
     ASMMode mode = ASMMode.TEXT;
     MTMCTokenizer tokenizer;
+    private MTMCToken lastLabel;
 
     public AssemblyResult assemble(String asm) {
         tokenizer = new MTMCTokenizer(asm, "#");
@@ -115,7 +116,18 @@ public class Assembler {
             mode = newMode;
             return;
         }
+        // label only lines are ok and propagate to the next instruction
         MTMCToken labelToken = maybeGetLabel(tokens);
+        if (labelToken != null) {
+            if (tokens.isEmpty()) {
+                lastLabel = labelToken;
+            } else {
+                lastLabel = null; // labels always reset after one line
+            }
+        } else {
+            labelToken = lastLabel;
+            lastLabel = null; // labels always reset after one line
+        }
         if (mode == ASMMode.TEXT) {
             parseInstruction(tokens, labelToken);
         } else {

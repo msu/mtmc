@@ -1,7 +1,10 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
 import edu.montana.cs.mtmc.asm.Assembler;
+import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
+
+import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.getBits;
 
 public class JumpInstruction extends Instruction {
 
@@ -46,4 +49,26 @@ public class JumpInstruction extends Instruction {
     public void setAddressToken(MTMCToken addressToken) {
         this.addressToken = addressToken;
     }
+
+    public static String disassemble(short instruction) {
+        if (getBits(16, 2, instruction) == 0b11) {
+            StringBuilder builder = new StringBuilder();
+            short jumpType = getBits(14, 2, instruction);
+            if (jumpType == 0b00) {
+                builder.append("j ");
+            } else if (jumpType == 0b01) {
+                builder.append("jz ");
+            } else if (jumpType == 0b10) {
+                builder.append("jnz ");
+            } else {
+                builder.append("jal ");
+            }
+            short val = getBits(12, 12, instruction);
+            builder.append(val);
+            return builder.toString();
+        }
+        return null;
+    }
+
+
 }

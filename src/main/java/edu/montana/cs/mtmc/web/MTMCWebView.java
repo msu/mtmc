@@ -1,18 +1,22 @@
 package edu.montana.cs.mtmc.web;
 
+import edu.montana.cs.mtmc.asm.Assembler;
+import edu.montana.cs.mtmc.asm.instructions.Instruction;
 import edu.montana.cs.mtmc.emulator.MTMCDisplay;
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.emulator.Registers;
 import kotlin.text.Charsets;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
 import java.util.stream.IntStream;
 
 public class MTMCWebView {
 
     private final MonTanaMiniComputer computer;
 
-    private DisplayFormat registerFormat = DisplayFormat.HEX;
-    private DisplayFormat memoryFormat = DisplayFormat.HEX;
+    private DisplayFormat registerFormat = DisplayFormat.DYN;
+    private DisplayFormat memoryFormat = DisplayFormat.DYN;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -41,10 +45,15 @@ public class MTMCWebView {
         try {
             short value = getRegisterValue(reg);
             switch (registerFormat) {
+                case DYN -> {
+                    if (Objects.equals(reg, "IR")) {
+                        return Instruction.disassembleInstruction(value);
+                    } else {
+                        return getHexStr(value);
+                    }
+                }
                 case HEX -> {
-                    String str = Integer.toHexString(value & 0xffff);
-                    String padded = "%1$4s".formatted(str).replace(" ", "0");
-                    return "0x" + padded;
+                    return getHexStr(value);
                 }
                 case DEC -> {
                     return "" + value;
@@ -59,6 +68,13 @@ public class MTMCWebView {
         } catch (Exception e) {
             return "No such register: " + reg;
         }
+    }
+
+    @NotNull
+    private static String getHexStr(short value) {
+        String str = Integer.toHexString(value & 0xffff);
+        String padded = "%1$4s".formatted(str).replace(" ", "0");
+        return "0x" + padded;
     }
 
     public String regBlinken(String reg) {
@@ -102,7 +118,8 @@ public class MTMCWebView {
     }
 
     public String displayValue(int address) {
-        if (memoryFormat == DisplayFormat.HEX) {
+        // TODO suport dyn view mode
+        if (memoryFormat == DisplayFormat.HEX || memoryFormat == DisplayFormat.DYN) {
             byte byteVal = computer.fetchByteFromMemory(address);
             return String.format("%02X ", byteVal);
         } else if (memoryFormat == DisplayFormat.DEC) {
@@ -118,7 +135,7 @@ public class MTMCWebView {
     }
 
     public String asciiValue(int address) {
-        String string = new String(computer.getMemory(), address, 1, Charsets.US_ASCII) + "&nbsp;";
+        String string = new String(computer.getBytesFromMemory(address, 1), Charsets.US_ASCII) + "&nbsp;";
         return string;
     }
 
@@ -163,6 +180,7 @@ public class MTMCWebView {
     }
 
     enum DisplayFormat {
+        DYN,
         HEX,
         DEC,
         ASCII

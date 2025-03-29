@@ -4,6 +4,10 @@ import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
+import java.util.Map;
+
+import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.getBits;
+
 public class LoadImmediateInstruction extends Instruction {
 
     public LoadImmediateInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
@@ -48,4 +52,17 @@ public class LoadImmediateInstruction extends Instruction {
     public void setValue(MTMCToken valueToken) {
         this.valueToken = valueToken;
     }
+
+    public static String disassemble(short instruction) {
+        if (getBits(16, 2, instruction) == 0b10) {
+            StringBuilder builder = new StringBuilder("ldi ");
+            short reg = getBits(14, 2, instruction);
+            builder.append(Registers.fromInteger(reg)).append(" ");
+            short val = getBits(12, 12, instruction);
+            builder.append(val);
+            return builder.toString();
+        }
+        return null;
+    }
+
 }

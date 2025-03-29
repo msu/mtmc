@@ -37,6 +37,21 @@ public class Registers {
         }
     }
 
+    public static String fromInteger(int reg) {
+        Field[] fields = Registers.class.getFields();
+        for (Field field : fields) {
+            try {
+                Integer index = (Integer) field.get(null);
+                if (index.equals(reg)) {
+                    return field.getName().toLowerCase();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return "<unknown>";
+    }
+
     public static boolean isWriteable(int reg) {
         return 0 <= reg && reg < 14;
     }

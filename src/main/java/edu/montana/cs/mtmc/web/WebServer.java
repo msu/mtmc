@@ -33,12 +33,16 @@ public class WebServer {
     Queue<SseClient> sseClients = new ConcurrentLinkedQueue<SseClient>();
     Gson json = new Gson();
 
+    WebUIUpdater uiUpdater = new WebUIUpdater(this);
+
     public WebServer(MonTanaMiniComputer computer) {
         touchLogFile(computer);
         this.computer = computer;
         this.computerView = new MTMCWebView(computer);
-        this.templateEngine = new PebbleEngine.Builder().cacheActive(false).build();
+        this.templateEngine = new PebbleEngine.Builder().build();
         initRoutes();
+        this.computer.addObserver(uiUpdater);
+        uiUpdater.start();
     }
 
     private void touchLogFile(MonTanaMiniComputer computer) {
@@ -75,22 +79,28 @@ public class WebServer {
                     String output = computer.getConsole().getOutput();
                     sendEvent("console-output", output);
                     sendEvent("console-ready", "{}");
-                    updateUi();
                     ctx.html("");
                 })
                 .post("/control/{action}", ctx -> {
                     if (ctx.pathParam("action").equals("reset")) {
                         computer.initMemory();
                     }
-                    updateUi();
+                    if (ctx.pathParam("action").equals("pause")) {
+                        computer.pause();
+                    }
+                    if (ctx.pathParam("action").equals("step")) {
+                        computer.setStatus(MonTanaMiniComputer.ComputerStatus.EXECUTING);
+                        computer.fetchAndExecute();
+                        computer.fetchCurrentInstruction(); // fetch next instruction for display
+                    }
                 })
                 .post("/registerFormat", ctx -> {
                     computerView.toggleRegisterFormat();
-                    updateUi();
+                    uiUpdater.updateRegistersImmediately();
                 })
                 .post("/memFormat", ctx -> {
                     computerView.toggleMemoryFormat();
-                    updateUi();
+                    uiUpdater.updateMemoryImmediately();
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();
@@ -102,20 +112,13 @@ public class WebServer {
         javalinApp.start(PORT);
     }
 
-    public void updateUi() {
-        var map = Map.of("register-panel", render("templates/registers.html"),
-                         "memory-panel", render("templates/memory.html"),
-                         "display-panel", render("templates/display.html"));
-        sendEvent("update", json.toJson(map));
-    }
-
-    private void sendEvent(String update, String data) {
+    void sendEvent(String update, String data) {
         sseClients.forEach(c -> {
             c.sendEvent(update, data);
         });
     }
 
-    private String render(String templateName) {
+    String render(String templateName) {
         PebbleTemplate template = templateEngine.getTemplate(templateName);
         Writer writer = new StringWriter();
         try {
@@ -145,4 +148,6 @@ public class WebServer {
     public static void main(String[] args) {
         maybeInit(new MonTanaMiniComputer());
     }
+
+
 }

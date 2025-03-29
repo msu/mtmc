@@ -65,10 +65,7 @@ public class MTOS {
             }
         } else if (syscallNumber == SysCalls.getValue("fbreset")) {
             // fbreset
-            byte[] memory = computer.getMemory();
-            for (int i = MonTanaMiniComputer.FRAME_BUFF_START; i < memory.length; i++) {
-                memory[i] = 0;
-            }
+            computer.resetFrameBuffer();
         } else if (syscallNumber == SysCalls.getValue("fbstat")) {
             // fbstat
             short x = computer.getRegisterValue(A0);
@@ -79,7 +76,7 @@ public class MTOS {
             // fbset
             short x = computer.getRegisterValue(A0);
             short y = computer.getRegisterValue(A1);
-            short color = computer.getRegisterValue(A3);
+            short color = computer.getRegisterValue(A2);
             computer.getDisplay().setValueFor(x, y, color);
         } else if (syscallNumber == SysCalls.getValue("fbline")) {
             short startX = computer.getRegisterValue(A0);

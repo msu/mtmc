@@ -2,7 +2,9 @@ package edu.montana.cs.mtmc.emulator;
 
 import edu.montana.cs.mtmc.os.MTOS;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.IntStream;
 
 import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
@@ -25,6 +27,9 @@ public class MonTanaMiniComputer {
     MTMCConsole console = new MTMCConsole(this);
     MTMCDisplay display = new MTMCDisplay(this);
 
+    // listeners
+    private List<MTMCObserver> observers = new ArrayList<>();
+
     public MonTanaMiniComputer() {
         initMemory();
     }
@@ -35,6 +40,7 @@ public class MonTanaMiniComputer {
         setRegisterValue(SP, (short) FRAME_BUFF_START);  // default the stack pointer to the top of normal memory
         setRegisterValue(ZERO, 0);
         setRegisterValue(ONE,  1);
+        observers.forEach(MTMCObserver::computerReset);
     }
 
     public void load(byte[] code, byte[] data) {
@@ -52,6 +58,8 @@ public class MonTanaMiniComputer {
         // base pointer starts just past the end of the data boundary
         setRegisterValue(BP, dataBoundary);
 
+        fetchCurrentInstruction(); // fetch the initial instruction for display purposes
+
         // reset computer status
         status = READY;
     }
@@ -60,6 +68,11 @@ public class MonTanaMiniComputer {
         status = EXECUTING;
         while (status == EXECUTING) {
             fetchAndExecute();
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -74,10 +87,12 @@ public class MonTanaMiniComputer {
     public void fetchAndExecute() {
         fetchCurrentInstruction();
         short instruction = getRegisterValue(IR);
+        setRegisterValue(PC, (short) (getRegisterValue(PC) + WORD_SIZE));
         execInstruction(instruction);
     }
 
     public void execInstruction(short instruction) {
+        observers.forEach(o -> o.beforeExecution(instruction));
         short instructionType = getBits(16, 4, instruction);
         if (instructionType == 0x0) {
             short specialInstructionType = getBits(12, 4, instruction);
@@ -352,9 +367,11 @@ public class MonTanaMiniComputer {
         } else {
             status = PERMANENT_ERROR;
         }
+        observers.forEach(o -> o.afterExecution(instruction));
     }
 
-    public short getBits(int start, int totalBits, short instruction) {
+    // TODO move to BinaryUtils?
+    public static short getBits(int start, int totalBits, short instruction) {
         if (totalBits <= 0) {
             return 0;
         }
@@ -369,11 +386,11 @@ public class MonTanaMiniComputer {
         return (short) (returnValue & mask);
     }
 
-    private void fetchCurrentInstruction() {
+    public void fetchCurrentInstruction() {
         short pc = getRegisterValue(PC);
         short instruction = fetchWordFromMemory(pc);
         setRegisterValue(IR, instruction);
-        setRegisterValue(PC, (short) (getRegisterValue(PC) + WORD_SIZE));
+        observers.forEach(o -> o.instructionFetched(instruction));
     }
 
     public short fetchWordFromMemory(int address) {
@@ -397,10 +414,18 @@ public class MonTanaMiniComputer {
 
     public void writeByteToMemory(int address, byte value) {
         memory[address] = value;
+        observers.forEach(o -> o.memoryUpdated(address, value));
+        if (address >= FRAME_BUFF_START) {
+            observers.forEach(o -> o.displayUpdated(address, value));
+        }
     }
 
     public void setRegisterValue(int register, int value) {
+        if (Short.MAX_VALUE < value || value < Short.MIN_VALUE) {
+            // TODO mark as overflow
+        }
         registerFile[register] = (short) value;
+        observers.forEach(o -> o.registerUpdated(register, value));
     }
 
     public short getRegisterValue(int register) {
@@ -433,6 +458,24 @@ public class MonTanaMiniComputer {
 
     public Iterable<Integer> getMemoryAddresses() {
         return () -> IntStream.range(0, MEMORY_SIZE).iterator();
+    }
+
+    public void addObserver(MTMCObserver observer) {
+        observers.add(observer);
+    }
+
+    public void removeObserver(MTMCObserver observer) {
+        observers.remove(observer);
+    }
+
+    public void resetFrameBuffer() {
+        for (int i = MonTanaMiniComputer.FRAME_BUFF_START; i < memory.length; i++) {
+            memory[i] = 0;
+        }
+    }
+
+    public void pause() {
+        status = READY;
     }
 
     public enum ComputerStatus {

@@ -4,8 +4,6 @@ import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.asm.AssemblyResult;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.Callable;
-
 import static edu.montana.cs.mtmc.emulator.Registers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +19,7 @@ public class EndToEndTests {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.load(result.code(), result.data());
         computer.run();
-        assertEquals(2, computer.getRegister(T0));
+        assertEquals(2, computer.getRegisterValue(T0));
     }
 
     @Test

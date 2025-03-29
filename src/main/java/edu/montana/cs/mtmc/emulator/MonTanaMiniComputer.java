@@ -32,9 +32,9 @@ public class MonTanaMiniComputer {
     public void initMemory() {
         registerFile = new short[19];
         memory = new byte[MEMORY_SIZE];
-        registerFile[SP] = FRAME_BUFF_START; // default the stack pointer to the top of normal memory
-        registerFile[ZERO] = 0;
-        registerFile[ONE] = 1;
+        setRegisterValue(SP, (short) FRAME_BUFF_START);  // default the stack pointer to the top of normal memory
+        setRegisterValue(ZERO, 0);
+        setRegisterValue(ONE,  1);
     }
 
     public void load(byte[] code, byte[] data) {
@@ -43,14 +43,14 @@ public class MonTanaMiniComputer {
 
         int codeBoundary = code.length;
         System.arraycopy(code, 0, memory, 0, codeBoundary);
-        setRegister(CB, codeBoundary - 1);
+        setRegisterValue(CB, codeBoundary - 1);
 
         int dataBoundary = codeBoundary + data.length;
         System.arraycopy(data, 0, memory, codeBoundary, data.length);
-        setRegister(DB, dataBoundary - 1);
+        setRegisterValue(DB, dataBoundary - 1);
 
         // base pointer starts just past the end of the data boundary
-        setRegister(BP, dataBoundary);
+        setRegisterValue(BP, dataBoundary);
 
         // reset computer status
         status = READY;
@@ -72,8 +72,9 @@ public class MonTanaMiniComputer {
     }
 
     public void fetchAndExecute() {
-        fetchInstruction();
-        execInstruction(registerFile[IR]);
+        fetchCurrentInstruction();
+        short instruction = getRegisterValue(IR);
+        execInstruction(instruction);
     }
 
     public void execInstruction(short instruction) {
@@ -86,7 +87,8 @@ public class MonTanaMiniComputer {
                 // move
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = registerFile[sourceReg]; // move value
+                short value = getRegisterValue(sourceReg);
+                setRegisterValue(targetReg, value);
             } else if(specialInstructionType == 0xF && getBits(8, 8, instruction) == 0xFF) {
                 // no op
             } else {
@@ -99,79 +101,79 @@ public class MonTanaMiniComputer {
                 // add
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] + registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) + getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x1) {
                 // sub
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] - registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) - getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x2) {
                 // mul
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] * registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) * getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x3) {
                 // div
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] / registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) / getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x4) {
                 // mod
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] % registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) % getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x5) {
                 // and
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] & registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) & getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x6) {
                 // or
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] | registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) | getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x7) {
                 // xor
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] ^ registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) ^ getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x8) {
                 // shift left
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] << registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) << getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x9) {
                 // shift right
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] >>> registerFile[sourceReg]);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) >>> getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0xA) {
                 // eq
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] == registerFile[sourceReg] ? 1 : 0);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) == getRegisterValue(sourceReg) ? 1 : 0);
             } else if(aluInstructionType == 0xB) {
                 // lt
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] < registerFile[sourceReg] ? 1 : 0);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) < getRegisterValue(sourceReg) ? 1 : 0);
             } else if(aluInstructionType == 0xC) {
                 // lte
                 short targetReg = getBits(8, 4, instruction);
                 short sourceReg = getBits(4, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] <= registerFile[sourceReg] ? 1 : 0);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) <= getRegisterValue(sourceReg) ? 1 : 0);
             } else if(aluInstructionType == 0xD) {
                 // bitwise not
                 short targetReg = getBits(8, 4, instruction);
-                registerFile[targetReg] = (short) ~registerFile[targetReg];
+                setRegisterValue(targetReg, (short) ~getRegisterValue(targetReg));
             } else if(aluInstructionType == 0xE) {
                 // logical not
                 short targetReg = getBits(8, 4, instruction);
-                registerFile[targetReg] = (short) (registerFile[targetReg] == 0 ? 1 : 0);
+                setRegisterValue(targetReg, getRegisterValue(targetReg) == 0 ? 1 : 0);
             } else if(aluInstructionType == 0xF) {
                 // negate
                 short targetReg = getBits(8, 4, instruction);
-                registerFile[targetReg] = (short) -registerFile[targetReg];
+                setRegisterValue(targetReg, (short) -getRegisterValue(targetReg));
             }
         } else if (instructionType == 0x2) {
             short stackInstructionType = getBits(12, 4, instruction);
@@ -180,125 +182,125 @@ public class MonTanaMiniComputer {
                 // push
                 short sourceRegister = getBits(8, 4, instruction);
                 // decrement the stack pointer
-                registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
+                setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
                 // write the value out to the location
-                writeWord(registerFile[stackReg], registerFile[sourceRegister]);
+                writeWordToMemory(getRegisterValue(stackReg), getRegisterValue(sourceRegister));
             } if(stackInstructionType == 0x1) {
                 // pop
                 short targetRegister = getBits(8, 4, instruction);
                 // save the value into the location
-                registerFile[targetRegister] = fetchWord(registerFile[stackReg]);
+                setRegisterValue(targetRegister, fetchWordFromMemory(getRegisterValue(stackReg)));
                 // increment the stack pointer
-                registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
             } if(stackInstructionType == 0x3) {
                 short stackOpSubType = getBits(8, 4, instruction);
                 if(stackOpSubType == 0x0) {
                     // dup
-                    short currentVal = fetchWord(registerFile[stackReg]);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
-                    writeWord(registerFile[stackReg], currentVal);
+                    short currentVal = fetchWordFromMemory(getRegisterValue(stackReg));
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), currentVal);
                 } else if(stackOpSubType == 0x1) {
                     // swap
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], nextDown);
-                    writeWord(registerFile[stackReg] + WORD_SIZE, currentTop);
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown);
+                    writeWordToMemory(getRegisterValue(stackReg) + WORD_SIZE, currentTop);
                 } else if(stackOpSubType == 0x2) {
                     // drop
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
                 } else if(stackOpSubType == 0x3) {
                     // over
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
                     // write the value out to the location
-                    writeWord(registerFile[stackReg], nextDown);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown);
                 } else if(stackOpSubType == 0x4) {
                     // rot
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    short thirdDown = fetchWord(registerFile[stackReg] + 2 * WORD_SIZE);
-                    writeWord(registerFile[stackReg], thirdDown);
-                    writeWord(registerFile[stackReg] + WORD_SIZE, currentTop);
-                    writeWord(registerFile[stackReg] + 2 * WORD_SIZE, nextDown);
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    short thirdDown = fetchWordFromMemory(getRegisterValue(stackReg) + 2 * WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), thirdDown);
+                    writeWordToMemory(getRegisterValue(stackReg) + WORD_SIZE, currentTop);
+                    writeWordToMemory(getRegisterValue(stackReg) + 2 * WORD_SIZE, nextDown);
                 } else {
                     // TODO error state
                 }
             } if(stackInstructionType == 0x4) {
                 short aluOp = getBits(8, 4, instruction);
                 if (aluOp == 0x0) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown + currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown + currentTop);
                 } else if (aluOp == 0x1) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown - currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown - currentTop);
                 } else if (aluOp == 0x2) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown * currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown * currentTop);
                 } else if (aluOp == 0x3) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown / currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown / currentTop);
                 } else if (aluOp == 0x4) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown % currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown % currentTop);
                 } else if (aluOp == 0x5) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown & currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown & currentTop);
                 } else if (aluOp == 0x6) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown | currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown | currentTop);
                 } else if (aluOp == 0x7) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown ^ currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown ^ currentTop);
                 } else if (aluOp == 0x8) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown << currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown << currentTop);
                 } else if (aluOp == 0x9) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown >>> currentTop));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown >>> currentTop);
                 } else if (aluOp == 0xA) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown == currentTop ? 1 : 0));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown == currentTop ? 1 : 0);
                 } else if (aluOp == 0xB) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown < currentTop ? 1 : 0));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown < currentTop ? 1 : 0);
                 } else if (aluOp == 0xC) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    short nextDown = fetchWord(registerFile[stackReg] + WORD_SIZE);
-                    registerFile[stackReg] = (short) (registerFile[stackReg] + WORD_SIZE);
-                    writeWord(registerFile[stackReg], (short) (nextDown <= currentTop ? 1 : 0));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), nextDown <= currentTop ? 1 : 0);
                 } else if (aluOp == 0xD) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    writeWord(registerFile[stackReg], (short) ~currentTop);
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    writeWordToMemory(getRegisterValue(stackReg), ~currentTop);
                 } else if (aluOp == 0xE) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    writeWord(registerFile[stackReg], (short) (currentTop == 0 ? 1 : 0));
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    writeWordToMemory(getRegisterValue(stackReg), currentTop == 0 ? 1 : 0));
                 } else if (aluOp == 0xF) {
-                    short currentTop = fetchWord(registerFile[stackReg]);
-                    writeWord(registerFile[stackReg], (short) -currentTop);
+                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                    writeWordToMemory(getRegisterValue(stackReg), -currentTop);
                 }
             } else {
                 // todo error state
@@ -307,45 +309,45 @@ public class MonTanaMiniComputer {
             // pushi
             short stackReg = getBits(12, 4, instruction);
             short value = getBits(8, 8, instruction);
-            registerFile[stackReg] = (short) (registerFile[stackReg] - WORD_SIZE);
-            writeWord(registerFile[stackReg], value);
+            setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE));
+            writeWordToMemory(getRegisterValue(stackReg), value);
         } else if (0x4 <= instructionType && instructionType <= 0x7) {
             // load store
             short loadStoreType = getBits(14, 2, instruction);
             short targetRegister = getBits(12, 4, instruction);
             short addressRegister = getBits(8, 4, instruction);
             short offsetRegister = getBits(4, 4, instruction);
-            int targetAddress = registerFile[addressRegister] + registerFile[offsetRegister];
+            int targetAddress = getRegisterValue(addressRegister) + getRegisterValue(offsetRegister);
             if(loadStoreType == 0x0) {
-                registerFile[targetRegister] = fetchWord(targetAddress);
+                setRegisterValue(targetRegister, fetchWordFromMemory(targetAddress));
             } else if (loadStoreType == 0x1) {
-                registerFile[targetRegister] = fetchByte(targetAddress);
+                setRegisterValue(targetRegister, fetchByteFromMemory(targetAddress));
             } else if (loadStoreType == 0x2) {
-                writeWord(targetAddress, registerFile[targetRegister]);
+                writeWordToMemory(targetAddress, getRegisterValue(targetRegister));
             } else if (loadStoreType == 0x3) {
-                writeByte(targetAddress, (byte) registerFile[targetRegister]);
+                writeByteToMemory(targetAddress, (byte) getRegisterValue(targetRegister));
             }
         } else if (0x8 <= instructionType && instructionType <= 0xB) {
             // load immediate
             short targetRegister = getBits(14, 2, instruction);
             short value = getBits(12, 12, instruction);
-            registerFile[targetRegister] = value;
+            setRegisterValue(targetRegister, value);
         } else if (0xC <= instructionType && instructionType <= 0xF) {
             short jumpType = getBits(14, 2, instruction);
             short location = getBits(12, 12, instruction);
             if(jumpType == 0x0) {
-                registerFile[PC] = location;
+                setRegisterValue(PC, location);
             } else if (jumpType == 0x1) {
-                if (registerFile[T0] == 0) {
-                    registerFile[PC] = location;
+                if (getRegisterValue(T0) == 0) {
+                    setRegisterValue(PC, location);
                 }
             } else if (jumpType == 0x2) {
-                if (registerFile[T0] != 0) {
-                    registerFile[PC] = location;
+                if (getRegisterValue(T0) != 0) {
+                    setRegisterValue(PC, location);
                 }
             } else if (jumpType == 0x3) {
-                registerFile[RA] = registerFile[PC];
-                registerFile[PC] = location;
+                setRegisterValue(RA, getRegisterValue(PC));
+                setRegisterValue(PC, location);
             }
         } else {
             status = PERMANENT_ERROR;
@@ -367,41 +369,41 @@ public class MonTanaMiniComputer {
         return (short) (returnValue & mask);
     }
 
-    private void fetchInstruction() {
-        short pc = registerFile[PC];
-        short instruction = fetchWord(pc);
-        registerFile[IR] = instruction;
-        registerFile[PC] = (short) (registerFile[PC] + WORD_SIZE);
+    private void fetchCurrentInstruction() {
+        short pc = getRegisterValue(PC);
+        short instruction = fetchWordFromMemory(pc);
+        setRegisterValue(IR, instruction);
+        setRegisterValue(PC, (short) (getRegisterValue(PC) + WORD_SIZE));
     }
 
-    public short fetchWord(int address) {
-        short upperByte = fetchByte(address);
-        byte lowerByte = fetchByte(address + 1);
+    public short fetchWordFromMemory(int address) {
+        short upperByte = fetchByteFromMemory(address);
+        byte lowerByte = fetchByteFromMemory(address + 1);
         short value = (short) (upperByte << 8);
         int i = value | Byte.toUnsignedInt(lowerByte);
         value = (short) i;
         return value;
     }
 
-    public byte fetchByte(int address) {
+    public byte fetchByteFromMemory(int address) {
         return memory[address];
     }
 
-    public void writeWord(int address, short value) {
+    public void writeWordToMemory(int address, int value) {
         byte i = (byte) (value >>> 8);
-        writeByte(address, i);
-        writeByte(address + 1, (byte) (value & 0b11111111));
+        writeByteToMemory(address, i);
+        writeByteToMemory(address + 1, (byte) (value & 0b11111111));
     }
 
-    public void writeByte(int address, byte value) {
+    public void writeByteToMemory(int address, byte value) {
         memory[address] = value;
     }
 
-    public void setRegister(int register, int value) {
+    public void setRegisterValue(int register, int value) {
         registerFile[register] = (short) value;
     }
 
-    public short getRegister(int register) {
+    public short getRegisterValue(int register) {
         return registerFile[register];
     }
 
@@ -413,7 +415,7 @@ public class MonTanaMiniComputer {
         return console;
     }
 
-    public byte[] getBytes(int address, int length) {
+    public byte[] getBytesFromMemory(int address, int length) {
         return Arrays.copyOfRange(memory, address, address + length);
     }
 

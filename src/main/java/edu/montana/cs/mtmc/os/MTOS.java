@@ -1,6 +1,5 @@
 package edu.montana.cs.mtmc.os;
 
-import edu.montana.cs.mtmc.asm.instructions.MiscInstruction;
 import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.os.shell.Shell;
 import kotlin.text.Charsets;
@@ -25,40 +24,40 @@ public class MTOS {
         } else if (syscallNumber == SysCalls.getValue("rint")) {
             // rint
             short val = computer.getConsole().readInt();
-            computer.setRegister(RV, val);
+            computer.setRegisterValue(RV, val);
         } else if (syscallNumber == SysCalls.getValue("wint")) {
             // wint
-            short value = computer.getRegister(A0);
+            short value = computer.getRegisterValue(A0);
             computer.getConsole().writeInt(value);
         } else if (syscallNumber == SysCalls.getValue("rstr")) {
             // rstr
-            short pointer = computer.getRegister(A0);
-            short maxLen = computer.getRegister(A1);
+            short pointer = computer.getRegisterValue(A0);
+            short maxLen = computer.getRegisterValue(A1);
             String string = computer.getConsole().readString();
             byte[] bytes = string.getBytes(Charsets.US_ASCII);
             int bytesToRead = Math.min(bytes.length, maxLen);
             for (int i = 0; i < bytesToRead; i++) {
                 byte aByte = bytes[i];
-                computer.writeByte(pointer + i, aByte);
+                computer.writeByteToMemory(pointer + i, aByte);
             }
-            computer.setRegister(RV, bytesToRead);
+            computer.setRegisterValue(RV, bytesToRead);
         } else if (syscallNumber == SysCalls.getValue("wstr")) {
             // wstr
-            short pointer = computer.getRegister(A0);
+            short pointer = computer.getRegisterValue(A0);
             short length = 0;
-            while (computer.fetchByte(pointer + length) != 0) {
+            while (computer.fetchByteFromMemory(pointer + length) != 0) {
                 length++;
             }
             String outputString = new String(computer.getMemory(), pointer, length, Charsets.US_ASCII);
             computer.getConsole().print(outputString);
         } else if (syscallNumber == SysCalls.getValue("rnd")) {
             // rnd
-            short low = computer.getRegister(A0);
-            short high = computer.getRegister(A1);
-            computer.setRegister(RV, random.nextInt(low, high + 1));
+            short low = computer.getRegisterValue(A0);
+            short high = computer.getRegisterValue(A1);
+            computer.setRegisterValue(RV, random.nextInt(low, high + 1));
         } else if (syscallNumber == SysCalls.getValue("sleep")) {
             // sleep
-            short millis = computer.getRegister(A0);
+            short millis = computer.getRegisterValue(A0);
             try {
                 Thread.sleep(millis);
             } catch (InterruptedException e) {
@@ -72,21 +71,21 @@ public class MTOS {
             }
         } else if (syscallNumber == SysCalls.getValue("fbstat")) {
             // fbstat
-            short x = computer.getRegister(A0);
-            short y = computer.getRegister(A1);
+            short x = computer.getRegisterValue(A0);
+            short y = computer.getRegisterValue(A1);
             short val = computer.getDisplay().getValueFor(x, y);
-            computer.setRegister(RV, val);
+            computer.setRegisterValue(RV, val);
         } else if (syscallNumber == SysCalls.getValue("fbset")) {
             // fbset
-            short x = computer.getRegister(A0);
-            short y = computer.getRegister(A1);
-            short color = computer.getRegister(A3);
+            short x = computer.getRegisterValue(A0);
+            short y = computer.getRegisterValue(A1);
+            short color = computer.getRegisterValue(A3);
             computer.getDisplay().setValueFor(x, y, color);
         } else if (syscallNumber == SysCalls.getValue("fbline")) {
-            short startX = computer.getRegister(A0);
-            short startY = computer.getRegister(A1);
-            short endX = computer.getRegister(A2);
-            short endY = computer.getRegister(A3);
+            short startX = computer.getRegisterValue(A0);
+            short startY = computer.getRegisterValue(A1);
+            short endX = computer.getRegisterValue(A2);
+            short endY = computer.getRegisterValue(A3);
             computer.getDisplay().drawLine(startX, startY, endX, endY);
         }
     }

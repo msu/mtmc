@@ -20,7 +20,7 @@ public class SetCommand extends ShellCommand {
             if (value == null) usageException();
             int reg = Registers.toInteger(register.stringValue());
             if (reg >= 0) {
-                computer.setRegister(reg, value.intValue());
+                computer.setRegisterValue(reg, value.intValue());
             } else {
                 throw new IllegalArgumentException("Bad register: " + register.stringValue());
             }
@@ -28,13 +28,13 @@ public class SetCommand extends ShellCommand {
             MTMCToken value = tokens.matchAndConsume(INTEGER, HEX, BINARY, STRING);
             if (value == null) usageException();
             if (value.type() == INTEGER || value.type() == BINARY || value.type() == HEX) {
-                computer.writeWord(memLocation.intValue(), value.intValue().shortValue());
+                computer.writeWordToMemory(memLocation.intValue(), value.intValue().shortValue());
             } else {
                 byte[] bytes = value.stringValue().getBytes();
                 Integer start = memLocation.intValue();
                 for (int i = 0; i < bytes.length; i++) {
                     byte aByte = bytes[i];
-                    computer.writeByte(start + i, aByte);
+                    computer.writeByteToMemory(start + i, aByte);
                 }
             }
         }

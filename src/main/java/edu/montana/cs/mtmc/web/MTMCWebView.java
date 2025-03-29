@@ -27,7 +27,7 @@ public class MTMCWebView {
     }
 
     public String blinken(int bit, int register) {
-        short value = computer.getRegister(register);
+        short value = computer.getRegisterValue(register);
         int mask = 0b1 << bit;
         value = (short) (value & mask);
         if (value == 0) {
@@ -78,7 +78,7 @@ public class MTMCWebView {
 
     private short getRegisterValue(String reg) {
         Integer index = Registers.toInteger(reg);
-        short register = computer.getRegister(index);
+        short register = computer.getRegisterValue(index);
         return register;
     }
 
@@ -86,15 +86,15 @@ public class MTMCWebView {
     public String classFor(int address) {
         if (address >= MonTanaMiniComputer.FRAME_BUFF_START) {
             return "frameBuffer";
-        } else if (address >= computer.getRegister(Registers.SP)) {
+        } else if (address >= computer.getRegisterValue(Registers.SP)) {
             return "stack";
-        } else if (address == computer.getRegister(Registers.PC)) {
+        } else if (address == computer.getRegisterValue(Registers.PC)) {
             return "currentInst";
-        } else if (address <= computer.getRegister(Registers.CB)) {
+        } else if (address <= computer.getRegisterValue(Registers.CB)) {
             return "code";
-        } else if (address <= computer.getRegister(Registers.DB)) {
+        } else if (address <= computer.getRegisterValue(Registers.DB)) {
             return "data";
-        } else if (address <= computer.getRegister(Registers.BP)) {
+        } else if (address <= computer.getRegisterValue(Registers.BP)) {
             return "heap";
         } else {
             return "";
@@ -103,16 +103,16 @@ public class MTMCWebView {
 
     public String displayValue(int address) {
         if (memoryFormat == DisplayFormat.HEX) {
-            byte byteVal = computer.fetchByte(address);
+            byte byteVal = computer.fetchByteFromMemory(address);
             return String.format("%02X ", byteVal);
         } else if (memoryFormat == DisplayFormat.DEC) {
             if (address % 2 == 1) {
-                return "" + computer.fetchWord(address - 1);
+                return "" + computer.fetchWordFromMemory(address - 1);
             } else {
                 return "";
             }
         } else {
-            byte value = computer.fetchByte(address);
+            byte value = computer.fetchByteFromMemory(address);
             return new String(new byte[]{value});
         }
     }

@@ -297,7 +297,7 @@ public class MonTanaMiniComputer {
                     writeWordToMemory(getRegisterValue(stackReg), ~currentTop);
                 } else if (aluOp == 0xE) {
                     short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    writeWordToMemory(getRegisterValue(stackReg), currentTop == 0 ? 1 : 0));
+                    writeWordToMemory(getRegisterValue(stackReg), currentTop == 0 ? 1 : 0);
                 } else if (aluOp == 0xF) {
                     short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
                     writeWordToMemory(getRegisterValue(stackReg), -currentTop);
@@ -309,7 +309,7 @@ public class MonTanaMiniComputer {
             // pushi
             short stackReg = getBits(12, 4, instruction);
             short value = getBits(8, 8, instruction);
-            setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE));
+            setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
             writeWordToMemory(getRegisterValue(stackReg), value);
         } else if (0x4 <= instructionType && instructionType <= 0x7) {
             // load store

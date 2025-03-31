@@ -1,0 +1,76 @@
+package mtmc.asm.instructions;
+
+import mtmc.asm.ASMElement;
+import mtmc.asm.Assembler;
+import mtmc.tokenizer.MTMCToken;
+
+public abstract class Instruction extends ASMElement {
+
+    private final InstructionType type;
+    private final MTMCToken instructionToken;
+
+    public static boolean isInstruction(String cmd) {
+        return InstructionType.fromString(cmd) != null;
+    }
+
+    public MTMCToken getInstructionToken() {
+        return instructionToken;
+    }
+
+    public void validateLabel(Assembler assembler) {
+        // default does nothing
+    }
+
+    public Instruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+        super(label);
+        this.type = type;
+        this.instructionToken = instructionToken;
+    }
+
+    public void addError(String error) {
+        addError(instructionToken, error);
+    }
+
+    public InstructionType getType() {
+        return type;
+    }
+
+    public abstract void genCode(byte[] output, Assembler assembler);
+
+    @Override
+    public int getSizeInBytes() {
+        return 2;
+    }
+
+    public static String disassembleInstruction(short instruction) {
+        String misc = MiscInstruction.disassemble(instruction);
+        if (misc != null) {
+            return misc;
+        }
+        String aluOp = ALUInstruction.disassemble(instruction);
+        if (aluOp != null) {
+            return aluOp;
+        }
+        String stack = StackInstruction.disassemble(instruction);
+        if (stack != null) {
+            return stack;
+        }
+        String stackImmediate = StackImmediateInstruction.disassemble(instruction);
+        if (stackImmediate != null) {
+            return stackImmediate;
+        }
+        String li = LoadInstruction.disassemble(instruction);
+        if (li != null) {
+            return li;
+        }
+        String ldi = LoadImmediateInstruction.disassemble(instruction);
+        if (ldi != null) {
+            return ldi;
+        }
+        String jump = JumpInstruction.disassemble(instruction);
+        if (jump != null) {
+            return jump;
+        }
+        return "<unknown>";
+    }
+}

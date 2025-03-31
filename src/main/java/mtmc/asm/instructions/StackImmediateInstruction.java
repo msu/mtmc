@@ -8,14 +8,22 @@ import static mtmc.util.BinaryUtils.getBits;
 
 public class StackImmediateInstruction extends Instruction {
 
-    public StackImmediateInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
-        super(type, label, instructionToken);
-    }
-
     public static final int MAX = (2 << 8) - 1;
 
     private MTMCToken stackRegisterToken;
     private MTMCToken valueToken;
+
+    public StackImmediateInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+        super(type, label, instructionToken);
+    }
+
+    public void setStackRegister(MTMCToken stackRegister) {
+        this.stackRegisterToken = stackRegister;
+    }
+
+    public void setValue(MTMCToken valueToken) {
+        this.valueToken = valueToken;
+    }
 
     @Override
     public void genCode(byte[] output, Assembler assembler) {
@@ -26,14 +34,6 @@ public class StackImmediateInstruction extends Instruction {
         int value = valueToken.intValue();
         output[getLocation()] = (byte) (0b0011_0000 | stackReg);
         output[getLocation() + 1] = (byte) value;
-    }
-
-    public void setStackRegister(MTMCToken stackRegister) {
-        this.stackRegisterToken = stackRegister;
-    }
-
-    public void setValue(MTMCToken valueToken) {
-        this.valueToken = valueToken;
     }
 
     public static String disassemble(short instruction) {

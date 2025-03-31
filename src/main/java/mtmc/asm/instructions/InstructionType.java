@@ -3,43 +3,43 @@ package mtmc.asm.instructions;
 import static mtmc.asm.instructions.InstructionType.InstructionClass.*;
 
 public enum InstructionType {
-    SYS("sys", MISC),
-    MV("mv", MISC),
-    NOOP("noop", MISC),
-    ADD("add", ALU),
-    SUB("sub", ALU),
-    MUL("mul", ALU),
-    DIV("div", ALU),
-    MOD("mod", ALU),
-    AND("and", ALU),
-    OR("or", ALU),
-    XOR("xor", ALU),
-    SHL("shl", ALU),
-    SHR("shr", ALU),
-    EQ("eq", ALU),
-    LT("lt", ALU),
-    LTEQ("lteq", ALU),
-    BNOT("bnot", ALU),
-    NOT("not", ALU),
-    NEG("neg", ALU),
-    PUSH("push", STACK),
-    POP("pop", STACK),
-    DUP("dup", STACK),
-    SWAP("swap", STACK),
-    DROP("drop", STACK),
-    OVER("over", STACK),
-    ROT("rot", STACK),
-    SOP("sop", STACK),
-    PUSHI("pushi", STACK_IMMEDIATE),
-    LW("lw", LOAD),
-    LB("lb", LOAD),
-    SW("sw", LOAD),
-    SB("sb", LOAD),
-    LDI("ldi", LOAD_IMMEDIATE),
-    J("j", JUMP),
-    JZ("jz", JUMP),
-    JNZ("jnz", JUMP),
-    JAL("jal", JUMP),
+    SYS(MISC),
+    MV(MISC),
+    NOOP(MISC),
+    ADD(ALU),
+    SUB(ALU),
+    MUL(ALU),
+    DIV(ALU),
+    MOD(ALU),
+    AND(ALU),
+    OR(ALU),
+    XOR(ALU),
+    SHL(ALU),
+    SHR(ALU),
+    EQ(ALU),
+    LT(ALU),
+    LTEQ(ALU),
+    BNOT(ALU),
+    NOT(ALU),
+    NEG(ALU),
+    PUSH(STACK),
+    POP(STACK),
+    DUP(STACK),
+    SWAP(STACK),
+    DROP(STACK),
+    OVER(STACK),
+    ROT(STACK),
+    SOP(STACK),
+    PUSHI(STACK_IMMEDIATE),
+    LW(LOAD),
+    LB(LOAD),
+    SW(LOAD),
+    SB(LOAD),
+    LDI(LOAD_IMMEDIATE),
+    J(JUMP),
+    JZ(JUMP),
+    JNZ(JUMP),
+    JAL(JUMP),
     ;
 
     public enum InstructionClass {
@@ -55,8 +55,8 @@ public enum InstructionType {
     private final String string;
     private final InstructionClass instructionClass;
 
-    InstructionType(String string, InstructionClass instructionClass) {
-        this.string = string;
+    InstructionType(InstructionClass instructionClass) {
+        this.string = this.name().toLowerCase();
         this.instructionClass = instructionClass;
     }
 
@@ -65,11 +65,6 @@ public enum InstructionType {
     }
 
     public static InstructionType fromString(String string) {
-        for (InstructionType type : InstructionType.values()) {
-            if (type.string.equals(string)) {
-                return type;
-            }
-        }
-        return null;
+        return InstructionType.valueOf(string.toUpperCase());
     }
 }

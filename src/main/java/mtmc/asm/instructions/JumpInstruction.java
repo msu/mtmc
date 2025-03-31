@@ -8,24 +8,15 @@ import static mtmc.util.BinaryUtils.getBits;
 public class JumpInstruction extends Instruction {
 
     public static final int MAX = (1 << 12) - 1;
+
     private MTMCToken addressToken;
 
     public JumpInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 
-    @Override
-    public void genCode(byte[] output, Assembler assembler) {
-        int opcode = 0;
-        switch (getType()) {
-            case J -> opcode = 0b1100;
-            case JZ -> opcode = 0b1101;
-            case JNZ -> opcode = 0b1110;
-            case JAL -> opcode = 0b1111;
-        }
-        int address = resolveTargetAddress(assembler);
-        output[getLocation()] = (byte) (opcode << 4 | address >>> 8);
-        output[getLocation()+1] = (byte) address;
+    public void setAddressToken(MTMCToken addressToken) {
+        this.addressToken = addressToken;
     }
 
     @Override
@@ -45,8 +36,18 @@ public class JumpInstruction extends Instruction {
         }
     }
 
-    public void setAddressToken(MTMCToken addressToken) {
-        this.addressToken = addressToken;
+    @Override
+    public void genCode(byte[] output, Assembler assembler) {
+        int opcode = 0;
+        switch (getType()) {
+            case J -> opcode = 0b1100;
+            case JZ -> opcode = 0b1101;
+            case JNZ -> opcode = 0b1110;
+            case JAL -> opcode = 0b1111;
+        }
+        int address = resolveTargetAddress(assembler);
+        output[getLocation()] = (byte) (opcode << 4 | address >>> 8);
+        output[getLocation()+1] = (byte) address;
     }
 
     public static String disassemble(short instruction) {

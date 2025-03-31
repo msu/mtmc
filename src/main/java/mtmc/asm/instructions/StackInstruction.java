@@ -8,13 +8,25 @@ import static mtmc.util.BinaryUtils.getBits;
 
 public class StackInstruction extends Instruction {
 
+    private MTMCToken targetToken;
+    private MTMCToken stackRegisterToken;
+    private MTMCToken aluOpToken;
+
     public StackInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 
-    private MTMCToken targetToken;
-    private MTMCToken stackRegisterToken;
-    private MTMCToken aluOpToken;
+    public void setTarget(MTMCToken target) {
+        this.targetToken = target;
+    }
+
+    public void setStackRegister(MTMCToken stackRegister) {
+        this.stackRegisterToken = stackRegister;
+    }
+
+    public void setALUOp(MTMCToken aluOp) {
+        this.aluOpToken = aluOp;
+    }
 
     @Override
     public void genCode(byte[] output, Assembler assembler) {
@@ -31,7 +43,7 @@ public class StackInstruction extends Instruction {
             output[getLocation()] = 0b0010_0001;
             output[getLocation() + 1] = (byte) (target << 4 | stackReg);
         } else if (getType() == InstructionType.SOP) {
-            int aluOp = ALUInstruction.getALUOpcode(aluOpToken.stringValue());
+            int aluOp = ALUOp.toInteger(aluOpToken.stringValue());
             output[getLocation()] = 0b0010_0011;
             output[getLocation() + 1] = (byte) (aluOp << 4 | stackReg);
         } else {
@@ -47,18 +59,6 @@ public class StackInstruction extends Instruction {
             output[getLocation()] = 0b0010_0010;
             output[getLocation()] = (byte) (stackOp << 4 | stackReg);
         }
-    }
-
-    public void setTarget(MTMCToken target) {
-        this.targetToken = target;
-    }
-
-    public void setStackRegister(MTMCToken stackRegister) {
-        this.stackRegisterToken = stackRegister;
-    }
-
-    public void setALUOp(MTMCToken aluOp) {
-        this.aluOpToken = aluOp;
     }
 
     public static String disassemble(short instruction) {
@@ -92,7 +92,7 @@ public class StackInstruction extends Instruction {
             if (type == 3) {
                 short opcode = getBits(8, 4, instruction);
                 short stackReg = getBits(4, 4, instruction);
-                String op = ALUInstruction.getALUOp(opcode);
+                String op = ALUOp.fromInt(opcode);
                 return "sop " + op + " " + Register.fromInteger(stackReg);
             }
         }

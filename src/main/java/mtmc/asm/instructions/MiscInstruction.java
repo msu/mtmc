@@ -17,6 +17,18 @@ public class MiscInstruction extends Instruction {
         super(type, label, instructionToken);
     }
 
+    public void setSyscallType(MTMCToken type) {
+        this.syscallType = type;
+    }
+
+    public void setFrom(MTMCToken fromRegister) {
+        this.fromRegister = fromRegister;
+    }
+
+    public void setTo(MTMCToken toRegister) {
+        this.toRegister = toRegister;
+    }
+
     @Override
     public void genCode(byte[] output, Assembler assembler) {
         if (getType() == InstructionType.SYS) {
@@ -31,19 +43,6 @@ public class MiscInstruction extends Instruction {
             output[getLocation()] = (byte) (0b0000_1111);
             output[getLocation() + 1] = (byte) (0b1111_1111);
         }
-    }
-
-
-    public void setSyscallType(MTMCToken type) {
-        this.syscallType = type;
-    }
-
-    public void setFrom(MTMCToken fromRegister) {
-        this.fromRegister = fromRegister;
-    }
-
-    public void setTo(MTMCToken toRegister) {
-        this.toRegister = toRegister;
     }
 
     public static String disassemble(short instruction) {

@@ -221,7 +221,7 @@ public class Assembler {
             instruction = miscInst;
         } else if (type.getInstructionClass() == ALU) {
             ALUInstruction aluInst = new ALUInstruction(type, labelToken, instructionToken);
-            if (aluInst.isBinary()) {
+            if (aluInst.isBinaryOp()) {
                 MTMCToken toRegister = requireWriteableRegister(tokens, aluInst);
                 aluInst.setTo(toRegister);
                 MTMCToken fromRegister = requireReadableRegister(tokens, aluInst);
@@ -344,7 +344,7 @@ public class Assembler {
             inst.addError("Syscall required");
         } else if (sysCallType.type() != IDENTIFIER) {
             inst.addError(sysCallType, "Syscall required");
-        } else if (!ALUInstruction.isALUInstruction(sysCallType.stringValue())) {
+        } else if (!ALUOp.isALUOp(sysCallType.stringValue())) {
             inst.addError(sysCallType, "Unknown alu operation : " + sysCallType.stringValue());
         }
         return sysCallType;

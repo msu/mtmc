@@ -27,6 +27,8 @@ public class Shell {
         COMMANDS.put("load", new LoadCommand());
         COMMANDS.put("step", new StepCommand());
         COMMANDS.put("run", new RunCommand());
+        COMMANDS.put("pause", new PauseCommand());
+        COMMANDS.put("speed", new SpeedCommand());
     }
 
     public static boolean isCommand(String cmd) {
@@ -59,7 +61,7 @@ public class Shell {
                         byte[] code = result.code();
                         for (int i = 0; i < code.length; i = i + 2) {
                             int instCodeUpper = code[i] << 8;
-                            byte instCodeLower = code[i + 1];
+                            int instCodeLower = code[i + 1] & 0xFF;
                             short inst = (short) (instCodeUpper | instCodeLower);
                             computer.execInstruction(inst);
                         }

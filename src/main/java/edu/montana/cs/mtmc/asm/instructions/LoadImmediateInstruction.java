@@ -4,9 +4,7 @@ import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
-import java.util.Map;
-
-import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.getBits;
+import static edu.montana.cs.mtmc.util.BinaryUtils.getBits;
 
 public class LoadImmediateInstruction extends Instruction {
 

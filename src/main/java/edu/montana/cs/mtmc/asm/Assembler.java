@@ -3,7 +3,7 @@ package edu.montana.cs.mtmc.asm;
 import edu.montana.cs.mtmc.asm.data.Data;
 import edu.montana.cs.mtmc.asm.instructions.*;
 import edu.montana.cs.mtmc.emulator.Registers;
-import edu.montana.cs.mtmc.os.SysCalls;
+import edu.montana.cs.mtmc.os.SysCall;
 import edu.montana.cs.mtmc.os.exec.Executable;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 import edu.montana.cs.mtmc.tokenizer.MTMCTokenizer;
@@ -332,7 +332,7 @@ public class Assembler {
             inst.addError("Syscall required");
         } else if (sysCallType.type() != IDENTIFIER) {
             inst.addError(sysCallType, "Syscall required");
-        } else if (!SysCalls.isSysCall(sysCallType.stringValue())) {
+        } else if (!SysCall.isSysCall(sysCallType.stringValue())) {
             inst.addError(sysCallType, "Unknown syscall : " + sysCallType.stringValue());
         }
         return sysCallType;

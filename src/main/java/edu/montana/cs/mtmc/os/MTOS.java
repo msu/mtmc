@@ -19,17 +19,17 @@ public class MTOS {
     }
 
     public void handleSysCall(short syscallNumber) {
-        if (syscallNumber == SysCalls.getValue("halt")) {
+        if (syscallNumber == SysCall.getValue("halt")) {
             computer.setStatus(MonTanaMiniComputer.ComputerStatus.HALTED);
-        } else if (syscallNumber == SysCalls.getValue("rint")) {
+        } else if (syscallNumber == SysCall.getValue("rint")) {
             // rint
             short val = computer.getConsole().readInt();
             computer.setRegisterValue(RV, val);
-        } else if (syscallNumber == SysCalls.getValue("wint")) {
+        } else if (syscallNumber == SysCall.getValue("wint")) {
             // wint
             short value = computer.getRegisterValue(A0);
             computer.getConsole().writeInt(value);
-        } else if (syscallNumber == SysCalls.getValue("rstr")) {
+        } else if (syscallNumber == SysCall.getValue("rstr")) {
             // rstr
             short pointer = computer.getRegisterValue(A0);
             short maxLen = computer.getRegisterValue(A1);
@@ -41,7 +41,7 @@ public class MTOS {
                 computer.writeByteToMemory(pointer + i, aByte);
             }
             computer.setRegisterValue(RV, bytesToRead);
-        } else if (syscallNumber == SysCalls.getValue("wstr")) {
+        } else if (syscallNumber == SysCall.getValue("wstr")) {
             // wstr
             short pointer = computer.getRegisterValue(A0);
             short length = 0;
@@ -50,12 +50,12 @@ public class MTOS {
             }
             String outputString = new String(computer.getMemory(), pointer, length, Charsets.US_ASCII);
             computer.getConsole().print(outputString);
-        } else if (syscallNumber == SysCalls.getValue("rnd")) {
+        } else if (syscallNumber == SysCall.getValue("rnd")) {
             // rnd
             short low = computer.getRegisterValue(A0);
             short high = computer.getRegisterValue(A1);
             computer.setRegisterValue(RV, random.nextInt(low, high + 1));
-        } else if (syscallNumber == SysCalls.getValue("sleep")) {
+        } else if (syscallNumber == SysCall.getValue("sleep")) {
             // sleep
             short millis = computer.getRegisterValue(A0);
             try {
@@ -63,22 +63,22 @@ public class MTOS {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        } else if (syscallNumber == SysCalls.getValue("fbreset")) {
+        } else if (syscallNumber == SysCall.getValue("fbreset")) {
             // fbreset
             computer.resetFrameBuffer();
-        } else if (syscallNumber == SysCalls.getValue("fbstat")) {
+        } else if (syscallNumber == SysCall.getValue("fbstat")) {
             // fbstat
             short x = computer.getRegisterValue(A0);
             short y = computer.getRegisterValue(A1);
             short val = computer.getDisplay().getValueFor(x, y);
             computer.setRegisterValue(RV, val);
-        } else if (syscallNumber == SysCalls.getValue("fbset")) {
+        } else if (syscallNumber == SysCall.getValue("fbset")) {
             // fbset
             short x = computer.getRegisterValue(A0);
             short y = computer.getRegisterValue(A1);
             short color = computer.getRegisterValue(A2);
             computer.getDisplay().setValueFor(x, y, color);
-        } else if (syscallNumber == SysCalls.getValue("fbline")) {
+        } else if (syscallNumber == SysCall.getValue("fbline")) {
             short startX = computer.getRegisterValue(A0);
             short startY = computer.getRegisterValue(A1);
             short endX = computer.getRegisterValue(A2);

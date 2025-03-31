@@ -39,7 +39,7 @@ public class WebServer {
         touchLogFile(computer);
         this.computer = computer;
         this.computerView = new MTMCWebView(computer);
-        this.templateEngine = new PebbleEngine.Builder().build();
+        this.templateEngine = new PebbleEngine.Builder().cacheActive(false).build();
         initRoutes();
         this.computer.addObserver(uiUpdater);
         uiUpdater.start();
@@ -79,6 +79,12 @@ public class WebServer {
                     String output = computer.getConsole().getOutput();
                     sendEvent("console-output", output);
                     sendEvent("console-ready", "{}");
+                    ctx.html("");
+                })
+                .post("/speed", ctx -> {
+                    String speed = ctx.formParam("speed");
+                    int speedi = Integer.parseInt(speed);
+                    computer.setSpeed(speedi);
                     ctx.html("");
                 })
                 .post("/control/{action}", ctx -> {

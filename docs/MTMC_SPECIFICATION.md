@@ -184,12 +184,12 @@ will assume you want to use the `sp` register.
 |-------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
 | `push`      | `0010 0000 rrrr ssss` | Pushes the word value of `rrrr` onto the stack pointed at by `ssss`, `ssss` is decrement by 2 bytes and the value in `rrrr` is saved to that location | `push t0` (`sp` is implied)                |
 | `pop`       | `0010 0001 rrrr ssss` | Pops the word at the top of the stack pointed at by `ssss` into `rrrr`, `ssss` is incremented by 2 bytes.                                             | `pop ra, t4` (explicit stack pointer `t4`) |
-| `dup`       | `0010 0011 0000 ssss` | Duplicates the word at the top of the stack pointed to by `ssss`.                                                                                     | `dup`                                      |
-| `swap`      | `0010 0011 0001 ssss` | Swaps the two words at the top of the stack pointed to by `ssss`.                                                                                     | `swap`                                     |
-| `drop`      | `0010 0011 0010 ssss` | Drops the top word of the stack pointed to by `ssss`.                                                                                                 | `drop`                                     |
-| `over`      | `0010 0011 0011 ssss` | Copies the second word to the top of the stack pointed to by `ssss`.                                                                                  | `over`                                     |
-| `rot`       | `0010 0011 0100 ssss` | Rotates the third word to the top of the stack pointed to by `ssss`.                                                                                  | `rot`                                      |
-| `sop`       | `0010 0100 oooo ssss` | Applies the ALU operation `oooo` to the stack pointed at by the `ssss` register.                                                                      | `sop add`                                  |
+| `dup`       | `0010 0010 0000 ssss` | Duplicates the word at the top of the stack pointed to by `ssss`.                                                                                     | `dup`                                      |
+| `swap`      | `0010 0010 0001 ssss` | Swaps the two words at the top of the stack pointed to by `ssss`.                                                                                     | `swap`                                     |
+| `drop`      | `0010 0010 0010 ssss` | Drops the top word of the stack pointed to by `ssss`.                                                                                                 | `drop`                                     |
+| `over`      | `0010 0010 0011 ssss` | Copies the second word to the top of the stack pointed to by `ssss`.                                                                                  | `over`                                     |
+| `rot`       | `0010 0010 0100 ssss` | Rotates the third word to the top of the stack pointed to by `ssss`.                                                                                  | `rot`                                      |
+| `sop`       | `0010 0011 oooo ssss` | Applies the ALU operation `oooo` to the stack pointed at by the `ssss` register.                                                                      | `sop add`                                  |
 
 ### STACK IMMEDIATE
 
@@ -210,10 +210,10 @@ register by.
 
 | Instruction | Form                  | Description                                                                                        | Example       |
 |-------------|-----------------------|----------------------------------------------------------------------------------------------------|---------------|
-| `lw`        | `0100 rrrr ssss tttt` | Loads the word (16-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr` | `lw t0 fp t4` |
-| `lb`        | `0101 rrrr ssss tttt` | Loads the byte (8-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr`  | `lb t0 fp t4` |
-| `sw`        | `0110 rrrr ssss tttt` | Saves the word (16-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`    | `sw t0 fp t4` |
-| `sb`        | `0111 rrrr ssss tttt` | Saves the byte (8-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`     | `sw t0 fp t4` |
+| `lw`        | `0100 rrrr ssss tttt` | Loads the word (16-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr` | `lw t0 fp t3` |
+| `lb`        | `0101 rrrr ssss tttt` | Loads the byte (8-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr`  | `lb t0 fp t3` |
+| `sw`        | `0110 rrrr ssss tttt` | Saves the word (16-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`    | `sw t0 fp t3` |
+| `sb`        | `0111 rrrr ssss tttt` | Saves the byte (8-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`     | `sw t0 fp t3` |
 
 ### LOAD IMMEDIATE
 

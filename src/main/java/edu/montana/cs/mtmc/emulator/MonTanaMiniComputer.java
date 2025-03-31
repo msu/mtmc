@@ -1,6 +1,7 @@
 package edu.montana.cs.mtmc.emulator;
 
 import edu.montana.cs.mtmc.os.MTOS;
+import edu.montana.cs.mtmc.util.BinaryUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +30,7 @@ public class MonTanaMiniComputer {
 
     // listeners
     private List<MTMCObserver> observers = new ArrayList<>();
+    private int speed = 0;
 
     public MonTanaMiniComputer() {
         initMemory();
@@ -67,11 +69,23 @@ public class MonTanaMiniComputer {
     public void run() {
         status = EXECUTING;
         while (status == EXECUTING) {
+            long startTime = 0;
+            if (speed > 0) {
+                startTime = System.currentTimeMillis();
+            }
             fetchAndExecute();
-            try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+            if (speed > 0) {
+                int delay = 1000 / speed;
+                long endTime = System.currentTimeMillis();
+                long instructionTime = endTime - startTime;
+                long delta = delay - instructionTime;
+                if (delta > 0) {
+                    try {
+                        Thread.sleep(delta);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }
         }
     }
@@ -93,122 +107,122 @@ public class MonTanaMiniComputer {
 
     public void execInstruction(short instruction) {
         observers.forEach(o -> o.beforeExecution(instruction));
-        short instructionType = getBits(16, 4, instruction);
+        short instructionType = BinaryUtils.getBits(16, 4, instruction);
         if (instructionType == 0x0) {
-            short specialInstructionType = getBits(12, 4, instruction);
+            short specialInstructionType = BinaryUtils.getBits(12, 4, instruction);
             if(specialInstructionType == 0x0) {
-                os.handleSysCall(getBits(8, 8, instruction));
+                os.handleSysCall(BinaryUtils.getBits(8, 8, instruction));
             } else if(specialInstructionType == 0x1) {
                 // move
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 short value = getRegisterValue(sourceReg);
                 setRegisterValue(targetReg, value);
-            } else if(specialInstructionType == 0xF && getBits(8, 8, instruction) == 0xFF) {
+            } else if(specialInstructionType == 0xF && BinaryUtils.getBits(8, 8, instruction) == 0xFF) {
                 // no op
             } else {
                 // todo error state?
             }
         } else if (instructionType == 0x1) {
             // alu
-            short aluInstructionType = getBits(12, 4, instruction);
+            short aluInstructionType = BinaryUtils.getBits(12, 4, instruction);
             if(aluInstructionType == 0x0) {
                 // add
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) + getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x1) {
                 // sub
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) - getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x2) {
                 // mul
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) * getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x3) {
                 // div
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) / getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x4) {
                 // mod
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) % getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x5) {
                 // and
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) & getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x6) {
                 // or
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) | getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x7) {
                 // xor
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) ^ getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x8) {
                 // shift left
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) << getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0x9) {
                 // shift right
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) >>> getRegisterValue(sourceReg));
             } else if(aluInstructionType == 0xA) {
                 // eq
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) == getRegisterValue(sourceReg) ? 1 : 0);
             } else if(aluInstructionType == 0xB) {
                 // lt
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) < getRegisterValue(sourceReg) ? 1 : 0);
             } else if(aluInstructionType == 0xC) {
                 // lte
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
+                short sourceReg = BinaryUtils.getBits(4, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) <= getRegisterValue(sourceReg) ? 1 : 0);
             } else if(aluInstructionType == 0xD) {
                 // bitwise not
-                short targetReg = getBits(8, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
                 setRegisterValue(targetReg, (short) ~getRegisterValue(targetReg));
             } else if(aluInstructionType == 0xE) {
                 // logical not
-                short targetReg = getBits(8, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
                 setRegisterValue(targetReg, getRegisterValue(targetReg) == 0 ? 1 : 0);
             } else if(aluInstructionType == 0xF) {
                 // negate
-                short targetReg = getBits(8, 4, instruction);
+                short targetReg = BinaryUtils.getBits(8, 4, instruction);
                 setRegisterValue(targetReg, (short) -getRegisterValue(targetReg));
             }
         } else if (instructionType == 0x2) {
-            short stackInstructionType = getBits(12, 4, instruction);
-            short stackReg = getBits(4, 4, instruction);
+            short stackInstructionType = BinaryUtils.getBits(12, 4, instruction);
+            short stackReg = BinaryUtils.getBits(4, 4, instruction);
             if(stackInstructionType == 0x0) {
                 // push
-                short sourceRegister = getBits(8, 4, instruction);
+                short sourceRegister = BinaryUtils.getBits(8, 4, instruction);
                 // decrement the stack pointer
                 setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
                 // write the value out to the location
                 writeWordToMemory(getRegisterValue(stackReg), getRegisterValue(sourceRegister));
             } if(stackInstructionType == 0x1) {
                 // pop
-                short targetRegister = getBits(8, 4, instruction);
+                short targetRegister = BinaryUtils.getBits(8, 4, instruction);
                 // save the value into the location
                 setRegisterValue(targetRegister, fetchWordFromMemory(getRegisterValue(stackReg)));
                 // increment the stack pointer
                 setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-            } if(stackInstructionType == 0x3) {
-                short stackOpSubType = getBits(8, 4, instruction);
+            } if(stackInstructionType == 0x2) {
+                short stackOpSubType = BinaryUtils.getBits(8, 4, instruction);
                 if(stackOpSubType == 0x0) {
                     // dup
                     short currentVal = fetchWordFromMemory(getRegisterValue(stackReg));
@@ -240,8 +254,8 @@ public class MonTanaMiniComputer {
                 } else {
                     // TODO error state
                 }
-            } if(stackInstructionType == 0x4) {
-                short aluOp = getBits(8, 4, instruction);
+            } if(stackInstructionType == 0x3) {
+                short aluOp = BinaryUtils.getBits(8, 4, instruction);
                 if (aluOp == 0x0) {
                     short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
                     short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
@@ -322,16 +336,16 @@ public class MonTanaMiniComputer {
             }
         } else if (instructionType == 0x3) {
             // pushi
-            short stackReg = getBits(12, 4, instruction);
-            short value = getBits(8, 8, instruction);
+            short stackReg = BinaryUtils.getBits(12, 4, instruction);
+            short value = BinaryUtils.getBits(8, 8, instruction);
             setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
             writeWordToMemory(getRegisterValue(stackReg), value);
         } else if (0x4 <= instructionType && instructionType <= 0x7) {
             // load store
-            short loadStoreType = getBits(14, 2, instruction);
-            short targetRegister = getBits(12, 4, instruction);
-            short addressRegister = getBits(8, 4, instruction);
-            short offsetRegister = getBits(4, 4, instruction);
+            short loadStoreType = BinaryUtils.getBits(14, 2, instruction);
+            short targetRegister = BinaryUtils.getBits(12, 4, instruction);
+            short addressRegister = BinaryUtils.getBits(8, 4, instruction);
+            short offsetRegister = BinaryUtils.getBits(4, 4, instruction);
             int targetAddress = getRegisterValue(addressRegister) + getRegisterValue(offsetRegister);
             if(loadStoreType == 0x0) {
                 setRegisterValue(targetRegister, fetchWordFromMemory(targetAddress));
@@ -344,12 +358,12 @@ public class MonTanaMiniComputer {
             }
         } else if (0x8 <= instructionType && instructionType <= 0xB) {
             // load immediate
-            short targetRegister = getBits(14, 2, instruction);
-            short value = getBits(12, 12, instruction);
+            short targetRegister = BinaryUtils.getBits(14, 2, instruction);
+            short value = BinaryUtils.getBits(12, 12, instruction);
             setRegisterValue(targetRegister, value);
         } else if (0xC <= instructionType && instructionType <= 0xF) {
-            short jumpType = getBits(14, 2, instruction);
-            short location = getBits(12, 12, instruction);
+            short jumpType = BinaryUtils.getBits(14, 2, instruction);
+            short location = BinaryUtils.getBits(12, 12, instruction);
             if(jumpType == 0x0) {
                 setRegisterValue(PC, location);
             } else if (jumpType == 0x1) {
@@ -368,22 +382,6 @@ public class MonTanaMiniComputer {
             status = PERMANENT_ERROR;
         }
         observers.forEach(o -> o.afterExecution(instruction));
-    }
-
-    // TODO move to BinaryUtils?
-    public static short getBits(int start, int totalBits, short instruction) {
-        if (totalBits <= 0) {
-            return 0;
-        }
-        int returnValue = (instruction & 0xffff) >>> (start - totalBits);
-        int mask = 0;
-        int toShift = totalBits;
-        while(toShift > 0) {
-            toShift--;
-            mask = mask << 1;
-            mask = mask + 1;
-        }
-        return (short) (returnValue & mask);
     }
 
     public void fetchCurrentInstruction() {
@@ -478,6 +476,10 @@ public class MonTanaMiniComputer {
         status = READY;
     }
 
+    public void setSpeed(int speed) {
+        this.speed = speed;
+    }
+
     public enum ComputerStatus {
         READY,
         EXECUTING,
@@ -488,6 +490,7 @@ public class MonTanaMiniComputer {
 
     public static void main(String[] args) {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setSpeed(1); // default to 1hz
         computer.start();
     }
 }

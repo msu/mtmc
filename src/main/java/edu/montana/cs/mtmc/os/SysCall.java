@@ -1,8 +1,6 @@
 package edu.montana.cs.mtmc.os;
 
-import java.util.HashMap;
-
-public enum SysCalls {
+public enum SysCall {
     HALT(0x00),
     RINT(0x01),
     WINT(0x02),
@@ -20,7 +18,7 @@ public enum SysCalls {
 
     private final byte value;
 
-    SysCalls(int value) {
+    SysCall(int value) {
         this.value = (byte) value;
     }
 
@@ -39,5 +37,14 @@ public enum SysCalls {
 
     public static byte getValue(String call) {
         return valueOf(call.toUpperCase()).value;
+    }
+
+    public static String getString(byte syscallCode) {
+        for (SysCall o : SysCall.values()) {
+            if (o.getValue() == syscallCode) {
+                return o.name().toLowerCase();
+            }
+        }
+        return null;
     }
 }

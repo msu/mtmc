@@ -1,12 +1,8 @@
 package edu.montana.cs.mtmc.asm;
 
-import edu.montana.cs.mtmc.asm.instructions.MiscInstruction;
-import edu.montana.cs.mtmc.os.SysCalls;
-import org.jetbrains.annotations.NotNull;
+import edu.montana.cs.mtmc.os.SysCall;
+import edu.montana.cs.mtmc.util.BinaryUtils;
 import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,8 +17,8 @@ public class AssemblerTest {
 
     @Test
     public void sysCalls() {
-        SysCalls[] syscalls = SysCalls.values();
-        for (SysCalls sysCall : syscalls) {
+        SysCall[] syscalls = SysCall.values();
+        for (SysCall sysCall : syscalls) {
             Assembler assembler = new Assembler();
             byte value = sysCall.getValue();
             AssemblyResult result = assembler.assemble("sys " + sysCall);
@@ -174,7 +170,7 @@ public class AssemblerTest {
             }
             byte byteValue = bytes[offset + i];
             assertEquals(expected, byteValue, "The " + offset + i + " byte is wrong," +
-                    " expected " + toBinary(expected) + " but found " + toBinary(byteValue));
+                    " expected " + BinaryUtils.toBinary(expected) + " but found " + BinaryUtils.toBinary(byteValue));
         }
     }
 
@@ -182,23 +178,13 @@ public class AssemblerTest {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < bytes.length; i++) {
             byte aByte = bytes[i];
-            sb.append(toBinary(aByte));
+            sb.append(BinaryUtils.toBinary(aByte));
             if (i < bytes.length - 1) {
                 sb.append(", ");
             }
         }
         sb.append("]");
         return sb.toString();
-    }
-
-    @NotNull
-    private static String toBinary(byte aByte) {
-        String binaryString = Integer.toBinaryString(aByte);
-        String formatted = String.format("%8s", binaryString);
-        String zeroed = formatted.replaceAll(" ", "0");
-        String underScored = zeroed.replaceAll("....", "$0_");
-        String noTrailingUnderscore = underScored.substring(0, underScored.length() - 1);
-        return "0b" + noTrailingUnderscore;
     }
 
 

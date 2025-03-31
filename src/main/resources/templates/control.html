@@ -1,12 +1,20 @@
 <div class="panel" id="controls">
     <div>
         <div id="control-header">
-            <span>m</span><span>s</span><span>u</span> &nbsp;&nbsp;<i>MTMC-16</i>
+            <span>m</span><span>s</span><span>u</span> &nbsp;<i>MTMC-16</i>
         </div>
         <div id="control-secondary">
             Montana sTate Mini-Computer
         </div>
         <div id="control-buttons">
+            <label>
+                <select style="font-family: monospace;background-color: black;color: #ffcc00" name="speed" fx-action="/speed" fx-method="post" fx-swap="none">
+                    <option value="1">1 Hz</option>
+                    <option value="10">10 Hz</option>
+                    <option value="100">100 Hz</option>
+                    <option value="1000">1 Khz</option>
+                </select>
+            </label>
             <button fx-action="/control/pause" fx-method="post" fx-swap="none">
                 pause
             </button>

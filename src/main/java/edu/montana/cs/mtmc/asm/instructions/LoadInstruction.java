@@ -4,6 +4,8 @@ import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
+import static edu.montana.cs.mtmc.util.BinaryUtils.getBits;
+
 public class LoadInstruction extends Instruction {
 
     public LoadInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
@@ -44,4 +46,29 @@ public class LoadInstruction extends Instruction {
     public void setOffsetToken(MTMCToken offsetToken) {
         this.offsetToken = offsetToken;
     }
+
+    public static String disassemble(short instruction) {
+        if (getBits(16, 2, instruction) == 0b11) {
+            StringBuilder builder = new StringBuilder("ldi ");
+            short type = getBits(14, 2, instruction);
+            if (type == 0b00) {
+                builder.append("lw ");
+            } else if (type == 0b01) {
+                builder.append("lb ");
+            } else if (type == 0b10) {
+                builder.append("sw ");
+            } else if (type == 0b11) {
+                builder.append("sb ");
+            }
+            short srcDestReg = getBits(12, 4, instruction);
+            short addrReg = getBits(8, 4, instruction);
+            short offsetReg = getBits(4, 4, instruction);
+            builder.append(Registers.fromInteger(srcDestReg)).append(" ");
+            builder.append(Registers.fromInteger(addrReg)).append(" ");
+            builder.append(Registers.fromInteger(offsetReg));
+            return builder.toString();
+        }
+        return null;
+    }
+
 }

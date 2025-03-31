@@ -1,10 +1,9 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
 import edu.montana.cs.mtmc.asm.Assembler;
-import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
-import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.getBits;
+import static edu.montana.cs.mtmc.util.BinaryUtils.getBits;
 
 public class JumpInstruction extends Instruction {
 

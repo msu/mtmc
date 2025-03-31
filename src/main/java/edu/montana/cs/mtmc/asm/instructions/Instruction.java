@@ -48,9 +48,25 @@ public abstract class Instruction extends ASMElement {
     }
 
     public static String disassembleInstruction(short instruction) {
+        String misc = MiscInstruction.disassemble(instruction);
+        if (misc != null) {
+            return misc;
+        }
         String aluOp = ALUInstruction.disassemble(instruction);
         if (aluOp != null) {
             return aluOp;
+        }
+        String stack = StackInstruction.disassemble(instruction);
+        if (stack != null) {
+            return stack;
+        }
+        String stackImmediate = StackImmediateInstruction.disassemble(instruction);
+        if (stackImmediate != null) {
+            return stackImmediate;
+        }
+        String li = LoadInstruction.disassemble(instruction);
+        if (li != null) {
+            return li;
         }
         String ldi = LoadImmediateInstruction.disassemble(instruction);
         if (ldi != null) {

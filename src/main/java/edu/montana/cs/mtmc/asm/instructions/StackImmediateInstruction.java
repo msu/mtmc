@@ -4,6 +4,8 @@ import edu.montana.cs.mtmc.asm.Assembler;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
+import static edu.montana.cs.mtmc.util.BinaryUtils.getBits;
+
 public class StackImmediateInstruction extends Instruction {
 
     public StackImmediateInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
@@ -32,5 +34,14 @@ public class StackImmediateInstruction extends Instruction {
 
     public void setValue(MTMCToken valueToken) {
         this.valueToken = valueToken;
+    }
+
+    public static String disassemble(short instruction) {
+        if(getBits(16, 4, instruction) == 3) {
+            short stackreg = getBits(12, 4, instruction);
+            short value = getBits(8, 8, instruction);
+            return "pushi " + value + Registers.fromInteger(stackreg);
+        }
+        return null;
     }
 }

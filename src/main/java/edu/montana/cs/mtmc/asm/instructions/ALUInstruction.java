@@ -1,16 +1,14 @@
 package edu.montana.cs.mtmc.asm.instructions;
 
 import edu.montana.cs.mtmc.asm.Assembler;
-import edu.montana.cs.mtmc.emulator.MonTanaMiniComputer;
 import edu.montana.cs.mtmc.emulator.Registers;
 import edu.montana.cs.mtmc.tokenizer.MTMCToken;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import static edu.montana.cs.mtmc.emulator.MonTanaMiniComputer.getBits;
+import static edu.montana.cs.mtmc.util.BinaryUtils.getBits;
 
 public class ALUInstruction extends Instruction {
 
@@ -53,16 +51,22 @@ public class ALUInstruction extends Instruction {
         if (getBits(16, 4, instruction) == 1) {
             StringBuilder builder = new StringBuilder();
             short opCode = getBits(12, 4, instruction);
-            for (Map.Entry<String, Integer> entry : ALU_OPS.entrySet()) {
-                if (entry.getValue() == opCode) {
-                    builder.append(entry.getKey()).append(" ");
-                }
-            }
+            String op = getALUOp(opCode);
+            builder.append(op).append(" ");
             builder.append(Registers.fromInteger(getBits(8, 4, instruction))).append(" ");
             builder.append(Registers.fromInteger(getBits(4, 4, instruction))).append(" ");
             return builder.toString();
         }
         return null;
+    }
+
+    public static String getALUOp(short opCode) {
+        for (Map.Entry<String, Integer> entry : ALU_OPS.entrySet()) {
+            if (entry.getValue() == opCode) {
+                return entry.getKey();
+            }
+        }
+        return  null;
     }
 
     @Override

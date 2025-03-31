@@ -340,7 +340,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(SP, 100);
         computer.writeWordToMemory(100, (short) 10);
 
-        short duplicateInst = 0b0010_0011_0000_1011; // dup sp
+        short duplicateInst = 0b0010_0010_0000_1011; // dup sp
         computer.execInstruction(duplicateInst);
 
         assertEquals(98, computer.getRegisterValue(SP));
@@ -354,7 +354,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 10);
         computer.writeWordToMemory(98, (short) 20);
 
-        short swapIns = 0b0010_0011_0001_1011; // swap sp
+        short swapIns = 0b0010_0010_0001_1011; // swap sp
         computer.execInstruction(swapIns);
 
         assertEquals(98, computer.getRegisterValue(SP));
@@ -382,7 +382,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 10);
         computer.writeWordToMemory(98, (short) 20);
 
-        short overInst = 0b0010_0011_0011_1011; // over sp
+        short overInst = 0b0010_0010_0011_1011; // over sp
         computer.execInstruction(overInst);
 
         assertEquals(96, computer.getRegisterValue(SP));
@@ -399,7 +399,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(98, (short) 20);
         computer.writeWordToMemory(96, (short) 30);
 
-        short rotInst = 0b0010_0011_0100_1011; // over sp
+        short rotInst = 0b0010_0010_0100_1011; // over sp
         computer.execInstruction(rotInst);
 
         assertEquals(96, computer.getRegisterValue(SP));
@@ -415,7 +415,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 10);
         computer.writeWordToMemory(98, (short) 20);
 
-        short sopAddInst = 0b0010_0100_0000_1011; // sop add sp
+        short sopAddInst = 0b0010_0011_0000_1011; // sop add sp
         computer.execInstruction(sopAddInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -429,7 +429,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 20);
         computer.writeWordToMemory(98, (short) 10);
 
-        short sopSubInst = 0b0010_0100_0001_1011; // sop sub sp
+        short sopSubInst = 0b0010_0011_0001_1011; // sop sub sp
         computer.execInstruction(sopSubInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -443,7 +443,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 20);
         computer.writeWordToMemory(98, (short) 10);
 
-        short sopMulInst = 0b0010_0100_0010_1011; // sop mul sp
+        short sopMulInst = 0b0010_0011_0010_1011; // sop mul sp
         computer.execInstruction(sopMulInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -457,7 +457,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 20);
         computer.writeWordToMemory(98, (short) 10);
 
-        short sopDivInst = 0b0010_0100_0011_1011; // sop div sp
+        short sopDivInst = 0b0010_0011_0011_1011; // sop div sp
         computer.execInstruction(sopDivInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -471,7 +471,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 20);
         computer.writeWordToMemory(98, (short) 10);
 
-        short sopModInst = 0b0010_0100_0100_1011; // sop mod sp
+        short sopModInst = 0b0010_0011_0100_1011; // sop mod sp
         computer.execInstruction(sopModInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -485,7 +485,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 0b110);
         computer.writeWordToMemory(98, (short) 0b011);
 
-        short sopAndInst = 0b0010_0100_0101_1011; // sop and sp
+        short sopAndInst = 0b0010_0011_0101_1011; // sop and sp
         computer.execInstruction(sopAndInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -499,7 +499,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 0b100);
         computer.writeWordToMemory(98, (short) 0b001);
 
-        short sopOrInst = 0b0010_0100_0110_1011; // sop or sp
+        short sopOrInst = 0b0010_0011_0110_1011; // sop or sp
         computer.execInstruction(sopOrInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -513,7 +513,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 0b110);
         computer.writeWordToMemory(98, (short) 0b011);
 
-        short sopXorInst = 0b0010_0100_0111_1011; // sop xor sp
+        short sopXorInst = 0b0010_0011_0111_1011; // sop xor sp
         computer.execInstruction(sopXorInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -527,7 +527,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 0b110);
         computer.writeWordToMemory(98, (short) 1);
 
-        short sopShlInst = 0b0010_0100_1000_1011; // sop shl sp
+        short sopShlInst = 0b0010_0011_1000_1011; // sop shl sp
         computer.execInstruction(sopShlInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -541,7 +541,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 0b110);
         computer.writeWordToMemory(98, (short) 1);
 
-        short sopShrInst = 0b0010_0100_1001_1011; // sop shr sp
+        short sopShrInst = 0b0010_0011_1001_1011; // sop shr sp
         computer.execInstruction(sopShrInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -555,7 +555,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 1);
         computer.writeWordToMemory(98, (short) 1);
 
-        short sopEquInst = 0b0010_0100_1010_1011; // sop eq sp
+        short sopEquInst = 0b0010_0011_1010_1011; // sop eq sp
         computer.execInstruction(sopEquInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -569,7 +569,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 1);
         computer.writeWordToMemory(98, (short) 2);
 
-        short sopEquInst = 0b0010_0100_1010_1011; // sop eq sp
+        short sopEquInst = 0b0010_0011_1010_1011; // sop eq sp
         computer.execInstruction(sopEquInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -583,7 +583,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 10);
         computer.writeWordToMemory(98, (short) 20);
 
-        short sopLtInst = 0b0010_0100_1011_1011; // sop lt sp
+        short sopLtInst = 0b0010_0011_1011_1011; // sop lt sp
         computer.execInstruction(sopLtInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -597,7 +597,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 20);
         computer.writeWordToMemory(98, (short) 10);
 
-        short sopLtInst = 0b0010_0100_1011_1011; // sop lt sp
+        short sopLtInst = 0b0010_0011_1011_1011; // sop lt sp
         computer.execInstruction(sopLtInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -611,7 +611,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 10);
         computer.writeWordToMemory(98, (short) 20);
 
-        short sopLteInst = 0b0010_0100_1100_1011; // sop lte sp
+        short sopLteInst = 0b0010_0011_1100_1011; // sop lte sp
         computer.execInstruction(sopLteInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -625,7 +625,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(100, (short) 20);
         computer.writeWordToMemory(98, (short) 10);
 
-        short sopLteInst = 0b0010_0100_1100_1011; // sop lte sp
+        short sopLteInst = 0b0010_0011_1100_1011; // sop lte sp
         computer.execInstruction(sopLteInst);
 
         assertEquals(100, computer.getRegisterValue(SP));
@@ -638,7 +638,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(SP, 98);
         computer.writeWordToMemory(98, (short) 0b01010101);
 
-        short sopBnotInst = 0b0010_0100_1101_1011; // sop bnot sp
+        short sopBnotInst = 0b0010_0011_1101_1011; // sop bnot sp
         computer.execInstruction(sopBnotInst);
 
         assertEquals(98, computer.getRegisterValue(SP));
@@ -651,7 +651,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(SP, 98);
         computer.writeWordToMemory(98, (short) 1);
 
-        short sopNotInst = 0b0010_0100_1110_1011; // sop not sp
+        short sopNotInst = 0b0010_0011_1110_1011; // sop not sp
         computer.execInstruction(sopNotInst);
 
         assertEquals(98, computer.getRegisterValue(SP));
@@ -664,7 +664,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(SP, 98);
         computer.writeWordToMemory(98, (short) 0);
 
-        short sopNotInst = 0b0010_0100_1110_1011; // sop not sp
+        short sopNotInst = 0b0010_0011_1110_1011; // sop not sp
         computer.execInstruction(sopNotInst);
 
         assertEquals(98, computer.getRegisterValue(SP));
@@ -677,7 +677,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(SP, 98);
         computer.writeWordToMemory(98, (short) 10);
 
-        short sopNegInst = 0b0010_0100_1111_1011; // sop neg sp
+        short sopNegInst = 0b0010_0011_1111_1011; // sop neg sp
         computer.execInstruction(sopNegInst);
 
         assertEquals(98, computer.getRegisterValue(SP));

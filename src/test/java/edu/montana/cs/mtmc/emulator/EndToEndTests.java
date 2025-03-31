@@ -28,7 +28,7 @@ public class EndToEndTests {
         AssemblyResult result = assembler.assemble("""
                 .data
                 hello_world: "hello world"
-                .code
+                .text
                 ldi t0 hello_world
                 mv a0 t0
                 sys wstr

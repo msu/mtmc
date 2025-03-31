@@ -14,12 +14,16 @@ public class Data extends ASMElement {
 
     @Override
     public int getSizeInBytes() {
-        return value.length;
+        if (value == null) {
+            return 0;
+        } else {
+            return value.length;
+        }
     }
 
     public void genData(byte[] dataBytes, Assembler assembler) {
         int offset = getLocation() - assembler.getInstructionsSizeInBytes();
-        for (int i = 0; i < value.length; i++) {
+        for (int i = 0; i < getSizeInBytes(); i++) {
             byte dataByte = value[i];
             dataBytes[offset + i] = dataByte;
         }

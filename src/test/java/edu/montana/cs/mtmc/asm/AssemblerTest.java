@@ -80,7 +80,7 @@ public class AssemblerTest {
         AssemblyResult result = assembler.assemble("""
         sop add
         """);
-        assertBytesAtOffsetAre(result.code(), 0, 0b0010_0100, 0b0000_1011);
+        assertBytesAtOffsetAre(result.code(), 0, 0b0010_0011, 0b0000_1011);
     }
 
     @Test
@@ -89,7 +89,7 @@ public class AssemblerTest {
         AssemblyResult result = assembler.assemble("""
         sop sub t3
         """);
-        assertBytesAtOffsetAre(result.code(), 0, 0b0010_0100, 0b0001_0011);
+        assertBytesAtOffsetAre(result.code(), 0, 0b0010_0011, 0b0001_0011);
     }
 
     @Test

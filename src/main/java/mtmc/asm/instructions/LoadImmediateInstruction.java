@@ -1,7 +1,7 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
 import static mtmc.util.BinaryUtils.getBits;
@@ -19,7 +19,7 @@ public class LoadImmediateInstruction extends Instruction {
 
     @Override
     public void genCode(byte[] output, Assembler assembler) {
-        int reg = Registers.toInteger(tempRegisterToken.stringValue());
+        int reg = Register.toInteger(tempRegisterToken.stringValue());
         int value = resolveValue(assembler);
         output[getLocation()] = (byte) (0b1000_0000 | reg << 4 | value >>> 8);
         output[getLocation() + 1] = (byte) (value);
@@ -55,7 +55,7 @@ public class LoadImmediateInstruction extends Instruction {
         if (getBits(16, 2, instruction) == 0b10) {
             StringBuilder builder = new StringBuilder("ldi ");
             short reg = getBits(14, 2, instruction);
-            builder.append(Registers.fromInteger(reg)).append(" ");
+            builder.append(Register.fromInteger(reg)).append(" ");
             short val = getBits(12, 12, instruction);
             builder.append(val);
             return builder.toString();

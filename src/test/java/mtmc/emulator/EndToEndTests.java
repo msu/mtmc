@@ -4,7 +4,7 @@ import mtmc.asm.Assembler;
 import mtmc.asm.AssemblyResult;
 import org.junit.jupiter.api.Test;
 
-import static mtmc.emulator.Registers.*;
+import static mtmc.emulator.Register.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class EndToEndTests {

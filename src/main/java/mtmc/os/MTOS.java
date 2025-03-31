@@ -7,7 +7,7 @@ import kotlin.text.Charsets;
 import java.io.File;
 import java.util.Random;
 
-import static mtmc.emulator.Registers.*;
+import static mtmc.emulator.Register.*;
 
 public class MTOS {
 

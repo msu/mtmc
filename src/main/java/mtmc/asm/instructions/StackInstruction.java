@@ -1,7 +1,7 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
 import static mtmc.util.BinaryUtils.getBits;
@@ -18,16 +18,16 @@ public class StackInstruction extends Instruction {
 
     @Override
     public void genCode(byte[] output, Assembler assembler) {
-        int stackReg = Registers.SP;
+        int stackReg = Register.SP.ordinal();
         if(stackRegisterToken != null) {
-            stackReg = Registers.toInteger(stackRegisterToken.stringValue());
+            stackReg = Register.toInteger(stackRegisterToken.stringValue());
         }
         if (getType() == InstructionType.PUSH) {
-            int target = Registers.toInteger(targetToken.stringValue());
+            int target = Register.toInteger(targetToken.stringValue());
             output[getLocation()] = 0b0010_0000;
             output[getLocation() + 1] = (byte) (target << 4 | stackReg);
         } else if (getType() == InstructionType.POP) {
-            int target = Registers.toInteger(targetToken.stringValue());
+            int target = Register.toInteger(targetToken.stringValue());
             output[getLocation()] = 0b0010_0001;
             output[getLocation() + 1] = (byte) (target << 4 | stackReg);
         } else if (getType() == InstructionType.SOP) {
@@ -67,33 +67,33 @@ public class StackInstruction extends Instruction {
             if (type == 0) {
                 short sourceReg = getBits(8, 4, instruction);
                 short stackReg = getBits(4, 4, instruction);
-                return "push " + Registers.fromInteger(sourceReg) + " " + Registers.fromInteger(stackReg);
+                return "push " + Register.fromInteger(sourceReg) + " " + Register.fromInteger(stackReg);
             }
             if (type == 1) {
                 short destReg = getBits(8, 4, instruction);
                 short stackReg = getBits(4, 4, instruction);
-                return "pop " + Registers.fromInteger(destReg) + " " + Registers.fromInteger(stackReg);
+                return "pop " + Register.fromInteger(destReg) + " " + Register.fromInteger(stackReg);
             }
             if (type == 2) {
                 short opcode = getBits(8, 4, instruction);
                 short stackReg = getBits(4, 4, instruction);
                 if (opcode == 0) {
-                    return "dup " + Registers.fromInteger(stackReg);
+                    return "dup " + Register.fromInteger(stackReg);
                 } else if(opcode == 1) {
-                    return "swap " + Registers.fromInteger(stackReg);
+                    return "swap " + Register.fromInteger(stackReg);
                 } else if(opcode == 2) {
-                    return "drop " + Registers.fromInteger(stackReg);
+                    return "drop " + Register.fromInteger(stackReg);
                 } else if(opcode == 3) {
-                    return "over " + Registers.fromInteger(stackReg);
+                    return "over " + Register.fromInteger(stackReg);
                 } else if(opcode == 4) {
-                    return "rot " + Registers.fromInteger(stackReg);
+                    return "rot " + Register.fromInteger(stackReg);
                 }
             }
             if (type == 3) {
                 short opcode = getBits(8, 4, instruction);
                 short stackReg = getBits(4, 4, instruction);
                 String op = ALUInstruction.getALUOp(opcode);
-                return "sop " + op + " " + Registers.fromInteger(stackReg);
+                return "sop " + op + " " + Register.fromInteger(stackReg);
             }
         }
         return null;

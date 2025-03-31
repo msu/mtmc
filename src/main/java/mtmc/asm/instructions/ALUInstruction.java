@@ -1,7 +1,7 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
 import java.util.HashMap;
@@ -53,8 +53,8 @@ public class ALUInstruction extends Instruction {
             short opCode = getBits(12, 4, instruction);
             String op = getALUOp(opCode);
             builder.append(op).append(" ");
-            builder.append(Registers.fromInteger(getBits(8, 4, instruction))).append(" ");
-            builder.append(Registers.fromInteger(getBits(4, 4, instruction))).append(" ");
+            builder.append(Register.fromInteger(getBits(8, 4, instruction))).append(" ");
+            builder.append(Register.fromInteger(getBits(4, 4, instruction))).append(" ");
             return builder.toString();
         }
         return null;
@@ -72,10 +72,10 @@ public class ALUInstruction extends Instruction {
     @Override
     public void genCode(byte[] output, Assembler assembler) {
         int opCode = getALUOpcode(getInstructionToken().stringValue());
-        int to = Registers.toInteger(toToken.stringValue());
+        int to = Register.toInteger(toToken.stringValue());
         int from = 0;
         if (fromToken != null) {
-            from = Registers.toInteger(fromToken.stringValue());
+            from = Register.toInteger(fromToken.stringValue());
         }
         output[getLocation()] = (byte) (0b0001_0000 | opCode);
         output[getLocation() + 1] = (byte) (to << 4 | from);

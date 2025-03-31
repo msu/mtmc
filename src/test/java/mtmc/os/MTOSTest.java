@@ -5,7 +5,7 @@ import kotlin.text.Charsets;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static mtmc.emulator.Registers.*;
+import static mtmc.emulator.Register.*;
 
 public class MTOSTest {
 

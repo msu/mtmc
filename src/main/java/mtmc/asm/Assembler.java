@@ -2,7 +2,7 @@ package mtmc.asm;
 
 import mtmc.asm.data.Data;
 import mtmc.asm.instructions.*;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import mtmc.os.SysCall;
 import mtmc.os.exec.Executable;
 import mtmc.tokenizer.MTMCToken;
@@ -372,7 +372,7 @@ public class Assembler {
             instruction.addError("Register required");
         } else if (nextToken.type() != IDENTIFIER) {
             instruction.addError(nextToken, "Invalid Register : " + nextToken.stringValue());
-        } else if (!Registers.isWriteable(nextToken.stringValue())) {
+        } else if (!Register.isWriteable(nextToken.stringValue())) {
             instruction.addError(nextToken, "Register not writeable : " + nextToken.stringValue());
         }
         return nextToken;
@@ -384,7 +384,7 @@ public class Assembler {
             instruction.addError("Register required");
         } else if (nextToken.type() != IDENTIFIER) {
             instruction.addError(nextToken, "Invalid Register : " + nextToken.stringValue());
-        } else if (!Registers.isTempRegister(nextToken.stringValue())) {
+        } else if (!Register.isTempRegister(nextToken.stringValue())) {
             instruction.addError(nextToken, "Register not writeable : " + nextToken.stringValue());
         }
         return nextToken;
@@ -396,7 +396,7 @@ public class Assembler {
             instruction.addError("Register required");
         } else if (nextToken.type() != IDENTIFIER) {
             instruction.addError(nextToken, "Invalid Register : " + nextToken.stringValue());
-        } else if (!Registers.isReadable(nextToken.stringValue())) {
+        } else if (!Register.isReadable(nextToken.stringValue())) {
             instruction.addError(nextToken, "Register not readable : " + nextToken.stringValue());
         }
         return nextToken;

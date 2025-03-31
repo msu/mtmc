@@ -1,7 +1,7 @@
 package mtmc.os.shell.builtins;
 
 import mtmc.emulator.MonTanaMiniComputer;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import mtmc.os.shell.ShellCommand;
 import mtmc.tokenizer.MTMCToken;
 import mtmc.tokenizer.MTMCTokenizer;
@@ -18,7 +18,7 @@ public class SetCommand extends ShellCommand {
             if (register == null) usageException();
             MTMCToken value = tokens.matchAndConsume(INTEGER, HEX, BINARY);
             if (value == null) usageException();
-            int reg = Registers.toInteger(register.stringValue());
+            int reg = Register.toInteger(register.stringValue());
             if (reg >= 0) {
                 computer.setRegisterValue(reg, value.intValue());
             } else {

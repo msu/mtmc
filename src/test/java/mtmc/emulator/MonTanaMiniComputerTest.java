@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 
 import static mtmc.emulator.MonTanaMiniComputer.WORD_SIZE;
-import static mtmc.emulator.Registers.*;
+import static mtmc.emulator.Register.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MonTanaMiniComputerTest {

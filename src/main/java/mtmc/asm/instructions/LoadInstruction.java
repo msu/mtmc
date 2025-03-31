@@ -1,7 +1,7 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
 import static mtmc.util.BinaryUtils.getBits;
@@ -25,11 +25,11 @@ public class LoadInstruction extends Instruction {
             case SW -> opcode = 0b0110;
             case SB -> opcode = 0b0111;
         }
-        int target = Registers.toInteger(targetToken.stringValue());
-        int pointer = Registers.toInteger(pointerToken.stringValue());
-        int offset = Registers.ZERO;
+        int target = Register.toInteger(targetToken.stringValue());
+        int pointer = Register.toInteger(pointerToken.stringValue());
+        int offset = Register.ZERO.ordinal();
         if (offsetToken != null) {
-            offset = Registers.toInteger(offsetToken.stringValue());
+            offset = Register.toInteger(offsetToken.stringValue());
         }
         output[getLocation()] = (byte) (opcode << 4 | target);
         output[getLocation() + 1] = (byte) (pointer << 4 | offset);
@@ -63,9 +63,9 @@ public class LoadInstruction extends Instruction {
             short srcDestReg = getBits(12, 4, instruction);
             short addrReg = getBits(8, 4, instruction);
             short offsetReg = getBits(4, 4, instruction);
-            builder.append(Registers.fromInteger(srcDestReg)).append(" ");
-            builder.append(Registers.fromInteger(addrReg)).append(" ");
-            builder.append(Registers.fromInteger(offsetReg));
+            builder.append(Register.fromInteger(srcDestReg)).append(" ");
+            builder.append(Register.fromInteger(addrReg)).append(" ");
+            builder.append(Register.fromInteger(offsetReg));
             return builder.toString();
         }
         return null;

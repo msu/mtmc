@@ -1,7 +1,7 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
 import static mtmc.util.BinaryUtils.getBits;
@@ -19,9 +19,9 @@ public class StackImmediateInstruction extends Instruction {
 
     @Override
     public void genCode(byte[] output, Assembler assembler) {
-        int stackReg = Registers.SP;
+        int stackReg = Register.SP.ordinal();
         if(stackRegisterToken != null) {
-            stackReg = Registers.toInteger(stackRegisterToken.stringValue());
+            stackReg = Register.toInteger(stackRegisterToken.stringValue());
         }
         int value = valueToken.intValue();
         output[getLocation()] = (byte) (0b0011_0000 | stackReg);
@@ -40,7 +40,7 @@ public class StackImmediateInstruction extends Instruction {
         if(getBits(16, 4, instruction) == 3) {
             short stackreg = getBits(12, 4, instruction);
             short value = getBits(8, 8, instruction);
-            return "pushi " + value + Registers.fromInteger(stackreg);
+            return "pushi " + value + Register.fromInteger(stackreg);
         }
         return null;
     }

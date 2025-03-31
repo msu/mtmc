@@ -3,7 +3,7 @@ package mtmc.web;
 import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.MTMCDisplay;
 import mtmc.emulator.MonTanaMiniComputer;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import kotlin.text.Charsets;
 import org.jetbrains.annotations.NotNull;
 
@@ -77,7 +77,7 @@ public class MTMCWebView {
     }
 
     public String regBlinken(String reg) {
-        Integer regIndex = Registers.toInteger(reg);
+        Integer regIndex = Register.toInteger(reg);
         StringBuilder blinken = new StringBuilder();
         for (int i = 0; i < 16; i++) {
             blinken.append("<div class='blinken ");
@@ -92,7 +92,7 @@ public class MTMCWebView {
     }
 
     private short getRegisterValue(String reg) {
-        Integer index = Registers.toInteger(reg);
+        Integer index = Register.toInteger(reg);
         short register = computer.getRegisterValue(index);
         return register;
     }
@@ -101,15 +101,15 @@ public class MTMCWebView {
     public String classFor(int address) {
         if (address >= MonTanaMiniComputer.FRAME_BUFF_START) {
             return "frameBuffer";
-        } else if (address >= computer.getRegisterValue(Registers.SP)) {
+        } else if (address >= computer.getRegisterValue(Register.SP)) {
             return "stack";
-        } else if (address == computer.getRegisterValue(Registers.PC)) {
+        } else if (address == computer.getRegisterValue(Register.PC)) {
             return "currentInst";
-        } else if (address <= computer.getRegisterValue(Registers.CB)) {
+        } else if (address <= computer.getRegisterValue(Register.CB)) {
             return "code";
-        } else if (address <= computer.getRegisterValue(Registers.DB)) {
+        } else if (address <= computer.getRegisterValue(Register.DB)) {
             return "data";
-        } else if (address <= computer.getRegisterValue(Registers.BP)) {
+        } else if (address <= computer.getRegisterValue(Register.BP)) {
             return "heap";
         } else {
             return "";

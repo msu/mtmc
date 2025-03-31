@@ -1,7 +1,7 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
-import mtmc.emulator.Registers;
+import mtmc.emulator.Register;
 import mtmc.os.SysCall;
 import mtmc.tokenizer.MTMCToken;
 
@@ -23,8 +23,8 @@ public class MiscInstruction extends Instruction {
             output[getLocation()] = 0b0000_0000;
             output[getLocation() + 1] = SysCall.getValue(this.syscallType.stringValue());
         } else if (getType() == InstructionType.MV) {
-            int to = Registers.toInteger(toRegister.stringValue());
-            int from = Registers.toInteger(fromRegister.stringValue());
+            int to = Register.toInteger(toRegister.stringValue());
+            int from = Register.toInteger(fromRegister.stringValue());
             output[getLocation()] = 0b0000_0001;
             output[getLocation() + 1] = (byte) (to << 4 | from);
         } else if(getType() == InstructionType.NOOP) {
@@ -59,8 +59,8 @@ public class MiscInstruction extends Instruction {
                 StringBuilder builder = new StringBuilder("mv ");
                 short to = getBits(8, 4, instruction);
                 short from = getBits(4, 4, instruction);
-                builder.append(Registers.fromInteger(to)).append(" ");
-                builder.append(Registers.fromInteger(from)).append(" ");
+                builder.append(Register.fromInteger(to)).append(" ");
+                builder.append(Register.fromInteger(from)).append(" ");
                 return builder.toString();
             } else if (type == 15) {
                 return "noop";

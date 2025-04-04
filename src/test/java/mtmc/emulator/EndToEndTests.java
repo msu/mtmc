@@ -15,7 +15,7 @@ public class EndToEndTests {
         AssemblyResult result = assembler.assemble("""
                 mv t0 one
                 add t0 t0
-                sys halt
+                sys exit
                 """);
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.load(result.code(), result.data());
@@ -33,7 +33,7 @@ public class EndToEndTests {
                 ldi t0 hello_world
                 mv a0 t0
                 sys wstr
-                sys halt
+                sys exit
                 """);
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.load(result.code(), result.data());

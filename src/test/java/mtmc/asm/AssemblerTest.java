@@ -11,7 +11,7 @@ public class AssemblerTest {
     @Test
     public void bootstrapAssembly() {
         Assembler assembler = new Assembler();
-        AssemblyResult result = assembler.assemble("sys halt");
+        AssemblyResult result = assembler.assemble("sys exit");
         assertArrayEquals(new byte[]{0b0000_1111, 0b0000_0000}, result.code());
     }
 

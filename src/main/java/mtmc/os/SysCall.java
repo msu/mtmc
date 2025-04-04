@@ -1,7 +1,7 @@
 package mtmc.os;
 
 public enum SysCall {
-    HALT(0x00),
+    EXIT(0x00),
     RINT(0x01),
     WINT(0x02),
     RSTR(0x03),

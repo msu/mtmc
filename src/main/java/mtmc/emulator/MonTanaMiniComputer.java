@@ -498,7 +498,7 @@ public class MonTanaMiniComputer {
         READY,
         EXECUTING,
         PERMANENT_ERROR,
-        HALTED,
+        FINISHED,
         WAITING
     }
 

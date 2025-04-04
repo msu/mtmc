@@ -19,8 +19,8 @@ public class MTOS {
     }
 
     public void handleSysCall(short syscallNumber) {
-        if (syscallNumber == SysCall.getValue("halt")) {
-            computer.setStatus(MonTanaMiniComputer.ComputerStatus.HALTED);
+        if (syscallNumber == SysCall.getValue("exit")) {
+            computer.setStatus(MonTanaMiniComputer.ComputerStatus.FINISHED);
         } else if (syscallNumber == SysCall.getValue("rint")) {
             // rint
             short val = computer.getConsole().readInt();

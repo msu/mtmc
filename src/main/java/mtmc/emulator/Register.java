@@ -23,7 +23,8 @@ public enum Register {
     //=== non-user-facing registers
     IR, // instruction register
     CB, // code boundary
-    DB; // data boundary
+    DB, // data boundary
+    IO; // I/O register
 
     public static int toInteger(String reg) {
         return Register.valueOf(reg.toUpperCase()).ordinal();

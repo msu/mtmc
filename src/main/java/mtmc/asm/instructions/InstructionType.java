@@ -6,6 +6,7 @@ public enum InstructionType {
     SYS(MISC),
     MV(MISC),
     NOOP(MISC),
+    MASK(MISC),
     ADD(ALU),
     SUB(ALU),
     MUL(ALU),

@@ -16,11 +16,34 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(T0, 0);
         computer.setRegisterValue(T1, 10);
 
-        short moveInst = 0b0000_0001_0000_0001; // mv t0, t1
+        short moveInst = 0b0000_0000_0001_0000; // mv t0, t1
         computer.execInstruction(moveInst);
 
         assertEquals(10, computer.getRegisterValue(T0));
         assertEquals(10, computer.getRegisterValue(T1));
+    }
+
+    @Test
+    void testMoveAndShift() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegisterValue(T0, 0);
+        computer.setRegisterValue(T1, 8);
+
+        short moveInst = 0b0000_0000_0001_0001; // mv t0, t1
+        computer.execInstruction(moveInst);
+
+        assertEquals(4, computer.getRegisterValue(T0));
+        assertEquals(8, computer.getRegisterValue(T1));
+    }
+
+    @Test
+    void testMaskInstruction() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegisterValue(T0, 0b1111_1111);
+
+        short maskInst = 0b0000_1110_0001_0001; // mask 0b0001_0001
+        computer.execInstruction(maskInst);
+        assertEquals(0b0001_0001, computer.getRegisterValue(T0));
     }
 
     @Test
@@ -30,7 +53,7 @@ public class MonTanaMiniComputerTest {
         short[] originalRegisters = Arrays.copyOf(computer.registerFile, computer.registerFile.length);
         byte[] originalMemory = Arrays.copyOf(computer.memory, computer.memory.length);
 
-        short noop = 0b0000_1111_1111_1111; // no-op
+        short noop = 0b0000_0000_0000_0000; // no-op
         computer.execInstruction(noop);
 
         boolean registersEqual = Arrays.equals(originalRegisters, computer.registerFile);

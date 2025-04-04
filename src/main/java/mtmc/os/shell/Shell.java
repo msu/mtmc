@@ -22,8 +22,8 @@ public class Shell {
         COMMANDS.put("exit", new ExitCommand());
         COMMANDS.put("set", new SetCommand());
         COMMANDS.put("web", new WebCommand());
-        COMMANDS.put("display", new DisplayCommand());
-        COMMANDS.put("assemble", new AssembleCommand());
+        COMMANDS.put("disp", new DisplayCommand());
+        COMMANDS.put("asm", new AssembleCommand());
         COMMANDS.put("load", new LoadCommand());
         COMMANDS.put("step", new StepCommand());
         COMMANDS.put("run", new RunCommand());

@@ -1,6 +1,7 @@
 # MTMC - MonTana state Mini Computer
 
-The MonTana state Mini Computer is a small virtual computer intended to show how computation works.
+The MonTana state Mini Computer is a virtual computer intended to show how digital computation works in a fun and visual 
+way.
 
 ## Overall Architecture
 
@@ -14,10 +15,10 @@ The MonTana state Mini Computer is a small virtual computer intended to show how
   - 1536 words/3072 bytes free excluding frame buffer
 - 16 Registers (see below)
 - 64x64 2-bit green scale display
-  - `00` - #2a453b
-  - `01` - #365d48
-  - `10` - #577c44
-  - `11` - #7f860f
+  - `00` - #2a453b - black
+  - `01` - #365d48 - dark
+  - `10` - #577c44 - light
+  - `11` - #7f860f - white
 - Console for text input/output & commands
 - Operating System (MTOS)
 - Core data types are signed 16-bit integers & bytes
@@ -26,27 +27,35 @@ The MonTana state Mini Computer is a small virtual computer intended to show how
 
 The MTMC has a total of 16 user-facing register.  They are outlined below.
 
-| index | name   | description                                                           |
-|-------|--------|-----------------------------------------------------------------------|
-| 0     | `t0`   | temp register 0, holds temporary values, also tested for jumps        |
-| 1     | `t1`   | temp register 1, holds temporary values                               |
-| 2     | `t2`   | temp register 2, holds temporary values                               |
-| 3     | `t3`   | temp register 3, holds temporary values                               |
-| 4     | `a0`   | arg register 0, holds the first argument for a function call          |
-| 5     | `a1`   | arg register 1, holds the second argument for a function call         |
-| 6     | `a2`   | arg register 2, holds the third argument for a function call          |
-| 7     | `a3`   | arg register 3, holds the fourth argument for a function call         |
-| 8     | `rv`   | return value register, holds the return value for a function call     |
-| 9     | `ra`   | return address register, holds the return address for a function call |
-| 10    | `fp`   | frame pointer, points to the top of the current function frame        |
-| 11    | `sp`   | stack pointer, points to the bottom of the current function frame     |
-| 12    | `bp`   | break pointer, points to the top of the current heap space            |
-| 13    | `pc`   | program counter, points to the next instruction to execute            |
-| 14    | `zero` | a register that always holds the value zero                           |
-| 15    | `one`  | a register that always holds the value one                            |
+| index | name   | description                                                                      |
+|-------|--------|----------------------------------------------------------------------------------|
+| 0     | `t0`   | temp register 0 (aka "the accumulator") holds temporary values, tested for jumps |
+| 1     | `t1`   | temp register 1, holds temporary values                                          |
+| 2     | `t2`   | temp register 2, holds temporary values                                          |
+| 3     | `t3`   | temp register 3, holds temporary values                                          |
+| 4     | `a0`   | arg register 0, holds the first argument for a function call                     |
+| 5     | `a1`   | arg register 1, holds the second argument for a function call                    |
+| 6     | `a2`   | arg register 2, holds the third argument for a function call                     |
+| 7     | `a3`   | arg register 3, holds the fourth argument for a function call                    |
+| 8     | `rv`   | return value register, holds the return value for a function call                |
+| 9     | `ra`   | return address register, holds the return address for a function call            |
+| 10    | `fp`   | frame pointer, points to the top of the current function frame                   |
+| 11    | `sp`   | stack pointer, points to the bottom of the current function frame                |
+| 12    | `bp`   | break pointer, points to the top of the current heap space                       |
+| 13    | `pc`   | program counter, points to the next instruction to execute                       |
+| 14    | `zero` | a read-only register that always holds the value zero                            |
+| 15    | `one`  | a read-only register that always holds the value one                             |
 
-In addition to these registers, there is an instruction register `ir` that holds the current instruction and that drives
-the blinken-lighten of the computer.
+In addition to these registers, there are the following non-user facing registers:
+
+| name | description                                    |
+|------|------------------------------------------------|
+| `ir` | that holds the current instruction to execute  |
+| `cb` | a pointer to the boundary of the code segment  |
+| `db` | a pointer to the boundary of the data segment  |
+| `io` | the value of the latest non-console user input |
+
+These registers are managed by the underlying operating system.
 
 ## Instructions (16 bit)
 
@@ -68,33 +77,17 @@ Instruction types can be determined by looking at the four high-order bits (nibb
 
 ### MISC
 
-Misc (miscellaneous) instructions start with `0000`.  There are three such instructions:
+Misc (miscellaneous) instructions start with the nibble `0000`.  There are three such instructions:
 
-| Instruction | Form                  | Description                                                                                                              | Example    |
-|-------------|-----------------------|--------------------------------------------------------------------------------------------------------------------------|------------|
-| `sys`       | `0000 0000 vvvv vvvv` | Invokes a syscall in the OS, where the syscall is encoded in the last byte, `vvvv vvvv`.  See the table below for codes. | `sys exit` |
-| `mv`        | `0000 0001 rrrr ssss` | Moves the value in register `ssss` to `rrrr`                                                                             | `mv t0 t1` |
-| `noop`      | `0000 1111 1111 1111` | Does nothing, useful for labels in compiler generated code                                                               | `noop`     |
+| Instruction | Form                  | Description                                                               | Example            |
+|-------------|-----------------------|---------------------------------------------------------------------------|--------------------|
+| `move`      | `0000 rrrr ssss hhhh` | Moves the value in register `ssss` to `rrrr`, right shifting it by `hhhh` | `move t0 t1`       |
+| `mask`      | `0000 1110 vvvv vvvv` | Does a bitwise AND of `t0` with the given byte value `vvvv vvvv`          | `mask 0b0000_1111` |
+| `sys`       | `0000 1111 vvvv vvvv` | Issues syscall `vvvv vvvv`                                                | `sys wstr`         |
 
-#### System Codes
+Note that the `zero` and `one` registers are not writeable, so the `mask` and `sys` instructions do not conflict with `move`
 
-Here are the syscodes supported by MTOS
-
-| Syscall   | Hex    | Description                                                                                                                                           |
-|-----------|--------|:------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `exit`    | 0x0000 | Causes the current program to exit, exit code in `a0`                                                                                                 |
-| `rint`    | 0x0001 | Reads an int value from the console into `rv`                                                                                                         |
-| `wint`    | 0x0002 | Writes the int value in `a0` to the console                                                                                                           |
-| `rstr`    | 0x0003 | Reads a string into the memory location pointed to by `a0` of max length `a1` from the console.  The bytes read are left in `rv`.                     |
-| `wstr`    | 0x0004 | Writes a null terminated string to the console from the memory location pointed to by `a0`                                                            |
-| `rfile`   | 0x0005 | Reads a file into the memory location pointed to by `a0` of max length `a1` from the file whose name is in `a2`.  The bytes read are left in `rv`.    |
-| `wfile`   | 0x0006 | Writes the bytes from the memory location pointed to by `a0` of length `a1` into teh file whose name is in `a2`.                                      |
-| `rnd`     | 0x0007 | Puts a random number between `a0` and `a1` (inclusive) into `rv`                                                                                      |
-| `sleep`   | 0x0008 | Sleeps the system for the number of milliseconds found in `a0`                                                                                        |
-| `fbreset` | 0x0009 | Resets the frame buffer to all zeros                                                                                                                  |
-| `fbstat`  | 0x000A | Sets `rv` to the 2-bit value of the pixel location `a0`, `a1` (out of bounds pixels will always be 0)                                                 |
-| `fbset`   | 0x000B | Sets the 2-bit value of the pixel location `a0`, `a1`, to the value found in `a3` (values may be 0, 1, 2 or 3, all other values will be treated as 0) |
-| `error`   | 0x000F | Aborts the current program execution with an error message, `a0` is a pointer to the error message                                                    |
+The instruction `0000 0000 0000 0000` is `mv t0 t0 0`, which does nothing and is aliased as `noop`
 
 ### ALU 
  
@@ -142,7 +135,7 @@ The second nibble of the instruction determines the ALU operation.  Here is a ta
 | `mul`     | `2` | `0010` |
 | `div`     | `3` | `0011` |
 | `mod`     | `4` | `0100` |
-| `and`     | `6` | `0101` |
+| `and`     | `5` | `0101` |
 | `or`      | `6` | `0110` |
 | `xor`     | `7` | `0111` |
 | `shl`     | `8` | `1000` |
@@ -210,21 +203,21 @@ register by.
 
 | Instruction | Form                  | Description                                                                                        | Example       |
 |-------------|-----------------------|----------------------------------------------------------------------------------------------------|---------------|
-| `lw`        | `0100 rrrr ssss tttt` | Loads the word (16-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr` | `lw t0 fp t3` |
-| `lb`        | `0101 rrrr ssss tttt` | Loads the byte (8-bit) value at the address in `ssss`, offset by the value in `tttt`, into `rrrr`  | `lb t0 fp t3` |
-| `sw`        | `0110 rrrr ssss tttt` | Saves the word (16-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`    | `sw t0 fp t3` |
-| `sb`        | `0111 rrrr ssss tttt` | Saves the byte (8-bit) value in `rrrr` to the address in `ssss`, offset by the value in `tttt`     | `sw t0 fp t3` |
+| `lw`        | `0100 rrrr aaaa oooo` | Loads the word (16-bit) value at the address in `aaaa`, offset by the value in `oooo`, into `rrrr` | `lw t0 fp t3` |
+| `lb`        | `0101 rrrr aaaa oooo` | Loads the byte (8-bit) value at the address in `aaaa`, offset by the value in `oooo`, into `rrrr`  | `lb t0 fp t3` |
+| `sw`        | `0110 rrrr aaaa oooo` | Saves the word (16-bit) value in `rrrr` to the address in `aaaa`, offset by the value in `oooo`    | `sw t0 fp t3` |
+| `sb`        | `0111 rrrr aaaa oooo` | Saves the byte (8-bit) value in `rrrr` to the address in `aaaa`, offset by the value in `oooo`     | `sw t0 fp t3` |
 
 ### LOAD IMMEDIATE
 
 The "load immediate" instruction starts with the two bits `10`, followed by two bits that specify one of the temporary
-registers.  After this come 12 bits that specify a signed value to be loaded into the temp register specified.  If you
+registers.  After this come 12 bits that specify an unsigned value to be loaded into the temp register specified.  If you
 want to load an immediate value into a non-temp register you must load it first into a temp register and then move it to
 another register.
 
-| Instruction | Form                  | Description                                                    | Example      |
-|-------------|-----------------------|----------------------------------------------------------------|--------------|
-| `ldi`       | `10rr vvvv vvvv vvvv` | Puts the signed value `vvvv vvvv vvvv` into temp register `rr` | `ldi t0 22`  |
+| Instruction | Form                  | Description                                             | Example     |
+|-------------|-----------------------|---------------------------------------------------------|-------------|
+| `ldi`       | `10rr vvvv vvvv vvvv` | Puts the value `vvvv vvvv vvvv` into temp register `rr` | `ldi t0 22` |
 
 ### JUMPS
 
@@ -237,16 +230,84 @@ The Jump & Link (`jal`) instruction is used to implement function calls.  It set
 the program counter to the address encoded in the lower three bytes of the instruction, while setting the `ra`
 register to the address of the instruction after itself.
 
-| Instruction | Form                  | Description                                                      | Example                                    |
-|-------------|-----------------------|------------------------------------------------------------------|--------------------------------------------|
-| `j`         | `1100 vvvv vvvv vvvv` | Jumps unconditionally to the location `vvvv vvvv vvvv`           | `jump loop`                                |
-| `jz`        | `1101 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` is 0              | `jz end`                                   |
-| `jnz`       | `1110 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` not 0             | `jnz end`                                  |
+| Instruction | Form                  | Description                                                                                       | Example                                    |
+|-------------|-----------------------|---------------------------------------------------------------------------------------------------|--------------------------------------------|
+| `j`         | `1100 vvvv vvvv vvvv` | Jumps unconditionally to the location `vvvv vvvv vvvv`                                            | `jump loop`                                |
+| `jz`        | `1101 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` is 0                                               | `jz end`                                   |
+| `jnz`       | `1110 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `t0` not 0                                              | `jnz end`                                  |
 | `jal`       | `1111 vvvv vvvv vvvv` | Sets `ra` to the address of the next instruction (`pc` + 1) and sets the `pc` to `vvvv vvvv vvvv` | `jal square` (jump to function `square()`) |
 
-## MTMC Calling Convention
 
-* t0-fp caller saved
-* sp    callee saved
-* args passed in `a0`-`a3`, additional args on stack in reverse order
+
+## MTMC Calling Conventions
+
+* t0-ra:     caller saved
+* fp, sp:    callee saved
+* parameters passed in `a0`-`a3`, additional parameters on stack, last parameter lowest
+* `ra` should be saved on the stack below any other values but above any additional parameters
 * return value placed in `rv`
+
+## MTMC IO
+
+The MTMC has two forms of input/output: console and interactive
+
+Console I/O is done via the text console attached to the machine.  String and integer values can be read and written
+using system calls.
+
+Interactive I/O is done via the screen, with the input event left in the user-invisible `io` register.  This register
+can be accessed via the `io` syscall.  This call can either be blocking or non-blocking.  If the `a0` register is set to
+`1`, the call will block, otherwise it will not block.
+
+Calling the `io` syscall returns the current value of `io` in `rv` and clears `io`.
+
+The value in `io` is a 16-bit value split in the following manner:
+
+`xxxx xxyy yyyy eeee`
+
+The first six bits indicate the x position of the event, if any.
+
+The next six bits indicate the y position of the event, if any.
+
+The final nibble of the value indicate what event occurred, with the following values:
+
+| Name       | Hex | binary | Description                                  |
+|------------|-----|--------|----------------------------------------------|
+| `none`     | `0` | `0000` | no event has occurred since the last read    |
+| `up`       | `1` | `0001` | the up arrow key was pressed                 |
+| `right`    | `2` | `0010` | the right arrow key was pressed              |
+| `down`     | `3` | `0011` | the down arrow key was pressed               |
+| `left`     | `4` | `0100` | the left arrow key was pressed               |
+| `space`    | `5` | `0101` | the space bar was pressed                    |
+| `a`        | `6` | `0110` | the a key was pressed                        |
+| `s`        | `7` | `0111` | the s key was pressed                        |
+| `d`        | `8` | `1000` | the d key was pressed                        |
+| `f`        | `9` | `1001` | the f key was pressed                        |
+| `esc`      | `A` | `1010` | the escape key was pressed                   |
+| `down`     | `B` | `1011` | the mouse was pressed down (but not clicked) |
+| `up`       | `C` | `1100` | the mouse was released                       |
+| `move`     | `D` | `1101` | the mouse was moved                          |
+| `click`    | `E` | `1110` | the mouse was clicked                        |
+| `dblclick` | `F` | `1111` | the mouse was double clicked                 |
+
+#### System Codes
+
+Here are the syscodes supported by MTOS - WORK IN PROGRESS
+
+| Syscall   | Hex  | Description                                                                                                                                           |
+|-----------|------|:------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `rint`    | 0x00 | Reads an int value from the console into `rv`                                                                                                         |
+| `wint`    | 0x01 | Writes the int value in `a0` to the console                                                                                                           |
+| `rstr`    | 0x02 | Reads a string into the memory location pointed to by `a0` of max length `a1` from the console.  The bytes read are left in `rv`.                     |
+| `wstr`    | 0x03 | Writes a null terminated string to the console from the memory location pointed to by `a0`                                                            |
+| `rfile`   | 0x04 | Reads a file into the memory location pointed to by `a0` of max length `a1` from the file whose name is in `a2`.  The bytes read are left in `rv`.    |
+| `wfile`   | 0x05 | Writes the bytes from the memory location pointed to by `a0` of length `a1` into teh file whose name is in `a2`.                                      |
+| `rnd`     | 0x06 | Puts a random number between `a0` and `a1` (inclusive) into `rv`                                                                                      |
+| `sleep`   | 0x07 | Sleeps the system for the number of milliseconds found in `a0`                                                                                        |
+| `fbreset` | 0x11 | Resets the frame buffer to all zeros                                                                                                                  |
+| `fbstat`  | 0x12 | Sets `rv` to the 2-bit value of the pixel location `a0`, `a1` (out of bounds pixels will always be 0)                                                 |
+| `fbset`   | 0x13 | Sets the 2-bit value of the pixel location `a0`, `a1`, to the value found in `a3` (values may be 0, 1, 2 or 3, all other values will be treated as 0) |
+| `fbss`    | 0x14 | Draws the sprite found at sprite index `a0` into the framebuffer at location `a1`, `a2`.  If `a3` is `1`, transparency will be respected.             |
+| `fbds`    | 0x14 | Draws the sprite found at sprite index `a0` into the framebuffer at location `a1`, `a2`.  If `a3` is `1`, transparency will be respected.             |
+| `fbsync`  | 0x14 | Synchronizes the frame buffer to the screen                                                                                                           |
+| `error`   | 0xF0 | Aborts the current program execution with an error message, `a0` is a pointer to the error message                                                    |
+| `halt`    | 0xFF | Shuts the computer down                                                                                                                               |

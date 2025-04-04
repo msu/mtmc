@@ -12,7 +12,7 @@ public class AssemblerTest {
     public void bootstrapAssembly() {
         Assembler assembler = new Assembler();
         AssemblyResult result = assembler.assemble("sys halt");
-        assertArrayEquals(new byte[]{0b0000_0000, 0b0000_0000}, result.code());
+        assertArrayEquals(new byte[]{0b0000_1111, 0b0000_0000}, result.code());
     }
 
     @Test
@@ -22,7 +22,7 @@ public class AssemblerTest {
             Assembler assembler = new Assembler();
             byte value = sysCall.getValue();
             AssemblyResult result = assembler.assemble("sys " + sysCall);
-            assertArrayEquals(new byte[]{0b0000_0000, value}, result.code());
+            assertArrayEquals(new byte[]{0b0000_1111, value}, result.code());
         }
     }
 
@@ -30,7 +30,14 @@ public class AssemblerTest {
     public void move() {
         Assembler assembler = new Assembler();
         AssemblyResult result = assembler.assemble("mv t0 t1");
-        assertArrayEquals(new byte[]{0b0000_0001, 0b0000_0001}, result.code());
+        assertArrayEquals(new byte[]{0b0000_0000, 0b0001_0000}, result.code());
+    }
+
+    @Test
+    public void moveWithShift() {
+        Assembler assembler = new Assembler();
+        AssemblyResult result = assembler.assemble("mv t0 t1 2");
+        assertArrayEquals(new byte[]{0b0000_0000, 0b0001_0010}, result.code());
     }
 
     @Test
@@ -42,11 +49,42 @@ public class AssemblerTest {
     }
 
     @Test
+    public void moveWithBadShift() {
+        Assembler assembler = new Assembler();
+        AssemblyResult result = assembler.assemble("mv t0 t1 22");
+        assertNull(result.code());
+        assertEquals(result.errors().size(), 1);
+    }
+
+    @Test
     public void badMoveRegister() {
         Assembler assembler = new Assembler();
         AssemblyResult result = assembler.assemble("mv foo bar");
         assertNull(result.code());
         assertEquals(result.errors().size(), 2);
+    }
+
+    @Test
+    public void mask() {
+        Assembler assembler = new Assembler();
+        AssemblyResult result = assembler.assemble("mask 2");
+        assertArrayEquals(new byte[]{0b0000_1110, 0b0000_0010}, result.code());
+    }
+
+    @Test
+    public void maskWithNoValue() {
+        Assembler assembler = new Assembler();
+        AssemblyResult result = assembler.assemble("mask");
+        assertNull(result.code());
+        assertEquals(result.errors().size(), 1);
+    }
+
+    @Test
+    public void maskWithBadValue() {
+        Assembler assembler = new Assembler();
+        AssemblyResult result = assembler.assemble("mask 256");
+        assertNull(result.code());
+        assertEquals(result.errors().size(), 1);
     }
 
     @Test

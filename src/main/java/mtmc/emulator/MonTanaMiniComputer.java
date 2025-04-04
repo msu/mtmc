@@ -16,12 +16,13 @@ public class MonTanaMiniComputer {
     // constants
     public static final short WORD_SIZE = 2;
     public static final int MEMORY_SIZE = 4096;
-    public static final int FRAME_BUFF_START = MEMORY_SIZE * 3 / 4;
+    public static final int FRAME_BUFF_START = 3072;
 
     // core model
     short[] registerFile; // 16 user visible + the instruction register
     byte[]  memory;
     ComputerStatus status = READY;
+    private int speed = 0;
 
     // helpers
     MTOS os = new MTOS(this);
@@ -30,14 +31,13 @@ public class MonTanaMiniComputer {
 
     // listeners
     private List<MTMCObserver> observers = new ArrayList<>();
-    private int speed = 0;
 
     public MonTanaMiniComputer() {
         initMemory();
     }
 
     public void initMemory() {
-        registerFile = new short[19];
+        registerFile = new short[Register.values().length];
         memory = new byte[MEMORY_SIZE];
         setRegisterValue(SP, (short) FRAME_BUFF_START);  // default the stack pointer to the top of normal memory
         setRegisterValue(ZERO, 0);
@@ -109,19 +109,25 @@ public class MonTanaMiniComputer {
         observers.forEach(o -> o.beforeExecution(instruction));
         short instructionType = getBits(16, 4, instruction);
         if (instructionType == 0x0) {
-            short specialInstructionType = getBits(12, 4, instruction);
-            if(specialInstructionType == 0x0) {
-                os.handleSysCall(getBits(8, 8, instruction));
-            } else if(specialInstructionType == 0x1) {
-                // move
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                short value = getRegisterValue(sourceReg);
-                setRegisterValue(targetReg, value);
-            } else if(specialInstructionType == 0xF && getBits(8, 8, instruction) == 0xFF) {
-                // no op
+            short topNibble = getBits(12, 4, instruction);
+            if(topNibble == 0b1111) {
+                // sys call
+                short sysCall = getBits(8, 8, instruction);
+                os.handleSysCall(sysCall);
+            } else if(topNibble == 0b1110) {
+                // mask
+                short mask = getBits(8, 8, instruction);
+                short t0Value = getRegisterValue(T0);
+                short result = (short) (t0Value & mask);
+                setRegisterValue(T0, result);
             } else {
-                // todo error state?
+                // move
+                short targetReg = topNibble;
+                short sourceReg = getBits(8, 4, instruction);
+                short shift = getBits(4, 4, instruction);
+                short value = getRegisterValue(sourceReg);
+                short result = (short) (value >>> shift);
+                setRegisterValue(targetReg, result);
             }
         } else if (instructionType == 0x1) {
             // alu

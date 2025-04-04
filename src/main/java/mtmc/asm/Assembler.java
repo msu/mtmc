@@ -159,7 +159,7 @@ public class Assembler {
                 System.arraycopy(stringBytes, 0, nullTerminated, 0, stringBytes.length);
                 nullTerminated[stringBytes.length] = '\0';
                 dataElt.setValue(nullTerminated);
-            } else if (dataToken.type() == INTEGER || dataToken.type() == HEX || dataToken.type() == BINARY) {
+            } else if (isInteger(dataToken)) {
                 int integerValue = dataToken.intValue();
                 if (integerValue > Short.MAX_VALUE) {
                     dataElt.addError(dataToken, "Number is too large");
@@ -209,15 +209,24 @@ public class Assembler {
         Instruction instruction;
         if (type.getInstructionClass() == MISC) {
             MiscInstruction miscInst = new MiscInstruction(type, labelToken, instructionToken);
-            if (type == InstructionType.SYS) {
-                MTMCToken sysCallType = requireSysCall(tokens, miscInst);
-                miscInst.setSyscallType(sysCallType);
-            } else if (type == InstructionType.MV) {
+            if (type == InstructionType.MV) {
                 MTMCToken toRegister = requireWriteableRegister(tokens, miscInst);
                 miscInst.setTo(toRegister);
                 MTMCToken fromRegister = requireReadableRegister(tokens, miscInst);
                 miscInst.setFrom(fromRegister);
-            } else if (type == InstructionType.NOOP) {/* no args */}
+                if (isInteger(tokens.peek())) {
+                    MTMCToken shift = requireIntegerToken(tokens, miscInst, 15);
+                    miscInst.setShiftOrMask(shift);
+                }
+            } else if (type == InstructionType.MASK){
+                MTMCToken shift = requireIntegerToken(tokens, miscInst, 255);
+                miscInst.setShiftOrMask(shift);
+            } else if (type == InstructionType.SYS) {
+                MTMCToken sysCallType = requireSysCall(tokens, miscInst);
+                miscInst.setSyscallType(sysCallType);
+            } else if (type == InstructionType.SYS) {
+                // set nothing
+            }
             instruction = miscInst;
         } else if (type.getInstructionClass() == ALU) {
             ALUInstruction aluInst = new ALUInstruction(type, labelToken, instructionToken);
@@ -408,7 +417,7 @@ public class Assembler {
         MTMCToken token = tokens.poll();
         if (token == null) {
             inst.addError("Integer value required");
-        } else if (token.type() == INTEGER || token.type() == HEX || token.type() == BINARY) {
+        } else if (isInteger(token)) {
             Integer integerValue = token.intValue();
             if (integerValue < 0 || max < integerValue) {
                 inst.addError(token, "Integer value out of range: 0-" + max);
@@ -417,6 +426,10 @@ public class Assembler {
             inst.addError(token, "Integer value expected");
         }
         return token;
+    }
+
+    private static boolean isInteger(MTMCToken token) {
+        return token != null && (token.type() == INTEGER || token.type() == HEX || token.type() == BINARY);
     }
 
     private LinkedList<MTMCToken> getTokensForLine() {

@@ -110,9 +110,10 @@ public class WebServer {
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();
-                    client.onClose(()-> sseClients.remove(client));
+                    client.onClose(() -> sseClients.remove(client));
                     sseClients.add(client);
-                });;
+                });
+        ;
 
         // start server
         javalinApp.start(PORT);

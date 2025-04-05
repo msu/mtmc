@@ -121,13 +121,7 @@ main {
     aspect-ratio: 1;
 }
 
-.memory {
-    display: grid;
-    grid-template-columns: repeat(16, 1fr);
-    border: 1px solid antiquewhite;
-}
-
-.frameBuffer {
+.buff {
     background-color: cornflowerblue;
 }
 
@@ -135,7 +129,7 @@ main {
     background-color: darkseagreen;
 }
 
-.currentInst {
+.curr {
     background-color: #78e878;
 }
 
@@ -147,7 +141,7 @@ main {
     background-color: lightcoral;
 }
 
-.stack {
+.sta {
     background-color: lightsalmon;
 }
 
@@ -186,4 +180,8 @@ main {
 }
 #register-table td {
     text-align: right;
+}
+
+.mem-highlight {
+    box-shadow: inset 0 0 10px purple;
 }

@@ -4,13 +4,14 @@ import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.MTMCDisplay;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
-import kotlin.text.Charsets;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
+import java.nio.charset.Charset;
 import java.util.stream.IntStream;
 
 public class MTMCWebView {
+
+    public static final int COLS_FOR_MEM = 16;
 
     private final MonTanaMiniComputer computer;
 
@@ -42,32 +43,18 @@ public class MTMCWebView {
 
     public String regDisplay(String reg) {
         try {
-            short value = getRegisterValue(reg);
-            switch (registerFormat) {
-                case DYN -> {
-                    if (Objects.equals(reg, "IR")) {
-                        return Instruction.disassembleInstruction(value);
-                    } else {
-                        return getHexStr(value);
-                    }
-                }
-                case HEX -> {
-                    return getHexStr(value);
-                }
-                case DEC -> {
-                    return "" + value;
-                }
-                case ASCII -> {
-                    return new String(new byte[]{(byte) (value >> 8), (byte) value});
-                }
-                case null, default -> {
-                    return "<error>";
-                }
-            }
+            Register register = Register.valueOf(reg.toUpperCase());
+            int regIndex = register.ordinal();
+            short val = computer.getRegisterValue(regIndex);
+            DisplayFormat format = computeFormat(register);
+            String str = displayValue(format, val);
+            return str;
         } catch (Exception e) {
             return "No such register: " + reg;
         }
     }
+
+
 
     @NotNull
     private static String getHexStr(short value) {
@@ -91,20 +78,93 @@ public class MTMCWebView {
         return blinken.toString();
     }
 
-    private short getRegisterValue(String reg) {
-        Integer index = Register.toInteger(reg);
-        short register = computer.getRegisterValue(index);
-        return register;
+
+    public String getMemoryTable(){
+        StringBuilder builder = new StringBuilder("<table id='memory-table' style='width:100%; table-layout:fixed'>");
+        byte[] memory = computer.getMemory();
+        for (int i = 0; i < memory.length; i++) {
+            if (i % 16 == 0) {
+                builder.append("<tr>");
+            }
+
+            // figure out how we are displaying this location
+            String memoryClass = classFor(i);
+            DisplayFormat format = computeFormat(memoryClass);
+            int cols = computeCols(format);
+
+            short val = (short) (memory[i] & 0xFF);
+            int originalPos = i;
+            if (cols == 2) {
+                i++; // consuming a word for this cell
+                val = (short) (val << 8);
+                val = (short) (val | (memory[i] & 0xFF));
+            }
+            String displayStr = displayValue(format, val);
+
+            // build table cell
+            builder.append("<td title='");
+            builder.append(originalPos);
+            builder.append("' id='mem_");
+            builder.append(originalPos);
+            builder.append("'");
+            builder.append("' class='");
+            builder.append(memoryClass);
+            builder.append("'");
+            if (cols > 1) {
+                builder.append(" colspan='");
+                builder.append(cols);
+                builder.append("'");
+            }
+            builder.append(">");
+            builder.append(displayStr);
+            builder.append("</td>");
+
+            if (i % COLS_FOR_MEM == 15) {
+                builder.append("</tr>");
+            }
+        }
+        builder.append("</table>");
+        return builder.toString();
     }
 
+    private int computeCols(DisplayFormat format) {
+        return switch (format) {
+            case DEC, INS -> 2;
+            default -> 1;
+        };
+    }
+
+    private DisplayFormat computeFormat(String memoryClass) {
+        if(memoryFormat == DisplayFormat.DYN) {
+            return switch (memoryClass) {
+                case "sta" -> DisplayFormat.DEC;
+                case "curr", "code" -> DisplayFormat.INS;
+                case "data", "heap" -> DisplayFormat.STR;
+                default -> DisplayFormat.HEX;
+            };
+        } else {
+            return memoryFormat;
+        }
+    }
+
+    private DisplayFormat computeFormat(Register register) {
+        if(registerFormat == DisplayFormat.DYN) {
+            return switch (register) {
+                case IR -> DisplayFormat.INS;
+                default -> DisplayFormat.DEC;
+            };
+        } else {
+            return registerFormat;
+        }
+    }
 
     public String classFor(int address) {
         if (address >= MonTanaMiniComputer.FRAME_BUFF_START) {
-            return "frameBuffer";
+            return "buff";
         } else if (address >= computer.getRegisterValue(Register.SP)) {
-            return "stack";
+            return "sta";
         } else if (address == computer.getRegisterValue(Register.PC)) {
-            return "currentInst";
+            return "curr";
         } else if (address <= computer.getRegisterValue(Register.CB)) {
             return "code";
         } else if (address <= computer.getRegisterValue(Register.DB)) {
@@ -116,27 +176,41 @@ public class MTMCWebView {
         }
     }
 
-    public String displayValue(int address) {
-        // TODO suport dyn view mode
-        if (memoryFormat == DisplayFormat.HEX || memoryFormat == DisplayFormat.DYN) {
-            byte byteVal = computer.fetchByteFromMemory(address);
-            return String.format("%02X ", byteVal);
-        } else if (memoryFormat == DisplayFormat.DEC) {
-            if (address % 2 == 1) {
-                return "" + computer.fetchWordFromMemory(address - 1);
-            } else {
-                return "";
-            }
+    public String displayValue(DisplayFormat format, short val) {
+        return switch (format) {
+            case HEX -> String.format("%02X ", val);
+            case DEC -> String.valueOf(val);
+            case INS -> Instruction.disassembleInstruction(val);
+            case STR -> get1252String(val);
+            default -> throw new IllegalArgumentException("Can't render displayValue " + format);
+        };
+    }
+
+    public static String get1252String(short value) {
+        byte topByte = (byte) (value >>> 8);
+        byte bottomByte = (byte) value;
+        if (topByte != 0) {
+            return get1252String(topByte) + " " + get1252String(bottomByte);
         } else {
-            byte value = computer.fetchByteFromMemory(address);
-            return new String(new byte[]{value});
+            return get1252String(bottomByte);
         }
     }
 
-    public String asciiValue(int address) {
-        String string = new String(computer.getBytesFromMemory(address, 1), Charsets.US_ASCII) + "&nbsp;";
-        return string;
+    @NotNull
+    private static String get1252String(byte value) {
+        if (0 <= value && value < 32) {
+            return ASCII_CODES[value];
+        } else {
+            Charset charset = Charset.forName("windows-1252");
+            String str = new String(new byte[]{value}, charset);
+            return str;
+        }
     }
+
+    static final String[] ASCII_CODES = new String[]{"NUL", "SOH", "STX", "ETX", "EOT", "ENT", "ACK", "BEL", "BS", "\\t",
+            "\\n", "VT", "\\f", "\\r", "SO", "SI", "DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB", "CAN", "EM",
+            "SUB", "ESC", "FS", "GS", "RS", "US",
+    };
 
     public Iterable getDisplayRows() {
         return computer.getDisplay().getRows();
@@ -167,7 +241,7 @@ public class MTMCWebView {
     }
 
     public void toggleRegisterFormat() {
-        registerFormat = DisplayFormat.values()[(registerFormat.ordinal() + 1) % 3];
+        registerFormat = DisplayFormat.values()[(registerFormat.ordinal() + 1) % memoryFormat.values().length];
     }
 
     public String getMemoryFormat() {
@@ -175,13 +249,20 @@ public class MTMCWebView {
     }
 
     public void toggleMemoryFormat() {
-        memoryFormat = DisplayFormat.values()[(memoryFormat.ordinal() + 1) % 3];
+        memoryFormat = DisplayFormat.values()[(memoryFormat.ordinal() + 1) % memoryFormat.values().length];
     }
 
     enum DisplayFormat {
         DYN,
         HEX,
         DEC,
-        ASCII
+        INS,
+        STR
+    }
+
+    public static void main(String[] args) {
+        for (int i = Short.MIN_VALUE; i < Short.MAX_VALUE; i++) {
+            System.out.println(i + " : " + get1252String((short) i));
+        }
     }
 }

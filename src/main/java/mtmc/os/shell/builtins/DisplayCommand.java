@@ -96,7 +96,7 @@ public class DisplayCommand extends ShellCommand {
     @Override
     public String getHelp() {
         return """
-display [options] - updates the display
+disp [options] - updates the display
   fuzz              - displays random colors
   reset             - resets the display
   invert            - inverts the display

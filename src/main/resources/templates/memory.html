@@ -6,8 +6,6 @@
         {{computer.getMemoryFormat()}}
     </button>
     <div id="memory" class="memory">
-        {% for addr in computer.memoryAddresses %}
-        <div title="{{addr}}" class="{{computer.classFor(addr)}}">{{computer.displayValue(addr) | raw }}</div>
-        {% endfor %}
+        {{computer.getMemoryTable() | raw}}
     </div>
 </div>

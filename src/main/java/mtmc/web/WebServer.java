@@ -157,4 +157,7 @@ public class WebServer {
     }
 
 
+    public MTMCWebView getComputerView() {
+        return computerView;
+    }
 }

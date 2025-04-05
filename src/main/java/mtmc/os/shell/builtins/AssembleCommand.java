@@ -48,7 +48,7 @@ public class AssembleCommand extends ShellCommand {
     @Override
     public String getHelp() {
         return """
-                assemble <src> <dst>
+                asm <src> <dst>
                     - src : path to a .asm file
                     - dst : path to a target output binary""";
     }

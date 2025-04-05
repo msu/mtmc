@@ -38,7 +38,7 @@ public class WebUIUpdater implements MTMCObserver {
                             uisToUpdate.put("register-panel", webServer.render("templates/registers.html"));
                         }
                         if ((updates & UPDATE_MEMORY_UI) != 0) {
-                            uisToUpdate.put("memory-panel", webServer.render("templates/memory.html"));
+                            uisToUpdate.put("memory-table", webServer.getComputerView().getMemoryTable());
                         }
                         if ((updates & UPDATE_DISPLAY_UI) != 0) {
                             uisToUpdate.put("display-panel", webServer.render("templates/display.html"));

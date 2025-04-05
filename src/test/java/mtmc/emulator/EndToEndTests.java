@@ -24,6 +24,24 @@ public class EndToEndTests {
     }
 
     @Test
+    public void stackAddition(){
+        Assembler assembler = new Assembler();
+        AssemblyResult result = assembler.assemble("""
+                pushi 10
+                pushi 99
+                sop add
+                pushi 99
+                sop add
+                pop t0
+                sys exit
+                """);
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.load(result.code(), result.data());
+        computer.run();
+        assertEquals(208, computer.getRegisterValue(T0));
+    }
+
+    @Test
     public void helloWorld(){
         Assembler assembler = new Assembler();
         AssemblyResult result = assembler.assemble("""

@@ -49,7 +49,7 @@ public class LoadInstruction extends Instruction {
 
     public static String disassemble(short instruction) {
         if (getBits(16, 2, instruction) == 0b11) {
-            StringBuilder builder = new StringBuilder("ldi ");
+            StringBuilder builder = new StringBuilder("");
             short type = getBits(14, 2, instruction);
             if (type == 0b00) {
                 builder.append("lw ");

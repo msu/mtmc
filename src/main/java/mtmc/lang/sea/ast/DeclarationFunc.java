@@ -11,7 +11,7 @@ public final class DeclarationFunc extends Declaration {
     public final Token name;
     public final List<Param> params;
 
-    public DeclarationFunc(TypeExpr returnType, Token name, List<Param> params, Token end) {
+    public DeclarationFunc(TypeExpr returnType, Token name, List<Param> params, StatementBlock block, Token end) {
         super(returnType.start, end);
         this.returnType = returnType;
         this.name = name;

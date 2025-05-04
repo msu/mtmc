@@ -1,7 +1,6 @@
 package mtmc.lang.sea;
 
 import mtmc.lang.sea.ast.*;
-import mtmc.tokenizer.MTMCToken;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,68 +12,125 @@ import java.util.List;
 import static mtmc.lang.sea.Token.Type.*;
 
 public class SeaParser {
-    protected List<Token> tokens;
-    protected int index = 0;
+    private final List<Token> tokens;
+    private int index = 0;
+
+
+    private Token openingBrace = null;
+    private final LinkedHashMap<String, Object> symbols;
 
     public SeaParser(@NotNull List<Token> tokens) {
         this.tokens = tokens;
+        this.symbols = new LinkedHashMap<>();
     }
 
-    private final LinkedHashMap<String, Object> symbols = new LinkedHashMap<>();
+    public SeaParser(SeaParser other) {
+        this.tokens = List.copyOf(other.tokens);
+        this.index = other.index;
+        this.symbols = new LinkedHashMap<>(other.symbols);
+    }
 
+    public Unit parseUnit() throws ParseException {
+        final var declarations = new ArrayList<Declaration>();
+
+        while (hasMoreTokens()) {
+            Token start = peekToken();
+
+            try {
+                var decl = parseDeclaration();
+                declarations.add(decl);
+            } catch (ParseException e) {
+                if (openingBrace != null) {
+                    consumeMatchingBrace(openingBrace);
+                } else {
+                    consumeThrough(SEMICOLON);
+                }
+            }
+
+            if (peekToken().equals(start)) {
+                throw new ParseException(peekToken(), "INFINITE LOOP DETECTED");
+            }
+        }
+
+        return new Unit(declarations, this.symbols);
+    }
+
+    public List<DeclarationFunc.Param> parseParamList() throws ParseException {
+        var params = new ArrayList<DeclarationFunc.Param>();
+        while (hasMoreTokens() && !matchToken(RIGHT_PAREN)) {
+            TypeExpr paramType = parseSimpleType();
+
+            if (!matchToken(LIT_IDENT)) {
+                throw new ParseException(peekToken(), "expected parameter name");
+            }
+            var paramName = consume();
+
+            paramType = parseCompoundType(paramType, paramName);
+            params.add(new DeclarationFunc.Param(paramType, paramName));
+
+            if (!consumeToken(COMMA)) break;
+        }
+
+        if (!consumeToken(RIGHT_PAREN)) {
+            try {
+                parseSimpleType();
+                throw new ParseException(peekToken(), "expected ')', did you forget a comma?");
+            } catch (ParseException ignored) {}
+
+            throw new ParseException(peekToken(), "expected ')' after parameter list");
+        }
+
+        return params;
+    }
+
+    @NotNull
     public Declaration parseDeclaration() throws ParseException {
         TypeExpr type;
         final var t2 = peekToken2();
-        if (t2.type().equals(Equal) || t2.type().equals(LeftParen)) {
+        if (t2.type().equals(EQUAL) || t2.type().equals(SEMICOLON) || t2.type().equals(LEFT_PAREN)) {
             type = new TypeExprInt(peekToken());
         } else {
             type = parseSimpleType();
         }
 
-        if (!match(LIT_IDENT)) {
+        if (!matchToken(LIT_IDENT)) {
             throw new ParseException(peekToken(), "expected declaration name");
         }
         final Token name = consume();
 
-        if (take(LeftParen)) {
+        if (consumeToken(LEFT_PAREN)) {
+            var params = parseParamList();
 
-            var params = new ArrayList<DeclarationFunc.Param>();
-            while (hasMoreTokens() && !match(RightParen)) {
-                TypeExpr paramType = parseSimpleType();
-
-                if (!match(LIT_IDENT)) {
-                    throw new ParseException(peekToken(), "expected parameter name");
+            StatementBlock body = null;
+            if (!matchToken(LEFT_BRACE)) {
+                if (!consumeToken(SEMICOLON)) {
+                    throw new ParseException(lastToken(), "expected ';' after function declaration");
                 }
-                var paramName = consume();
-
-                paramType = parseCompoundType(paramType, paramName);
-                params.add(new DeclarationFunc.Param(paramType, paramName));
-
-                if (!take(Comma)) break;
+            } else {
+                body = parseStatementBlock();
             }
 
-
-            if (!take(RightParen)) {
-                try {
-                    parseSimpleType();
-                    throw new ParseException(peekToken(), "expected ')', did you forget a comma?");
-                } catch (ParseException ignored) {}
-                throw new ParseException(peekToken(), "expected ')' after parameter list");
-            }
-
-            return new DeclarationFunc(type, name, params, lastToken());
+            return new DeclarationFunc(type, name, params, body, body == null ? lastToken() : body.end);
         } else {
             type = parseCompoundType(type, name);
 
-        }
+            Expression init = null;
+            if (consumeToken(EQUAL)) {
+                init = parseExpression();
+            }
 
-        return null;
+            if (!consumeToken(SEMICOLON)) {
+                throw new ParseException(lastToken(), "expected ';' after variable declaration");
+            }
+
+            return new DeclarationVar(type, name, init);
+        }
     }
 
     public TypeExpr parseCompoundType(TypeExpr simpleType, @Nullable Token name) throws ParseException {
-        if (take(LeftBracket)) {
-            if (!take(RightBracket)) {
-                throw new ParseException("expected ']' after '[' in compound-type");
+        if (consumeToken(LEFT_BRACKET)) {
+            if (!consumeToken(RIGHT_BRACKET)) {
+                throw new ParseException(peekToken(), "expected ']' after '[' in compound-type");
             }
             return new TypeExprArray(simpleType, lastToken());
         } else {
@@ -84,7 +140,7 @@ public class SeaParser {
 
     public TypeExpr parseSimpleType() throws ParseException {
         TypeExpr type = parseTypeName();
-        while (match(Star)) {
+        while (matchToken(STAR)) {
             final var tok = consume();
             type = new TypePointer(type, tok);
         }
@@ -93,12 +149,11 @@ public class SeaParser {
 
     @NotNull
     public TypeExpr parseTypeName() throws ParseException {
-        final var tok = peekToken();
-        if (!tok.type().equals(LIT_IDENT)) {
-            throw new ParseException("expected simple type name");
+        if (!consumeToken(LIT_IDENT)) {
+            throw new ParseException(peekToken(), "expected simple type name");
         }
-        consume();
 
+        var tok = lastToken();
         if (tok.content().equals("int")) {
             return new TypeExprInt(tok);
         } else if (tok.content().equals("char")) {
@@ -107,15 +162,67 @@ public class SeaParser {
             if (symbols.get(tok.content()) instanceof TypeDeclaration decl) {
                 return new TypeExprRef(tok, decl);
             } else {
-                throw new ParseException(tok.content() + " is not a type");
+                throw new ParseException(tok, tok.content() + " is not a type");
             }
         } else {
-            throw new ParseException("unknown type '" + tok.content() + "'");
+            throw new ParseException(tok, "unknown type '" + tok.content() + "'");
         }
     }
 
-    public Statement parseStatement() {
+    public Statement parseStatement() throws ParseException {
         return null;
+    }
+
+    void recover() throws ParseException {
+        Token endToken = null;
+        if (openingBrace != null) {
+            int start = index;
+            var open = 1;
+            while (hasMoreTokens() && open > 0) {
+                var token = consume();
+                if (token.type().equals(LEFT_BRACE)) {
+                    open++;
+                } else if (token.type().equals(RIGHT_BRACE)) {
+                    open--;
+                }
+            }
+
+            if (!hasMoreTokens()) throw new ParseException(openingBrace, "no corresponding brace!");
+            endToken = lastToken();
+            index = start;
+        }
+
+        while (hasMoreTokens() && peekToken() != endToken) {
+            if (consumeToken(SEMICOLON)) return;
+            if (matchToken(KW_IF, KW_FOR)) return;
+        }
+    }
+
+    @Nullable
+    public StatementBlock parseStatementBlock() throws ParseException {
+        if (!consumeToken(LEFT_BRACE)) return null;
+        var start = lastToken();
+        var previousOpeningBrace = openingBrace;
+        openingBrace = start;
+
+        var stmts = new ArrayList<Statement>();
+        while (hasMoreTokens() && !matchToken(RIGHT_BRACE)) {
+            try {
+                var stmt = parseStatement();
+                stmts.add(stmt);
+            } catch (ParseException e) {
+                var stmt = new StatementSyntaxError(e.token, e.getMessage());
+                stmts.add(stmt);
+                recover();
+            }
+        }
+
+        openingBrace = previousOpeningBrace;
+        if (!consumeToken(RIGHT_BRACE)) {
+            throw new ParseException(lastToken(), "expected '}' after block statement");
+        }
+
+        return new StatementBlock(start, stmts, lastToken());
     }
 
     public Expression parseExpression() {
@@ -130,16 +237,16 @@ public class SeaParser {
         return index < tokens.size();
     }
 
-    protected boolean match(@NotNull Token.Type... types) {
+    protected boolean matchToken(@NotNull Token.Type... types) {
         for (var type : types) {
             if (peekToken().type().equals(type)) return true;
         }
         return false;
     }
 
-    protected boolean take(@NotNull Token.Type... types) {
+    protected boolean consumeToken(@NotNull Token.Type... types) {
         for (Token.Type type : types) {
-            if (match(type)) {
+            if (matchToken(type)) {
                 consume();
                 return true;
             }
@@ -155,6 +262,20 @@ public class SeaParser {
         index += 1;
         return token;
     }
+
+    protected List<Token> consumeThrough(@NotNull Token.Type... types) {
+        var tokens = new ArrayList<Token>();
+        while (hasMoreTokens()) {
+            var token = consume();
+            tokens.add(token);
+            if (Arrays.stream(types).anyMatch(t -> t.equals(token.type()))) {
+                return tokens;
+            }
+            index += 1;
+        }
+        return null;
+    }
+
 
     protected List<Token> consumeTo(@NotNull Token.Type... types) {
         var tokens = new ArrayList<Token>();

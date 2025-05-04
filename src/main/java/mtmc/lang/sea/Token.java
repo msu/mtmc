@@ -18,13 +18,13 @@ public record Token(
 
     public enum Type {
         // Special
-        Int(null),
-        Str(null),
-        Char(null),
-        Ident(null),
-        Sizeof(null),
-        TypeInt(null),
-        TypeChar(null),
+        LIT_INT(null),
+        LIT_STR(null),
+        LIT_CHAR(null),
+        LIT_IDENT(null),
+        KW_SIZEOF(null),
+        KW_INT(null),
+        KW_CHAR(null),
         SOF(null),
         EOF(null),
 
@@ -89,9 +89,7 @@ public record Token(
         BangEq("!="),
         Bang("!");
 
-        public static Object EOL = new Object();
-
-        public String lex;
+        public final String lex;
 
         public static final Type[] PUNCT;
 
@@ -225,7 +223,7 @@ public record Token(
                 offset += Character.charCount(src.charAt(offset));
             } while (offset < src.length() && Character.isDigit(src.charAt(offset)));
             content = src.substring(start, offset);
-            type = Type.Int;
+            type = Type.LIT_INT;
         } else if (Character.isLetter(c) || c == '_') {
             do {
                 offset += Character.charCount(src.charAt(offset));
@@ -233,13 +231,13 @@ public record Token(
             content = src.substring(start, offset);
             type = switch (content) {
                 case "int":
-                    yield Type.TypeInt;
+                    yield Type.KW_INT;
                 case "char":
-                    yield Type.Char;
+                    yield Type.LIT_CHAR;
                 case "sizeof":
-                    yield Type.Sizeof;
+                    yield Type.KW_SIZEOF;
                 default:
-                    yield Type.Ident;
+                    yield Type.LIT_IDENT;
             };
         } else if (c == '\'') {
             offset += Character.charCount(c);
@@ -274,7 +272,7 @@ public record Token(
             if (offset >= src.length() || src.charAt(offset) == '\'') {
                 throw new TokenizeException("unterminated character literal", start, offset);
             }
-            type = Type.Char;
+            type = Type.LIT_CHAR;
         } else if (c == '"') {
             offset += Character.charCount(src.charAt(offset));
             StringBuilder sb = new StringBuilder();
@@ -314,7 +312,7 @@ public record Token(
             }
 
             content = sb.toString();
-            type = Type.Str;
+            type = Type.LIT_STR;
         } else {
             type = null;
             for (Type t : Type.PUNCT) {

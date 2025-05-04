@@ -1,8 +1,14 @@
 package mtmc.lang.sea;
 
+import mtmc.lang.sea.ast.*;
+import mtmc.tokenizer.MTMCToken;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 import static mtmc.lang.sea.Token.Type.*;
 
@@ -14,345 +20,111 @@ public class SeaParser {
         this.tokens = tokens;
     }
 
-    public Ast.Expr parseExpr() {
-        return parseAssignExpr();
-    }
+    private final LinkedHashMap<String, Object> symbols = new LinkedHashMap<>();
 
-    public Ast.Expr parseAssignExpr() {
-        var expr = parseTernaryExpr();
-        if (expr == null) return null;
-
-        if (match(Equal, PlusEq, DashEq, StarEq, SlashEq, PercentEq, AmpersandEq, BarEq, CaretEq, LeftArrow2Eq, RightArrow2Eq)) {
-            var op = consume();
-            var inner = parseAssignExpr();
-            return new Ast.BinaryExpr(expr, op, inner);
+    public Declaration parseDeclaration() throws ParseException {
+        TypeExpr type;
+        final var t2 = peekToken2();
+        if (t2.type().equals(Equal) || t2.type().equals(LeftParen)) {
+            type = new TypeExprInt(peekToken());
         } else {
-            return expr;
-        }
-    }
-
-    public Ast.Expr parseTernaryExpr() {
-        var expr = parseOrExpr();
-        if (expr == null) return null;
-
-        if (take(Question)) {
-            var then = parseTernaryExpr();
-            if (then == null) {
-                then = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after ternary '?'"));
-                consumeTo(Colon);
-            }
-            if (!take(Colon)) {
-                return new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected ':' in ternary expression"));
-            }
-            var elseExpr = parseTernaryExpr();
-            if (elseExpr == null) {
-                elseExpr = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after ternary ':'"));
-            }
-            return new Ast.TernaryExpr(expr, then, elseExpr);
-        } else {
-            return expr;
-        }
-    }
-
-    public Ast.Expr parseOrExpr() {
-        var expr = parseAndExpr();
-        if (expr == null) return null;
-
-        while (match(Bar2)) {
-            var op = consume();
-            var rhs = parseAndExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '||'"));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
+            type = parseSimpleType();
         }
 
-        return expr;
-    }
-
-    public Ast.Expr parseAndExpr() {
-        var expr = parseBinaryOrExpr();
-        if (expr == null) return null;
-
-        while (match(Ampersand2)) {
-            var op = consume();
-            var rhs = parseBinaryOrExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '&&'"));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
+        if (!match(LIT_IDENT)) {
+            throw new ParseException(peekToken(), "expected declaration name");
         }
+        final Token name = consume();
 
-        return expr;
-    }
+        if (take(LeftParen)) {
 
-    public Ast.Expr parseBinaryOrExpr() {
-        var expr = parseBinaryXorExpr();
-        if (expr == null) return null;
+            var params = new ArrayList<DeclarationFunc.Param>();
+            while (hasMoreTokens() && !match(RightParen)) {
+                TypeExpr paramType = parseSimpleType();
 
-        while (match(Bar)) {
-            var op = consume();
-            var rhs = parseBinaryXorExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '|'"));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
-        }
-
-        return expr;
-    }
-
-    public Ast.Expr parseBinaryXorExpr() {
-        var expr = parseBinaryAndExpr();
-        if (expr == null) return null;
-
-        while (match(Caret)) {
-            var op = consume();
-            var rhs = parseBinaryAndExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '^'"));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
-        }
-
-        return expr;
-    }
-
-    public Ast.Expr parseBinaryAndExpr() {
-        var expr = parseEqualityExpr();
-        if (expr == null) return null;
-
-        while (match(Ampersand)) {
-            var op = consume();
-            var rhs = parseEqualityExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '&'"));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
-        }
-
-        return expr;
-    }
-
-    public Ast.Expr parseEqualityExpr() {
-        var expr = parseOrdinalExpr();
-        if (expr == null) return null;
-
-        while (match(Equal2, BangEq)) {
-            var op = consume();
-            var rhs = parseOrdinalExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '%s'".formatted(op.content())));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
-        }
-
-        return expr;
-    }
-
-    public Ast.Expr parseOrdinalExpr() {
-        var expr = parseShiftExpr();
-        if (expr == null) return null;
-
-        while (match(LeftArrow, LeftArrowEq, RightArrow, RightArrowEq)) {
-            var op = consume();
-            var rhs = parseShiftExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '%s'".formatted(op.content())));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
-        }
-
-        return expr;
-    }
-
-    public Ast.Expr parseShiftExpr() {
-        var expr = parseAdditiveExpr();
-        if (expr == null) return null;
-
-        while (match(LeftArrow2, RightArrow2)) {
-            var op = consume();
-            var rhs = parseAdditiveExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '%s'".formatted(op.content())));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
-        }
-
-        return expr;
-    }
-
-    public Ast.Expr parseAdditiveExpr() {
-        var expr = parseMultiplicativeExpr();
-        if (expr == null) return null;
-
-        while (match(Plus, Dash)) {
-            var op = consume();
-            var rhs = parseMultiplicativeExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '%s'".formatted(op.content())));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
-        }
-
-        return expr;
-    }
-
-    public Ast.Expr parseMultiplicativeExpr() {
-        var expr = parseCastExpr();
-        if (expr == null) return null;
-
-        while (match(Star, Slash, Percent)) {
-            var op = consume();
-            var rhs = parseCastExpr();
-            if (rhs == null) {
-                rhs = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected expression after '%s'".formatted(op.content())));
-            }
-            expr = new Ast.BinaryExpr(expr, op, rhs);
-        }
-
-        return expr;
-    }
-
-    public Ast.Expr parseCastExpr() {
-        return parsePrefixExpr();
-    }
-
-    public Ast.Expr parsePrefixExpr() {
-        if (match(Plus2, Dash2, Ampersand, Plus, Dash, Tilde, Bang, Sizeof)) {
-            var op = consume();
-            var inner = parsePrefixExpr();
-            if (inner == null) {
-                inner = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(),
-                        "expected expression after prefix operator '%s'".formatted(op.content())));
-            }
-            return new Ast.PrefixExpr(op, inner);
-        } else {
-            return parsePostfixExpr();
-        }
-    }
-
-    public Ast.Expr parsePostfixExpr() {
-        var expr = parsePrimaryExpr();
-        while (hasMoreTokens()) {
-            if (take(LeftBracket)) {
-                var index = parseExpr();
-                if (index == null) {
-                    index = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected index after '['"));
-                    consumeTo(RightBracket);
+                if (!match(LIT_IDENT)) {
+                    throw new ParseException(peekToken(), "expected parameter name");
                 }
+                var paramName = consume();
 
-                if (!match(RightBracket)) {
-                    return new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected "));
-                }
-                var rbracket = consume();
-
-                expr = new Ast.IndexExpr(expr, index, rbracket);
-            } else if (take(LeftParen)) {
-                var args = new ArrayList<Ast.Expr>();
-                while (hasMoreTokens() && !match(RightParen)) {
-                    var arg = parseExpr();
-                    if (arg == null) {
-                        arg = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected function argument"));
-                        consumeTo(Comma, RightParen);
-                    }
-                    args.add(arg);
-                    if (!take(Comma)) break;
-                }
-
-                if (!match(RightParen)) {
-                    if (parseExpr() != null) {
-                        return new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected ')' after function arguments, did you forget a comma?"));
-                    }
-
-                    return new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected ')' after function arguments"));
-                }
-
-                var rparen = consume();
-                expr = new Ast.InvokeExpr(expr, args, rparen);
-            } else if (take(Dot)) {
-                if (!match(Ident)) {
-                    return new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected field name after '.'"));
-                }
-                var field = consume();
-                expr = new Ast.AccessExpr(expr, new Ast.Ident(field));
-            } else if (take(Arrow)) {
-                if (!match(Ident)) {
-                    return new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected field name after '->'"));
-                }
-                var field = consume();
-                expr = new Ast.PtrAccessExpr(expr, new Ast.Ident(field));
-            } else if (match(Plus2, Dash2)) {
-                var op = consume();
-                expr = new Ast.PostfixExpr(expr, op);
-            } else {
-                break;
-            }
-        }
-        return expr;
-    }
-
-    public Ast.Expr parsePrimaryExpr() {
-        if (match(Int)) {
-            return new Ast.Int(consume());
-        } else if (match(Str)) {
-            return new Ast.Str(consume());
-        } else if (match(Char)) {
-            return new Ast.Char(consume());
-        } else if (match(Ident)) {
-            return new Ast.Ident(consume());
-        } else if (match(LeftParen)) {
-            var start = consume();
-            var inner = parseExpr();
-            var end = consume();
-            if (end.type() != RightParen) {
-                return new Ast.Error(start, end, Map.of(end, "expected ')' in group"));
-            }
-            return new Ast.Group(start, inner, end);
-        } else if (match(LeftBrace)) {
-            var start = consume();
-            List<Ast.Initializer> initializers = new ArrayList<>();
-            while (hasMoreTokens() && !match(RightBrace)) {
-                if (match(Dot)) {
-                    var dot = consume();
-                    if (!match(Ident)) {
-                        return new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected field name after '.' in initializer list"));
-                    }
-                    var name = new Ast.Ident(consume());
-                    if (!take(Equal)) {
-                        return new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected '=' after field-name in initializer list"));
-                    }
-                    var value = parseExpr();
-                    if (value == null) {
-                        value = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected value after '=' in initializer list"));
-                        consumeTo(Comma, RightBrace);
-                    }
-                    var init = new Ast.FieldInitializer(dot, name, value);
-                    initializers.add(init);
-                } else {
-                    var value = parseExpr();
-                    if (value == null) {
-                        value = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected value in initializer list"));
-                        consumeTo(Comma, RightBrace);
-                    }
-                    var init = new Ast.ValueInitializer(value);
-                    initializers.add(init);
-                }
+                paramType = parseCompoundType(paramType, paramName);
+                params.add(new DeclarationFunc.Param(paramType, paramName));
 
                 if (!take(Comma)) break;
             }
 
-            if (!match(RightBrace)) {
-                var error = new Ast.Error(lastToken(), peekToken(), Map.of(peekToken(), "expected '}' after initializer list"));
-                return error;
+
+            if (!take(RightParen)) {
+                try {
+                    parseSimpleType();
+                    throw new ParseException(peekToken(), "expected ')', did you forget a comma?");
+                } catch (ParseException ignored) {}
+                throw new ParseException(peekToken(), "expected ')' after parameter list");
             }
 
-            var end = consume();
-            return new Ast.InitializerList(start, initializers, end);
+            return new DeclarationFunc(type, name, params, lastToken());
         } else {
-            return null;
+            type = parseCompoundType(type, name);
+
+        }
+
+        return null;
+    }
+
+    public TypeExpr parseCompoundType(TypeExpr simpleType, @Nullable Token name) throws ParseException {
+        if (take(LeftBracket)) {
+            if (!take(RightBracket)) {
+                throw new ParseException("expected ']' after '[' in compound-type");
+            }
+            return new TypeExprArray(simpleType, lastToken());
+        } else {
+            return simpleType;
         }
     }
+
+    public TypeExpr parseSimpleType() throws ParseException {
+        TypeExpr type = parseTypeName();
+        while (match(Star)) {
+            final var tok = consume();
+            type = new TypePointer(type, tok);
+        }
+        return type;
+    }
+
+    @NotNull
+    public TypeExpr parseTypeName() throws ParseException {
+        final var tok = peekToken();
+        if (!tok.type().equals(LIT_IDENT)) {
+            throw new ParseException("expected simple type name");
+        }
+        consume();
+
+        if (tok.content().equals("int")) {
+            return new TypeExprInt(tok);
+        } else if (tok.content().equals("char")) {
+            return new TypeExprChar(tok);
+        } else if (symbols.containsKey(tok.content())) {
+            if (symbols.get(tok.content()) instanceof TypeDeclaration decl) {
+                return new TypeExprRef(tok, decl);
+            } else {
+                throw new ParseException(tok.content() + " is not a type");
+            }
+        } else {
+            throw new ParseException("unknown type '" + tok.content() + "'");
+        }
+    }
+
+    public Statement parseStatement() {
+        return null;
+    }
+
+    public Expression parseExpression() {
+        return null;
+    }
+
+    // =================================
+    // UTILITIES BEYOND HERE LIE
+    // =================================
 
     protected boolean hasMoreTokens() {
         return index < tokens.size();
@@ -405,5 +177,10 @@ public class SeaParser {
     protected Token peekToken() {
         if (index >= tokens.size()) return Token.EOF;
         return tokens.get(index);
+    }
+
+    protected Token peekToken2() {
+        if (index + 1 >= tokens.size()) return Token.EOF;
+        return tokens.get(index + 1);
     }
 }

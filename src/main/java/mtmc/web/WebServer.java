@@ -39,7 +39,7 @@ public class WebServer {
         touchLogFile(computer);
         this.computer = computer;
         this.computerView = new MTMCWebView(computer);
-        this.templateEngine = new PebbleEngine.Builder().cacheActive(false).build();
+        this.templateEngine = new PebbleEngine.Builder().cacheActive(true).build();
         initRoutes();
         this.computer.addObserver(uiUpdater);
         uiUpdater.start();
@@ -65,7 +65,6 @@ public class WebServer {
         this.javalinApp = Javalin.create(cfg -> {
             cfg.staticFiles.add("public");
         });
-
         // paths
         javalinApp
                 .get("/", ctx -> {

@@ -32,7 +32,7 @@ public class WebUIUpdater implements MTMCObserver {
                 try {
                     Thread.sleep(UI_UPDATE_INTERVAL);
                     Map<String, String> uisToUpdate = new HashMap<>();
-                    int updates = updateFlags.getAndUpdate(_ -> 0); // get and zero out any changes
+                    int updates = updateFlags.getAndUpdate(_x-> 0); // get and zero out any changes
                     if (updates != 0) {
                         if ((updates & UPDATE_REGISTER_UI) != 0) {
                             uisToUpdate.put("register-panel", webServer.render("templates/registers.html"));

@@ -24,7 +24,11 @@ public sealed interface Ast permits Ast.Expr, Ast.Initializer {
             return switch (this) {
                 case AccessExpr accessExpr -> Stream.of(accessExpr.expr);
                 case BinaryExpr binaryExpr -> Stream.of(binaryExpr.lhs, binaryExpr.rhs);
-                case Char _, Error _, Ident _, Int _, Str _ -> Stream.empty();
+                case Char _char -> Stream.empty();
+                case Str _str -> Stream.empty();
+                case Int ignored -> Stream.empty();
+                case Ident _ident -> Stream.empty();
+                case Error _error -> Stream.empty();
                 case Group group -> Stream.of(group.expr);
                 case IndexExpr indexExpr -> Stream.of(indexExpr.expr, indexExpr.index);
                 case Initializer initializer -> initializer.getChildren();
@@ -236,7 +240,7 @@ public sealed interface Ast permits Ast.Expr, Ast.Initializer {
         @Override
         default Stream<Ast> getChildren() {
             return switch (this) {
-                case Error _ -> Stream.of();
+                case Error _error -> Stream.of();
                 case FieldInitializer fieldInitializer -> Stream.of(fieldInitializer.field, fieldInitializer.value);
                 case ValueInitializer valueInitializer -> Stream.of(valueInitializer.value);
             };

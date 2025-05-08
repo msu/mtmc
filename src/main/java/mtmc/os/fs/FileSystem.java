@@ -1,6 +1,8 @@
 package mtmc.os.fs;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
@@ -10,9 +12,34 @@ import mtmc.web.WebServer;
 
 public class FileSystem {
     private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
-    Context fileTestVar = WebServer.ctx;
+    static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
 
-    /*
+    static Path getDiskPath(String pathString) {
+        Path path = Path.of(pathString);
+        if (!path.isAbsolute()) {
+            path = DISK_PATH.resolve(path);
+        }
+        path = path.toAbsolutePath();
+        if (!path.startsWith(DISK_PATH)) {
+            throw new IllegalArgumentException(pathString + " is not a disk path");
+        }
+        return path;
+    }
+
+    public void listFiles(String basepath) {
+        Path TEST_PATH = getDiskPath(basepath);
+        File[] filesInDir = new File(TEST_PATH.toUri()).listFiles();
+        // getParent: normalize for shell like stuff
+        for (File file : filesInDir) {
+            System.out.println(file.getName());
+        }
+        //
+        System.out.println("Should've printed the files.");
+    }
+    //TODO: Ensure relative absolute something:
+    // Compare paths to $user/disk
+
+       /*
     TODO: Create "directories" variable to iterate
     for (directory = 0; directory < directories.length; directory++) // Iterate through directories
         if (directory.isDirectory){
@@ -30,5 +57,6 @@ public class FileSystem {
         public static boolean isDirectory(String directory) {return DIRECTORIES.containsKey(directory);}
 
      */
+
 }
 

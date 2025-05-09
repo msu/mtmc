@@ -7,14 +7,15 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/*public class FSTests {
+public class FSTests {
     @Test
     public void testPaths() {
         var fs = new FileSystem();
 
         assertAll(
             () -> assertEquals("/bin/hello_world", fs.resolve("/bin/../bin/hello_world")),
-            () -> assertEquals("/home/hello_world", fs.resolve("hello_world"))
+            () -> assertEquals("/home/hello_world", fs.resolve("hello_world")),
+            () -> assertEquals("/home/hello_world", fs.resolve("/home/./hello_world"))
         );
     }
 
@@ -23,4 +24,4 @@ import static org.junit.jupiter.api.Assertions.*;
         var fs = new FileSystem();
         fs.listFiles("/bin");
     }
-}*/
+}

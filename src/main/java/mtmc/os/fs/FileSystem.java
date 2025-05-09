@@ -42,16 +42,15 @@ public class FileSystem {
 
     public String resolve(String fileName) {
         ArrayList<String> resolvedArr = new ArrayList<>();
-        System.out.println("New Test");
+        String pathString = null;
         String[] parts = fileName.split("/");
-        System.out.println(List.of(parts)); // Input Path
 
-        String pathString = null; // Initialize here
+        System.out.println("New Test");
+        System.out.println(List.of(parts)); // Input Path
 
         if (parts.length == 0) {
             return null;
         }
-
         // Absolute path case
         if (parts[0].equals("")) {
             System.out.println("ABSOLUTE");
@@ -86,17 +85,8 @@ public class FileSystem {
             System.out.println("Rel before construction: " + resolvedArr);
             pathString = relativePathConstructor(resolvedArr);
         }
-
         return pathString;
     }
-
-    // TODO: The code seems to becoming unneccessarily complex:
-        // Absolute Path should have an initial "/", and Relative should not. Need to remove Relative's first "/"
-        // TODO: Build absolutePathConstructor and relativePathConstructor
-        // TODO: Separate into new resolveString method?
-
-        // Converting path arrays into strings
-
 
     public String relativePathConstructor(ArrayList<String> relativeArr) { // Unfinished
         String fileString = "";
@@ -124,8 +114,7 @@ public class FileSystem {
                 for (int resolvedDirs = 0; resolvedDirs < absoluteArr.size(); resolvedDirs++) {
                     fileString += ("/" + absoluteArr.get(resolvedDirs));
                 }
-            }
-            else if(absoluteArr.getFirst().equals("home")){
+            } else if (absoluteArr.getFirst().equals("home")) {
                 for (int resolvedDirs = 0; resolvedDirs < absoluteArr.size(); resolvedDirs++) {
                     fileString += ("/" + absoluteArr.get(resolvedDirs));
                 }

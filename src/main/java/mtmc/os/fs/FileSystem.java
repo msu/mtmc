@@ -83,8 +83,8 @@ public class FileSystem {
                     resolvedArr.add(parts[dirVar]);
                 }
             }
+            System.out.println("Rel before construction: " + resolvedArr);
             pathString = relativePathConstructor(resolvedArr);
-            System.out.println("Rel before construction: " + pathString);
         }
 
         return pathString;

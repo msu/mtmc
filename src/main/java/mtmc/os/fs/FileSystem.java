@@ -42,55 +42,104 @@ public class FileSystem {
 
     public String resolve(String fileName) {
         ArrayList<String> resolvedArr = new ArrayList<>();
-        String fileString = "";
         System.out.println("New Test");
         String[] parts = fileName.split("/");
         System.out.println(List.of(parts)); // Input Path
+
+        String pathString = null; // Initialize here
+
         if (parts.length == 0) {
             return null;
         }
-        if (parts[0].equals("")) { // First is empty string = Absolute
-            System.out.println("ABSOLUTE");
-            // Creates a resolved path array
 
-            for (int dirVar = 0; dirVar < parts.length; dirVar++) { // Remember parts[0].equals("")
-                if (parts[dirVar] == "") {
-                } else if (parts[dirVar].equals(".")) {
-                } else if (parts[dirVar].equals("..")) { // Removes the last added directory parent
+        // Absolute path case
+        if (parts[0].equals("")) {
+            System.out.println("ABSOLUTE");
+            for (int dirVar = 0; dirVar < parts.length; dirVar++) {
+                if (parts[dirVar].equals("") || parts[dirVar].equals(".")) {
+                    continue;
+                } else if (parts[dirVar].equals("..")) {
                     if (!resolvedArr.isEmpty()) {
                         resolvedArr.removeLast();
                     }
-                } else if (parts[dirVar] != "..") {
+                } else {
                     resolvedArr.add(parts[dirVar]);
                 }
             }
-            System.out.println(resolvedArr);
+            System.out.println("Abs before construction: " + resolvedArr);
+            pathString = absolutePathConstructor(resolvedArr);
         }
-        if (!parts[0].equals("")) { // Checks for empty string
+        // Relative path case
+        else {
             System.out.println("RELATIVE");
-
+            for (int dirVar = 0; dirVar < parts.length; dirVar++) {
+                if (parts[dirVar].equals(".")) {
+                    continue;
+                } else if (parts[dirVar].equals("..")) {
+                    if (!resolvedArr.isEmpty()) {
+                        resolvedArr.remove(resolvedArr.size() - 1);
+                    }
+                } else {
+                    resolvedArr.add(parts[dirVar]);
+                }
+            }
+            pathString = relativePathConstructor(resolvedArr);
+            System.out.println("Rel before construction: " + pathString);
         }
+
+        return pathString;
+    }
+
+    // TODO: The code seems to becoming unneccessarily complex:
+        // Absolute Path should have an initial "/", and Relative should not. Need to remove Relative's first "/"
+        // TODO: Build absolutePathConstructor and relativePathConstructor
+        // TODO: Separate into new resolveString method?
 
         // Converting path arrays into strings
-        if (resolvedArr.size() != 0){
-            if (resolvedArr.getFirst().equals("home"))
-                for (int resolvedDirs = 0; resolvedDirs < resolvedArr.size(); resolvedDirs++) {
-                    fileString += ("/" + resolvedArr.get(resolvedDirs));
+
+
+    public String relativePathConstructor(ArrayList<String> relativeArr) { // Unfinished
+        String fileString = "";
+        if (relativeArr.size() != 0) {
+            if (relativeArr.getFirst().equals("home"))
+                for (int resolvedDirs = 0; resolvedDirs < relativeArr.size(); resolvedDirs++) {
+                    fileString += ("/" + relativeArr.get(resolvedDirs));
                 }
-            else if (!resolvedArr.getFirst().equals("home")) {
-                for (int resolvedDirs = 0; resolvedDirs < resolvedArr.size(); resolvedDirs++) {
-                    fileString += ("/" + resolvedArr.get(resolvedDirs));
+            else if (!relativeArr.getFirst().equals("home")) {
+                fileString += "/home";
+                for (int resolvedDirs = 0; resolvedDirs < relativeArr.size(); resolvedDirs++) {
+                    fileString += ("/" + relativeArr.get(resolvedDirs));
                 }
             }
         }
-        System.out.println("fileString: " + fileString);
+        System.out.println("Relative string: " + fileString);
         System.out.println("\n");
         return fileString;
     }
+
+    public String absolutePathConstructor(ArrayList<String> absoluteArr) {
+        String fileString = "";
+        if (absoluteArr.size() != 0) {
+            if (!absoluteArr.getFirst().equals("home")) {
+                for (int resolvedDirs = 0; resolvedDirs < absoluteArr.size(); resolvedDirs++) {
+                    fileString += ("/" + absoluteArr.get(resolvedDirs));
+                }
+            }
+            else if(absoluteArr.getFirst().equals("home")){
+                for (int resolvedDirs = 0; resolvedDirs < absoluteArr.size(); resolvedDirs++) {
+                    fileString += ("/" + absoluteArr.get(resolvedDirs));
+                }
+            }
+        }
+        System.out.println("Absolute string: " + fileString);
+        System.out.println("\n");
+        return fileString;
+    }
+
     //TODO: Ensure relative absolute something:
     // Compare paths to $user/disk
 
-       /*
+    /*
     TODO: Create "directories" variable to iterate
     for (directory = 0; directory < directories.length; directory++) // Iterate through directories
         if (directory.isDirectory){

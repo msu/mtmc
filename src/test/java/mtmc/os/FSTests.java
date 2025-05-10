@@ -17,10 +17,19 @@ public class FSTests {
             () -> assertEquals("/home/hello_world", fs.resolve("hello_world")),
             () -> assertEquals("/home/hello_world", fs.resolve("/home/./hello_world")),
             () -> {
-              fs.setPWD("/bin");
-              assertEquals("/bin/cat", fs.resolve("./cat"));
-              assertEquals("/bin/cat", fs.resolve("cat"));
+                fs.setPWD("/bin");
+                assertEquals("/bin/cat", fs.resolve("./cat"));
+                assertEquals("/bin/cat", fs.resolve("cat"));
             }
+        );
+    }
+
+    @Test
+    public void testPathJoin() {
+        var fs = new FileSystem();
+        assertAll(
+            () -> assertEquals("/bin/pwd", fs.join("/bin", "cat")),
+            () -> assertEquals("/bin/echo", fs.join("/bin", "./echo"))
         );
     }
 

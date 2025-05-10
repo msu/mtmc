@@ -12,8 +12,10 @@ import java.util.TreeMap;
 import io.javalin.http.Context;
 import mtmc.web.WebServer;
 
+// TODO: stop using the Path objects, remove prints when not debugging
 public class FileSystem {
     private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
+    // TODO: make these strings and write a `static String join(String path, String path)` method
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
     static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
 
@@ -51,6 +53,7 @@ public class FileSystem {
         if (parts.length == 0) {
             return null;
         }
+        // TODO: maybe extract this duplicated loop
         // Absolute path case
         if (parts[0].equals("")) {
             System.out.println("ABSOLUTE");

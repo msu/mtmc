@@ -15,7 +15,12 @@ public class FSTests {
         assertAll(
             () -> assertEquals("/bin/hello_world", fs.resolve("/bin/../bin/hello_world")),
             () -> assertEquals("/home/hello_world", fs.resolve("hello_world")),
-            () -> assertEquals("/home/hello_world", fs.resolve("/home/./hello_world"))
+            () -> assertEquals("/home/hello_world", fs.resolve("/home/./hello_world")),
+            () -> {
+              fs.setPWD("/bin");
+              assertEquals("/bin/cat", fs.resolve("./cat"));
+              assertEquals("/bin/cat", fs.resolve("cat"));
+            }
         );
     }
 

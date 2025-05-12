@@ -352,4 +352,16 @@ public record Token(
             this.end = end;
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof String s) return Objects.equals(content, s);
+        if (!(o instanceof Token token)) return false;
+        return end == token.end && start == token.start && Objects.equals(content, token.content) && type == token.type;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, content, start, end);
+    }
 }

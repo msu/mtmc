@@ -125,7 +125,7 @@ public class SeaParser {
         }
     }
 
-    public TypeExpr parseCompoundType(TypeExpr simpleType, @Nullable Token name) throws ParseException {
+    public TypeExpr parseCompoundType(TypeExpr simpleType, @Nullable Token ignored) throws ParseException {
         if (take(LEFT_BRACKET)) {
             if (!take(RIGHT_BRACKET)) {
                 throw new ParseException(peekToken(), "expected ']' after '[' in compound-type");
@@ -350,12 +350,12 @@ public class SeaParser {
         return new StatementGoto(start, labelName);
     }
 
-    StatementBreak parseStatementBreak() throws ParseException {
+    StatementBreak parseStatementBreak() {
         if (!take(KW_BREAK)) return null;
         return new StatementBreak(lastToken());
     }
 
-    StatementContinue parseStatementContinue() throws ParseException {
+    StatementContinue parseStatementContinue() {
         if (!take(KW_CONTINUE)) return null;
         return new StatementContinue(lastToken());
     }

@@ -2,14 +2,13 @@ package mtmc.os.fs;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLOutput;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import io.javalin.http.Context;
+import io.javalin.http.util.JsonEscapeUtil;
 import mtmc.web.WebServer;
 
 // TODO: stop using the Path objects, remove prints when not debugging
@@ -35,16 +34,20 @@ public class FileSystem {
     public void setCWD(String cd) {
         cwd = cd;
     }
-    /*public void listFiles(String basepath) {
-        Path TEST_PATH = getDiskPath(basepath);
-        File[] filesInDir = new File(TEST_PATH.toUri()).listFiles();
-        // getParent: normalize for shell like stuff
-        for (File file : filesInDir) {
-            System.out.println(file.getName());
+    public void listFiles() {
+        File[] files = new File("disk").listFiles();
+        for (File file : files) {
+            // If a subdirectory is found,
+            // print the name of the subdirectory
+            if (file.isDirectory()) {
+                System.out.println("Directory: " + file.getName());
+            }
+            else {
+                // Print the file name
+                System.out.println("File: " + file.getName());
+            }
         }
-        //
-        System.out.println("Should've printed the files.");
-    }*/
+    }
 
     public String resolve(String fileName) {
         ArrayList<String> resolvedArr = new ArrayList<>();

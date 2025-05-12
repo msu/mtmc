@@ -15,11 +15,12 @@ import mtmc.web.WebServer;
 // TODO: stop using the Path objects, remove prints when not debugging
 public class FileSystem {
     private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
+    private String cwd = "/home";
     // TODO: make these strings and write a `static String join(String path, String path)` method
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
     static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
 
-    static Path getDiskPath(String pathString) { // C:\Users_username\folderParents\mtmc\disk
+    /*static Path getDiskPath(String pathString) { // C:\Users_username\folderParents\mtmc\disk
         Path path = Path.of(pathString);
         if (!path.isAbsolute()) {
             path = DISK_PATH.resolve(path);
@@ -29,9 +30,12 @@ public class FileSystem {
             throw new IllegalArgumentException(pathString + " is not a disk path");
         }
         return path;
-    }
+    }*/
 
-    public void listFiles(String basepath) {
+    public void setCWD(String cd){
+        cwd = cd;
+    }
+    /*public void listFiles(String basepath) {
         Path TEST_PATH = getDiskPath(basepath);
         File[] filesInDir = new File(TEST_PATH.toUri()).listFiles();
         // getParent: normalize for shell like stuff
@@ -40,7 +44,7 @@ public class FileSystem {
         }
         //
         System.out.println("Should've printed the files.");
-    }
+    }*/
 
     public String resolve(String fileName) {
         ArrayList<String> resolvedArr = new ArrayList<>();
@@ -94,12 +98,12 @@ public class FileSystem {
     public String relativePathConstructor(ArrayList<String> relativeArr) { // Unfinished
         String fileString = "";
         if (relativeArr.size() != 0) {
-            if (relativeArr.getFirst().equals("home"))
+            if (relativeArr.getFirst().equals(cwd))
                 for (int resolvedDirs = 0; resolvedDirs < relativeArr.size(); resolvedDirs++) {
                     fileString += ("/" + relativeArr.get(resolvedDirs));
                 }
-            else if (!relativeArr.getFirst().equals("home")) {
-                fileString += "/home";
+            else if (!relativeArr.getFirst().equals(cwd)) {
+                fileString += cwd;
                 for (int resolvedDirs = 0; resolvedDirs < relativeArr.size(); resolvedDirs++) {
                     fileString += ("/" + relativeArr.get(resolvedDirs));
                 }

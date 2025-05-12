@@ -39,4 +39,12 @@ public class SeaStatementTests {
         var val = ((ExpressionInteger) stmt.initValue);
         assertEquals(12, val.value);
     }
+
+    @Test
+    public void testEmptyVariable() {
+        StatementVar stmt = parseStatement("int myVar;");
+        assertEquals("myVar", stmt.name.content());
+        assertInstanceOf(TypeExprInt.class, stmt.type);
+        assertNull(stmt.initValue);
+    }
 }

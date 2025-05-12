@@ -3,9 +3,7 @@ package mtmc.lang.sea.ast;
 import mtmc.lang.sea.ParseException;
 import mtmc.lang.sea.Token;
 
-public abstract sealed class Statement extends Ast permits StatementBlock, StatementBreak, StatementContinue,
-        StatementDoWhile, StatementExpression, StatementFor, StatementGoto, StatementIf,
-        StatementSyntaxError, StatementVar, StatementWhile
+public abstract sealed class Statement extends Ast permits StatementBlock, StatementBreak, StatementContinue, StatementDoWhile, StatementExpression, StatementFor, StatementGoto, StatementIf, StatementSyntaxError, StatementVar, StatementWhile
 {
     private Token labelAnchor = null;
 

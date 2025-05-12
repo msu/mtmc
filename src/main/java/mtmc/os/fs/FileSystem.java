@@ -132,6 +132,18 @@ public class FileSystem {
         return fileString;
     }
 
+    public String join(String upperPath, String lowerPath){
+        String joinedPath = "";
+        String[] parts = lowerPath.split("/");
+        if (!parts[0].equals("/")){
+            joinedPath = upperPath + "/" + lowerPath;
+        } else if (parts[0].equals("/")) {
+            joinedPath = upperPath + lowerPath;
+        }
+        return joinedPath;
+    }
+
+
     //TODO: Ensure relative absolute something:
     // Compare paths to $user/disk
 

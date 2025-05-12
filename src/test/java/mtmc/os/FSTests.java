@@ -28,9 +28,14 @@ public class FSTests {
     public void testPathJoin() {
         var fs = new FileSystem();
         assertAll(
-                () -> assertEquals("/bin/pwd", fs.join("/bin", "cat")),
-                () -> assertEquals("/bin/echo", fs.join("/bin", "./echo")),
-                () -> assertEquals("/echo", fs.join("/bin", "../../echo"))
+                () -> assertEquals("/bin/pwd", fs.join("/bin", "pwd")),
+                () -> assertEquals("/bin/./echo", fs.join("/bin", "./echo")),
+                () -> assertEquals("/bin/../../echo", fs.join("/bin", "../../echo")),
+                () -> assertEquals("scoobie/doobie", fs.join("scoobie", "doobie")),
+                () -> {
+                    fs.setCWD("/img");
+                    assertEquals("/img/dog", fs.join("/img", "dog"));
+                }
         );
     }
 

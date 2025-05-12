@@ -32,7 +32,7 @@ public class FileSystem {
         return path;
     }*/
 
-    public void setCWD(String cd){
+    public void setCWD(String cd) {
         cwd = cd;
     }
     /*public void listFiles(String basepath) {
@@ -50,46 +50,26 @@ public class FileSystem {
         ArrayList<String> resolvedArr = new ArrayList<>();
         String pathString = null;
         String[] parts = fileName.split("/");
-
-        System.out.println("New Test");
-        System.out.println(List.of(parts)); // Input Path
+        //System.out.println(List.of(parts)); // Input Path
 
         if (parts.length == 0) {
             return null;
         }
         // TODO: maybe extract this duplicated loop
-        // Absolute path case
-        if (parts[0].equals("")) {
-            System.out.println("ABSOLUTE");
-            for (int dirVar = 0; dirVar < parts.length; dirVar++) {
-                if (parts[dirVar].equals("") || parts[dirVar].equals(".")) {
-                    continue;
-                } else if (parts[dirVar].equals("..")) {
-                    if (!resolvedArr.isEmpty()) {
-                        resolvedArr.removeLast();
-                    }
-                } else {
-                    resolvedArr.add(parts[dirVar]);
+        for (int dirVar = 0; dirVar < parts.length; dirVar++) {
+            if (parts[dirVar].equals("") || parts[dirVar].equals(".")) {
+                continue;
+            } else if (parts[dirVar].equals("..")) {
+                if (!resolvedArr.isEmpty()) {
+                    resolvedArr.removeLast();
                 }
+            } else {
+                resolvedArr.add(parts[dirVar]);
             }
-            System.out.println("Abs before construction: " + resolvedArr);
-            pathString = absolutePathConstructor(resolvedArr);
         }
-        // Relative path case
-        else {
-            System.out.println("RELATIVE");
-            for (int dirVar = 0; dirVar < parts.length; dirVar++) {
-                if (parts[dirVar].equals(".")) {
-                    continue;
-                } else if (parts[dirVar].equals("..")) {
-                    if (!resolvedArr.isEmpty()) {
-                        resolvedArr.remove(resolvedArr.size() - 1);
-                    }
-                } else {
-                    resolvedArr.add(parts[dirVar]);
-                }
-            }
-            System.out.println("Rel before construction: " + resolvedArr);
+        if (parts[0].equals("")) {
+            pathString = absolutePathConstructor(resolvedArr);
+        } else {
             pathString = relativePathConstructor(resolvedArr);
         }
         return pathString;
@@ -109,8 +89,8 @@ public class FileSystem {
                 }
             }
         }
-        System.out.println("Relative string: " + fileString);
-        System.out.println("\n");
+        //System.out.println("Relative string: " + fileString);
+        //System.out.println("\n");
         return fileString;
     }
 
@@ -127,15 +107,15 @@ public class FileSystem {
                 }
             }
         }
-        System.out.println("Absolute string: " + fileString);
-        System.out.println("\n");
+        //System.out.println("Absolute string: " + fileString);
+        //System.out.println("\n");
         return fileString;
     }
 
-    public String join(String upperPath, String lowerPath){
+    public String join(String upperPath, String lowerPath) {
         String joinedPath = "";
         String[] parts = lowerPath.split("/");
-        if (!parts[0].equals("/")){
+        if (!parts[0].equals("/")) {
             joinedPath = upperPath + "/" + lowerPath;
         } else if (parts[0].equals("/")) {
             joinedPath = upperPath + lowerPath;

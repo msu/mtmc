@@ -13,9 +13,15 @@ public class FSTests {
         var fs = new FileSystem();
 
         assertAll(
-                () -> assertEquals("/bin/hello_world", fs.resolve("/bin/../bin/hello_world")),
+                () -> assertEquals("/bin/bin/hello_world", fs. resolve("/bin/./bin/hello_world")),
+                () -> assertEquals("/bin/hello_world", fs.resolve("../bin/hello_world")),
+                () -> assertEquals("/bin/hello_world", fs.resolve("../../bin/hello_world")),
                 () -> assertEquals("/home/hello_world", fs.resolve("hello_world")),
                 () -> assertEquals("/home/hello_world", fs.resolve("/home/./hello_world")),
+                () -> {
+                    fs.setCWD("/home/user/dillon/projects/testcase");
+                    assertEquals("/home/user/dillon/.local/bin", fs.resolve("../../.local/bin"));
+                },
                 () -> {
                     fs.setCWD("/bin");
                     assertEquals("/bin/cat", fs.resolve("./cat"));
@@ -43,7 +49,6 @@ public class FSTests {
     @Test
     public void testListFiles() {
         var fs = new FileSystem();
-        fs.listFiles();
-        //fs.listFiles("/bin");
+        fs.listFiles("../bin");
     }
 }

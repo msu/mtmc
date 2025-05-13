@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.sql.SQLOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -11,11 +12,9 @@ import io.javalin.http.Context;
 import io.javalin.http.util.JsonEscapeUtil;
 import mtmc.web.WebServer;
 
-// TODO: stop using the Path objects, remove prints when not debugging
 public class FileSystem {
     private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
     private String cwd = "/home";
-    // TODO: make these strings and write a `static String join(String path, String path)` method
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
     static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
 
@@ -34,31 +33,26 @@ public class FileSystem {
     public void setCWD(String cd) {
         cwd = cd;
     }
-    public void listFiles() {
-        File[] files = new File("disk").listFiles();
-        for (File file : files) {
-            // If a subdirectory is found,
-            // print the name of the subdirectory
-            if (file.isDirectory()) {
-                System.out.println("Directory: " + file.getName());
-            }
-            else {
-                // Print the file name
-                System.out.println("File: " + file.getName());
-            }
-        }
-    }
+
 
     public String resolve(String fileName) {
+
         ArrayList<String> resolvedArr = new ArrayList<>();
         String pathString = null;
         String[] parts = fileName.split("/");
+        String[] cwdSplit = cwd.split("/");             // Split the string by "/"
+        ArrayList<String> cwdString = new ArrayList<>(Arrays.asList(cwdSplit)); // Convert to ArrayList
+        cwdString.removeFirst();
+        System.out.println("CWD STRING: " + cwdString);
+        if(!parts[0].equals("") || parts[0].equals("..")){
+            resolvedArr = cwdString;
+        }
         //System.out.println(List.of(parts)); // Input Path
 
+        //Construction of path given: Determining absolute or relative based on "..", ".", and "/"
         if (parts.length == 0) {
             return null;
         }
-        // TODO: maybe extract this duplicated loop
         for (int dirVar = 0; dirVar < parts.length; dirVar++) {
             if (parts[dirVar].equals("") || parts[dirVar].equals(".")) {
                 continue;
@@ -74,6 +68,7 @@ public class FileSystem {
             pathString = absolutePathConstructor(resolvedArr);
         } else {
             pathString = relativePathConstructor(resolvedArr);
+            //pathString = absolutePathConstructor(resolvedArr);
         }
         return pathString;
     }
@@ -126,6 +121,37 @@ public class FileSystem {
         return joinedPath;
     }
 
+    private File toRealPath(String path) {
+        String resolvedPath = resolve(path);
+        String slashGone = resolvedPath.substring(1);
+        return DISK_PATH.resolve(slashGone).toFile();
+    }
+
+    public void listFiles(String path) {
+        File resolvedPath = toRealPath(path);
+        File[] files = resolvedPath.listFiles();
+        System.out.println(Arrays.toString(files));
+        if(files == null){
+            System.out.println("File path does not exist or has no children.");
+            return;
+        }
+        for (File file : files) {
+            // If a subdirectory is found,
+            // print the name of the subdirectory
+
+            if (file.isDirectory()) {
+                System.out.println("Directory: " + file.getName());
+                /*for (int i = 0; i < files[file].length; i++) {
+
+                }*/
+                System.out.println("test: " + Arrays.toString(file.listFiles()));
+            }
+            else {
+                // Print the file name
+                System.out.println("File: " + file.getName());
+            }
+        }
+    }
 
     //TODO: Ensure relative absolute something:
     // Compare paths to $user/disk

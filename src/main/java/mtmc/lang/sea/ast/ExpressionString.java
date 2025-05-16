@@ -10,4 +10,8 @@ public final class ExpressionString extends Expression {
     public byte[] getBytes() {
         return start.content().getBytes();
     }
+
+    public String content() {
+        return start.content();
+    }
 }

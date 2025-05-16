@@ -5,7 +5,7 @@ import mtmc.asm.Assembler;
 import mtmc.tokenizer.MTMCToken;
 
 public class Data extends ASMElement {
-
+    public MTMCToken valueToken;
     private byte[] value;
 
     public Data(MTMCToken label) {
@@ -29,7 +29,8 @@ public class Data extends ASMElement {
         }
     }
 
-    public void setValue(byte[] value) {
+    public void setValue(MTMCToken src, byte[] value) {
+        this.valueToken = src;
         this.value = value;
     }
 }

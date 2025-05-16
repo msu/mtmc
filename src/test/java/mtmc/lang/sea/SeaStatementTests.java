@@ -1,11 +1,9 @@
 package mtmc.lang.sea;
 
-import mtmc.lang.sea.ast.ExpressionInteger;
-import mtmc.lang.sea.ast.Statement;
-import mtmc.lang.sea.ast.StatementVar;
-import mtmc.lang.sea.ast.TypeExprInt;
+import mtmc.lang.sea.ast.*;
 import org.junit.jupiter.api.Test;
 
+import static mtmc.lang.sea.SeaExpressionTests.Matching.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SeaStatementTests {
@@ -47,4 +45,44 @@ public class SeaStatementTests {
         assertInstanceOf(TypeExprInt.class, stmt.type);
         assertNull(stmt.initValue);
     }
+
+    @Test
+    public void testIfStatement() {
+        StatementIf stmt = parseStatement("if (x == 3) printf(\"hello\");");
+        assertMatches(stmt.condition, eq(sym("x"), intV(3)));
+        assertMatches(stmt.body, call("printf", strV("hello")));
+        assertNull(stmt.elseBody);
+    }
+
+    @Test
+    public void testForStatement() {
+        StatementFor stmt = parseStatement("for (; i < 10; i++) printf(\"hi there %s\", \"yo\");");
+        assertNull(stmt.initStatement);
+        assertNull(stmt.initExpression);
+        assertMatches(stmt.condition, lt(sym("i"), intV(10)));
+        assertMatches(stmt.inc, postInc(sym("i")));
+        assertMatches(stmt.body, call("printf", strV("hi there %s"), strV("yo")));
+    }
+
+    @Test
+    public void testIfElseStatement() {
+        StatementIf stmt = parseStatement("""
+                if (x >> 3 | y << 7) {
+                    printf("x = %d, y = %d\\n", x, y);
+                    x = x * 3 + y;
+                } else {
+                    printf("you\\n");
+                }
+                """);
+
+        assertMatches(stmt.condition, bor(rsh(sym("x"), intV(3)), lsh(sym("y"), intV(7))));
+        assertMatches(stmt.body, block(
+                call("printf", strV("x = %d, y = %d\n"), sym("x"), sym("y")),
+                assign("x", add(mul(sym("x"), intV(3)), sym("y")))
+        ));
+        assertMatches(stmt.elseBody, block(
+                call("printf", strV("you\n"))
+        ));
+    }
+
 }

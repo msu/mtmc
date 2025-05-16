@@ -8,6 +8,18 @@ public record MTMCToken(
         String stringValue,
         TokenType type
 ) {
+    public static MTMCToken join(MTMCToken a, MTMCToken b, TokenType type) {
+        if (a.end != b.start) throw new IllegalArgumentException("tokens must be joint!");
+        return new MTMCToken(
+                a.start,
+                b.end,
+                a.line,
+                a.lineOffset,
+                a.stringValue + b.stringValue,
+                type
+        );
+    }
+
     public String stringValue() {
         return stringValue;
     }

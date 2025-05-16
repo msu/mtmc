@@ -9,4 +9,8 @@ public final class ExpressionPostfix extends Expression {
         super(lhs.start, op);
         this.inner = lhs;
     }
+
+    public String op() {
+        return end.content();
+    }
 }

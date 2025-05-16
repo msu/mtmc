@@ -12,9 +12,8 @@ public class SeaParser {
     private final List<Token> tokens;
     private int index = 0;
 
-
-    private Token openingBrace = null;
     private final LinkedHashMap<String, Object> symbols;
+    private Vector<LinkedHashMap<String, Token>> scope = new Vector<>();
 
     public SeaParser(@NotNull List<Token> tokens) {
         this.tokens = tokens;
@@ -37,8 +36,9 @@ public class SeaParser {
                 var decl = parseDeclaration();
                 declarations.add(decl);
             } catch (ParseException e) {
-                if (openingBrace != null) {
-                    consumeMatchingBrace(openingBrace);
+                declarations.add(new DeclarationSyntaxError(e.token, e.getMessage()));
+                if (bodyBrace != null) {
+                    consumeMatchingBrace(bodyBrace);
                 } else {
                     consumeThrough(SEMICOLON);
                 }
@@ -47,6 +47,10 @@ public class SeaParser {
             if (peekToken().equals(start)) {
                 throw new ParseException(peekToken(), "INFINITE LOOP DETECTED");
             }
+        }
+
+        if (!symbols.containsKey("main")) {
+            declarations.add(new DeclarationSyntaxError(Token.SOF, "no main function defined"));
         }
 
         return new Unit(declarations, this.symbols);
@@ -81,8 +85,40 @@ public class SeaParser {
         return params;
     }
 
+    public DeclarationTypedef parseDeclarationTypedef() throws ParseException {
+        if (!take(KW_TYPEDEF)) {
+            return null;
+        }
+        var start = lastToken();
+
+        var type = parseSimpleType();
+
+        if (!take(LIT_IDENT)) {
+            throw new ParseException(peekToken(), "expected new type name after");
+        }
+        var name = lastToken();
+        if (symbols.containsKey(name.content())) {
+            throw new ParseException(name, "the symbol '" + name.content() + "' was previously defined");
+        }
+
+        type = parseCompoundType(type, name);
+
+        if (!take(SEMICOLON)) {
+            throw new ParseException(lastToken(), "expected ';' after typedef");
+        }
+
+        var typedef = new DeclarationTypedef(start, type, name, type.end.end() < name.end() ? name : type.end);
+        symbols.put(name.content(), typedef);
+        return typedef;
+    }
+
+    Token bodyBrace = null;
+
     @NotNull
     public Declaration parseDeclaration() throws ParseException {
+        var typedef = parseDeclarationTypedef();
+        if (typedef != null) return typedef;
+
         TypeExpr type;
         final var t2 = peekToken2();
         if (t2.type().equals(EQUAL) || t2.type().equals(SEMICOLON) || t2.type().equals(LEFT_PAREN)) {
@@ -95,6 +131,9 @@ public class SeaParser {
             throw new ParseException(peekToken(), "expected declaration name");
         }
         final Token name = consume();
+        if (symbols.containsKey(name.content())) {
+            throw new ParseException(name, "the symbol '" + name.content() + "' was previously defined");
+        }
 
         if (take(LEFT_PAREN)) {
             var params = parseParamList();
@@ -105,10 +144,16 @@ public class SeaParser {
                     throw new ParseException(lastToken(), "expected ';' after function declaration");
                 }
             } else {
+                bodyBrace = peekToken();
+                scope = new Vector<>();
                 body = parseStatementBlock();
+                scope = null;
+                bodyBrace = null;
             }
 
-            return new DeclarationFunc(type, name, params, body, body == null ? lastToken() : body.end);
+            var func = new DeclarationFunc(type, name, params, body, body == null ? lastToken() : body.end);
+            symbols.put(name.content(), func);
+            return func;
         } else {
             type = parseCompoundType(type, name);
 
@@ -121,7 +166,9 @@ public class SeaParser {
                 throw new ParseException(lastToken(), "expected ';' after variable declaration");
             }
 
-            return new DeclarationVar(type, name, init);
+            var decl = new DeclarationVar(type, name, init);
+            symbols.put(name.content(), decl);
+            return decl;
         }
     }
 
@@ -182,6 +229,12 @@ public class SeaParser {
             consume();
         }
 
+        var blockStmt = parseStatementBlock();
+        if (blockStmt != null) {
+            blockStmt.setLabelAnchor(label);
+            return blockStmt;
+        }
+
         var ifStmt = parseStatementIf();
         if (ifStmt != null) {
             ifStmt.setLabelAnchor(label);
@@ -207,7 +260,7 @@ public class SeaParser {
             return doWhileStmt;
         }
 
-       var varStmt = parseStatementVar();
+        var varStmt = parseStatementVar();
         if (varStmt != null) {
             if (!take(SEMICOLON)) throw new ParseException(lastToken(), "expected ';' after variable statement");
             varStmt.setLabelAnchor(label);
@@ -235,10 +288,19 @@ public class SeaParser {
             return breakStmt;
         }
 
+        var returnStmt = parseStatementReturn();
+        if (returnStmt != null) {
+            if (!take(SEMICOLON)) throw new ParseException(lastToken(), "expected ';' after return statement");
+            returnStmt.setLabelAnchor(label);
+            return returnStmt;
+        }
+
         Expression expr = parseExpression();
         if (expr != null) {
+            if (!take(SEMICOLON)) throw new ParseException(lastToken(), "expected ';' after expression");
             var stmt = new StatementExpression(expr);
             stmt.setLabelAnchor(label);
+            return stmt;
         }
 
         throw new ParseException(lastToken(), "expected statement");
@@ -269,6 +331,7 @@ public class SeaParser {
 
         if (!take(LEFT_PAREN)) throw new ParseException(lastToken(), "expected '(' after 'for'");
 
+        scope.add(new LinkedHashMap<>());
         Expression initExpr = null;
         StatementVar initStmt = null;
         if (peekTypeName()) {
@@ -289,7 +352,19 @@ public class SeaParser {
 
         var body = parseStatement();
 
+        scope.removeLast();
         return new StatementFor(start, initExpr, initStmt, condition, incr, body);
+    }
+
+    boolean defineLocal(Token token) {
+        for (var frame : scope) {
+            if (frame.containsKey(token.content())) {
+                return false;
+            }
+        }
+
+        scope.getLast().put(token.content(), token);
+        return true;
     }
 
     StatementVar parseStatementVar() throws ParseException {
@@ -299,6 +374,10 @@ public class SeaParser {
 
         if (!take(LIT_IDENT)) throw new ParseException(peekToken(), "expected variable name");
         Token name = lastToken();
+        if (!defineLocal(name)) {
+            throw new ParseException(name, "the symbol '" + name.content() + "' shadows a previously defined symbol");
+        }
+
         type = parseCompoundType(type, name);
 
         Expression value = null;
@@ -355,33 +434,44 @@ public class SeaParser {
         return new StatementBreak(lastToken());
     }
 
+    StatementReturn parseStatementReturn() {
+        if (!take(KW_RETURN)) return null;
+        var start = lastToken();
+
+        Expression value = null;
+        if (!match(SEMICOLON)) {
+            value = parseExpression();
+        }
+
+        return new StatementReturn(start, value);
+    }
+
     StatementContinue parseStatementContinue() {
         if (!take(KW_CONTINUE)) return null;
         return new StatementContinue(lastToken());
     }
 
-    void recover(Token ob) throws ParseException {
-        Token endToken = null;
-        if (ob != null) {
-            int start = index;
-            var open = 1;
-            while (hasMoreTokens() && open > 0) {
-                var token = consume();
-                if (token.type().equals(LEFT_BRACE)) {
-                    open++;
-                } else if (token.type().equals(RIGHT_BRACE)) {
-                    open--;
-                }
-            }
-
-            if (!hasMoreTokens()) throw new ParseException(ob, "unterminated '{'");
-            endToken = lastToken();
-            index = start;
+    void recover(Token openingBrace) throws ParseException {
+        var pos = index;
+        index = tokens.indexOf(openingBrace) + 1;
+        int open = 1;
+        while (hasMoreTokens() && open > 0 && index < pos) {
+            if (take(LEFT_BRACE)) open++;
+            else if (take(RIGHT_BRACE)) open--;
+            else consume();
         }
 
-        while (hasMoreTokens() && peekToken() != endToken) {
-            if (take(SEMICOLON)) return;
-            if (match(KW_IF, KW_FOR)) return;
+        // we want to consume all open braces from other blocks
+        index = pos;
+        while (open > 1) {
+            if (take(LEFT_BRACE)) open++;
+            else if (take(RIGHT_BRACE)) open--;
+            else consume();
+        }
+
+        while (hasMoreTokens()) {
+            if (match(RIGHT_BRACE, SEMICOLON)) return;
+            if (match(KW_IF, KW_FOR, KW_DO, KW_WHILE, KW_CONTINUE, KW_BREAK, KW_RETURN, KW_GOTO)) return;
         }
     }
 
@@ -389,11 +479,11 @@ public class SeaParser {
     public StatementBlock parseStatementBlock() throws ParseException {
         if (!take(LEFT_BRACE)) return null;
         var start = lastToken();
-        var previousOpeningBrace = openingBrace;
-        openingBrace = start;
 
+        scope.add(new LinkedHashMap<>());
         var stmts = new ArrayList<Statement>();
         while (hasMoreTokens() && !match(RIGHT_BRACE)) {
+            var before = peekToken();
             try {
                 var stmt = parseStatement();
                 stmts.add(stmt);
@@ -401,10 +491,11 @@ public class SeaParser {
                 var stmt = new StatementSyntaxError(e.token, e.getMessage());
                 stmts.add(stmt);
                 recover(start);
+                if (peekToken() == before) break;
             }
         }
+        scope.removeLast();
 
-        openingBrace = previousOpeningBrace;
         if (!take(RIGHT_BRACE)) {
             throw new ParseException(lastToken(), "expected '}' after block statement");
         }
@@ -421,8 +512,7 @@ public class SeaParser {
         if (expr == null) return null;
 
         if (take(EQUAL, STAR_EQ, SLASH_EQ, PERCENT_EQ, PLUS_EQ, DASH_EQ, LEFT_ARROW2_EQ, RIGHT_ARROW2_EQ,
-                AMPERSAND_EQ, BAR_EQ))
-        {
+                AMPERSAND_EQ, BAR_EQ)) {
             var op = lastToken();
             var rhs = parseTernaryExpression();
             if (rhs == null)
@@ -644,7 +734,7 @@ public class SeaParser {
             expr = new ExpressionPrefix(op, expr);
         }
 
-       return expr;
+        return expr;
     }
 
     public Expression parsePostfixExpression() {
@@ -797,20 +887,17 @@ public class SeaParser {
         return tokens.get(index + 1);
     }
 
-    void consumeMatchingBrace(Token token) throws ParseException {
-        assert token.type().equals(LEFT_BRACE);
+    void consumeMatchingBrace(Token openingBrace) throws ParseException {
+        assert openingBrace.type().equals(LEFT_BRACE);
+        index = tokens.indexOf(openingBrace) + 1;
         var open = 1;
-        var parser = new SeaParser(this);
-        parser.index = parser.tokens.indexOf(token);
-        parser.consume();
-        while (open > 0 && parser.hasMoreTokens()) {
-            if (parser.take(LEFT_BRACE)) open += 1;
-            else if (parser.take(RIGHT_BRACE)) open -= 1;
+        while (hasMoreTokens() && open > 0) {
+            if (take(LEFT_BRACE)) open++;
+            else if (take(RIGHT_BRACE)) open--;
             else consume();
         }
-
         if (open > 0) {
-            throw new ParseException(token, "unterminated '{'");
+            throw new ParseException(openingBrace, "unterminated '{'");
         }
     }
 

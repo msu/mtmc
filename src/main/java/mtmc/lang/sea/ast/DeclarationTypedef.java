@@ -7,7 +7,7 @@ public final class DeclarationTypedef extends Declaration implements TypeDeclara
     public final Token name;
 
 
-    public DeclarationTypedef(Token start, TypeExpr type, Token name) {
+    public DeclarationTypedef(Token start, TypeExpr type, Token name, Token end) {
         super(start, type.end);
         this.type = type;
         this.name = name;

@@ -22,6 +22,7 @@ public record Token(
         LIT_STR(null),
         LIT_CHAR(null),
         LIT_IDENT(null),
+        KW_TYPEDEF("typedef"),
         KW_IF("if"),
         KW_ELSE("else"),
         KW_FOR("for"),
@@ -30,6 +31,7 @@ public record Token(
         KW_GOTO("goto"),
         KW_CONTINUE("continue"),
         KW_BREAK("break"),
+        KW_RETURN("return"),
         KW_SIZEOF("sizeof"),
         KW_INT("int"),
         KW_CHAR("char"),
@@ -100,7 +102,6 @@ public record Token(
         public final String lex;
 
         public static final Type[] PUNCT;
-
         static {
             List<Type> list = new ArrayList<>();
             for (Type t : Type.values()) {
@@ -109,6 +110,17 @@ public record Token(
                 }
             }
             PUNCT = list.toArray(new Type[0]);
+        }
+
+        public static final Type[] KEYWORDS;
+        static {
+            List<Type> list = new ArrayList<>();
+            for (Type t : Type.values()) {
+                if (t.name().startsWith("KW_")) {
+                    list.add(t);
+                }
+            }
+            KEYWORDS = list.toArray(new Type[0]);
         }
 
         Type(String lex) {
@@ -237,16 +249,13 @@ public record Token(
                 offset += Character.charCount(src.charAt(offset));
             } while (offset < src.length() && Character.isLetter(src.charAt(offset)));
             content = src.substring(start, offset);
-            type = switch (content) {
-                case "int":
-                    yield Type.KW_INT;
-                case "char":
-                    yield Type.LIT_CHAR;
-                case "sizeof":
-                    yield Type.KW_SIZEOF;
-                default:
-                    yield Type.LIT_IDENT;
-            };
+            type = Type.LIT_IDENT;
+            for (var ty : Type.KEYWORDS) {
+                if (content.equals(ty.lex)) {
+                    type = ty;
+                    break;
+                }
+            }
         } else if (c == '\'') {
             offset += Character.charCount(c);
             char d = src.charAt(offset);

@@ -1,6 +1,7 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
+import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
 import static mtmc.util.BinaryUtils.getBits;
@@ -10,6 +11,7 @@ public class JumpInstruction extends Instruction {
     public static final int MAX = (1 << 12) - 1;
 
     private MTMCToken addressToken;
+    private MTMCToken register;
 
     public JumpInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
@@ -17,6 +19,10 @@ public class JumpInstruction extends Instruction {
 
     public void setAddressToken(MTMCToken addressToken) {
         this.addressToken = addressToken;
+    }
+
+    public void setRegister(MTMCToken register) {
+        this.register = register;
     }
 
     @Override
@@ -42,33 +48,21 @@ public class JumpInstruction extends Instruction {
         switch (getType()) {
             case J -> opcode = 0b1100;
             case JZ -> opcode = 0b1101;
-            case JNZ -> opcode = 0b1110;
+            case JR -> opcode = 0b1110;
             case JAL -> opcode = 0b1111;
         }
         int address = resolveTargetAddress(assembler);
-        output[getLocation()] = (byte) (opcode << 4 | address >>> 8);
-        output[getLocation()+1] = (byte) address;
+        if(getType() == InstructionType.JR) {
+            output[getLocation()] = (byte) (opcode << 4);
+            int reg = Register.toInteger(register.stringValue());
+            output[getLocation()+1] = (byte) reg;
+        } else {
+            output[getLocation()] = (byte) (opcode << 4 | address >>> 8);
+            output[getLocation()+1] = (byte) address;
+        }
     }
 
     public static String disassemble(short instruction) {
-        if (getBits(16, 2, instruction) == 0b11) {
-            StringBuilder builder = new StringBuilder();
-            short jumpType = getBits(14, 2, instruction);
-            if (jumpType == 0b00) {
-                builder.append("j ");
-            } else if (jumpType == 0b01) {
-                builder.append("jz ");
-            } else if (jumpType == 0b10) {
-                builder.append("jnz ");
-            } else {
-                builder.append("jal ");
-            }
-            short val = getBits(12, 12, instruction);
-            builder.append(val);
-            return builder.toString();
-        }
         return null;
     }
-
-
 }

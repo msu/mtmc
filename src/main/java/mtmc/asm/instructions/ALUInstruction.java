@@ -10,6 +10,8 @@ public class ALUInstruction extends Instruction {
 
     private MTMCToken toToken;
     private MTMCToken fromToken;
+    private MTMCToken immediateOp;
+    private MTMCToken value;
 
     public ALUInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
@@ -21,6 +23,18 @@ public class ALUInstruction extends Instruction {
 
     public void setFrom(MTMCToken from) {
         this.fromToken = from;
+    }
+
+    public void setImmediateValue(MTMCToken value) {
+        this.value = value;
+    }
+
+    public void setImmediateOp(MTMCToken immediateOp) {
+        this.immediateOp = immediateOp;
+    }
+
+    public boolean isImmediatOp() {
+        return this.getType() == InstructionType.IMM;
     }
 
     public boolean isBinaryOp() {
@@ -36,7 +50,17 @@ public class ALUInstruction extends Instruction {
             from = Register.toInteger(fromToken.stringValue());
         }
         output[getLocation()] = (byte) (0b0001_0000 | opCode);
-        output[getLocation() + 1] = (byte) (to << 4 | from);
+        if (isBinaryOp()) {
+            output[getLocation() + 1] = (byte) (to << 4 | from);
+        } else if (isImmediatOp()) {
+            int immediateValue = value.intValue();
+            int immediateOpValue = ALUOp.toInteger(immediateOp.stringValue());
+            output[getLocation() + 1] = (byte) (to << 4 | immediateOpValue);
+            output[getLocation() + 2] = (byte) (immediateValue >>> 8);
+            output[getLocation() + 3] = (byte) immediateValue;
+        } else { // unary op
+            output[getLocation() + 1] = (byte) (to << 4);
+        }
     }
 
     public static String disassemble(short instruction) {

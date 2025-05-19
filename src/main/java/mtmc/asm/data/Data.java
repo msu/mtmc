@@ -4,6 +4,8 @@ import mtmc.asm.ASMElement;
 import mtmc.asm.Assembler;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.Arrays;
+
 public class Data extends ASMElement {
 
     private byte[] value;
@@ -31,5 +33,12 @@ public class Data extends ASMElement {
 
     public void setValue(byte[] value) {
         this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return "Data{" +
+                "value=" + Arrays.toString(value) +
+                '}';
     }
 }

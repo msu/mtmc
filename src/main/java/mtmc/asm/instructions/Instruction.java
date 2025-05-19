@@ -39,7 +39,7 @@ public abstract class Instruction extends ASMElement {
 
     @Override
     public int getSizeInBytes() {
-        return 2;
+        return type.getSizeInBytes();
     }
 
     public static String disassembleInstruction(short instruction) {
@@ -55,17 +55,17 @@ public abstract class Instruction extends ASMElement {
         if (stack != null) {
             return stack;
         }
-        String stackImmediate = StackImmediateInstruction.disassemble(instruction);
-        if (stackImmediate != null) {
-            return stackImmediate;
+        String test = TestInstruction.disassemble(instruction);
+        if (test != null) {
+            return test;
         }
-        String li = LoadInstruction.disassemble(instruction);
-        if (li != null) {
-            return li;
+        String lsr = LoadStoreRelativeInstruction.disassemble(instruction);
+        if (lsr != null) {
+            return lsr;
         }
-        String ldi = LoadImmediateInstruction.disassemble(instruction);
-        if (ldi != null) {
-            return ldi;
+        String ls = LoadStoreInstruction.disassemble(instruction);
+        if (ls != null) {
+            return ls;
         }
         String jump = JumpInstruction.disassemble(instruction);
         if (jump != null) {

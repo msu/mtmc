@@ -6,13 +6,13 @@ import mtmc.tokenizer.MTMCToken;
 
 import static mtmc.util.BinaryUtils.getBits;
 
-public class LoadInstruction extends Instruction {
+public class LoadStoreRelativeInstruction extends Instruction {
 
     private MTMCToken targetToken;
     private MTMCToken pointerToken;
     private MTMCToken offsetToken;
 
-    public LoadInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+    public LoadStoreRelativeInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 
@@ -32,14 +32,14 @@ public class LoadInstruction extends Instruction {
     public void genCode(byte[] output, Assembler assembler) {
         int opcode = 0;
         switch (getType()) {
-            case LW -> opcode = 0b0100;
-            case LB -> opcode = 0b0101;
-            case SW -> opcode = 0b0110;
-            case SB -> opcode = 0b0111;
+            case LWR -> opcode = 0b1000;
+            case LBR -> opcode = 0b1001;
+            case SWR -> opcode = 0b1010;
+            case SBR -> opcode = 0b1011;
         }
         int target = Register.toInteger(targetToken.stringValue());
         int pointer = Register.toInteger(pointerToken.stringValue());
-        int offset = Register.ZERO.ordinal();
+        int offset = Register.PC.ordinal();
         if (offsetToken != null) {
             offset = Register.toInteger(offsetToken.stringValue());
         }
@@ -52,13 +52,13 @@ public class LoadInstruction extends Instruction {
             StringBuilder builder = new StringBuilder();
             short type = getBits(14, 2, instruction);
             if (type == 0b00) {
-                builder.append("lw ");
+                builder.append("lwr ");
             } else if (type == 0b01) {
-                builder.append("lb ");
+                builder.append("lbr ");
             } else if (type == 0b10) {
-                builder.append("sw ");
+                builder.append("swr ");
             } else if (type == 0b11) {
-                builder.append("sb ");
+                builder.append("sbr ");
             }
             short srcDestReg = getBits(12, 4, instruction);
             short addrReg = getBits(8, 4, instruction);

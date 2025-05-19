@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class WebServer {
 
-    public static final int PORT = 8080;
+    public static final int PORT = 8082;
     public static final String SERVER_URL = "http://localhost:" + PORT;
     private static WebServer instance;
 

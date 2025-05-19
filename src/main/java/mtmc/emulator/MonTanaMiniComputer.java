@@ -40,8 +40,6 @@ public class MonTanaMiniComputer {
         registerFile = new short[Register.values().length];
         memory = new byte[MEMORY_SIZE];
         setRegisterValue(SP, (short) FRAME_BUFF_START);  // default the stack pointer to the top of normal memory
-        setRegisterValue(ZERO, 0);
-        setRegisterValue(ONE,  1);
         observers.forEach(MTMCObserver::computerReset);
     }
 
@@ -101,155 +99,194 @@ public class MonTanaMiniComputer {
     public void fetchAndExecute() {
         fetchCurrentInstruction();
         short instruction = getRegisterValue(IR);
-        setRegisterValue(PC, (short) (getRegisterValue(PC) + WORD_SIZE));
+        if (hasData(instruction)) {
+            setRegisterValue(PC, (short) (getRegisterValue(PC) + 2 * WORD_SIZE));
+        } else {
+            setRegisterValue(PC, (short) (getRegisterValue(PC) + WORD_SIZE));
+        }
         execInstruction(instruction);
     }
 
     public void execInstruction(short instruction) {
         observers.forEach(o -> o.beforeExecution(instruction));
         short instructionType = getBits(16, 4, instruction);
-        if (instructionType == 0x0) {
+        if (instructionType == 0x0000) { // MISC
             short topNibble = getBits(12, 4, instruction);
-            if(topNibble == 0b1111) {
-                // sys call
-                short sysCall = getBits(8, 8, instruction);
-                os.handleSysCall(sysCall);
-            } else if(topNibble == 0b1110) {
-                // mask
-                short mask = getBits(8, 8, instruction);
-                short t0Value = getRegisterValue(T0);
-                short result = (short) (t0Value & mask);
-                setRegisterValue(T0, result);
+            switch (topNibble) {
+                case 0b0000 -> {
+                    // sys call
+                    short sysCall = getBits(8, 8, instruction);
+                    os.handleSysCall(sysCall);
+                }
+                case 0b0001 -> {
+                    // mov
+                    short from = getBits(8, 4, instruction);
+                    short to = getBits(4, 4, instruction);
+                    short value = getRegisterValue(from);
+                    setRegisterValue(to, value);
+                }
+                case 0b0010 -> {
+                    // inc
+                    short target = getBits(8, 4, instruction);
+                    short immediateValue = getBits(4, 4, instruction);
+                    short registerValue = getRegisterValue(target);
+                    int value = registerValue + immediateValue;
+                    setRegisterValue(target, value);
+                }
+                case 0b0011 -> {
+                    // dec
+                    short target = getBits(8, 4, instruction);
+                    short immediateValue = getBits(4, 4, instruction);
+                    short registerValue = getRegisterValue(target);
+                    int value = registerValue - immediateValue;
+                    setRegisterValue(target, value);
+                }
+                case 0b1111 -> {
+                    // noop
+                }
+                default -> badInstruction(instruction);
+            }
+        } else if (instructionType == 0x0001) { // ALU
+            short opCode = getBits(12, 4, instruction);
+
+            short targetReg = getBits(8, 4, instruction);
+            short sourceReg;
+
+            if(opCode == 0b1111){
+                // immediate, source is data register, opcode is the lowest nibble
+                sourceReg = (short) Register.DR.ordinal();
+                opCode = getBits(4, 4, instruction);
+            } else if (opCode == 0b1100 || opCode == 0b1101 || opCode == 0b1110) {
+                // unary
+                sourceReg = targetReg;
             } else {
-                // move
-                short targetReg = topNibble;
-                short sourceReg = getBits(8, 4, instruction);
-                short shift = getBits(4, 4, instruction);
-                short value = getRegisterValue(sourceReg);
-                short result = (short) (value >>> shift);
-                setRegisterValue(targetReg, result);
+                // binary op, source is in the lowest nibble
+                sourceReg = getBits(4, 4, instruction);
             }
-        } else if (instructionType == 0x1) {
-            // alu
-            short aluInstructionType = getBits(12, 4, instruction);
-            if(aluInstructionType == 0x0) {
-                // add
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) + getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x1) {
-                // sub
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) - getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x2) {
-                // mul
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) * getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x3) {
-                // div
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) / getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x4) {
-                // mod
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) % getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x5) {
-                // and
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) & getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x6) {
-                // or
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) | getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x7) {
-                // xor
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) ^ getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x8) {
-                // shift left
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) << getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0x9) {
-                // shift right
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) >>> getRegisterValue(sourceReg));
-            } else if(aluInstructionType == 0xA) {
-                // eq
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) == getRegisterValue(sourceReg) ? 1 : 0);
-            } else if(aluInstructionType == 0xB) {
-                // lt
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) < getRegisterValue(sourceReg) ? 1 : 0);
-            } else if(aluInstructionType == 0xC) {
-                // lte
-                short targetReg = getBits(8, 4, instruction);
-                short sourceReg = getBits(4, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) <= getRegisterValue(sourceReg) ? 1 : 0);
-            } else if(aluInstructionType == 0xD) {
-                // bitwise not
-                short targetReg = getBits(8, 4, instruction);
-                setRegisterValue(targetReg, (short) ~getRegisterValue(targetReg));
-            } else if(aluInstructionType == 0xE) {
-                // logical not
-                short targetReg = getBits(8, 4, instruction);
-                setRegisterValue(targetReg, getRegisterValue(targetReg) == 0 ? 1 : 0);
-            } else if(aluInstructionType == 0xF) {
-                // negate
-                short targetReg = getBits(8, 4, instruction);
-                setRegisterValue(targetReg, (short) -getRegisterValue(targetReg));
+
+            final short sourceValue = getRegisterValue(sourceReg);
+            final short targetValue = getRegisterValue(targetReg);
+
+            int result = 0;
+            switch (opCode) {
+                case 0b0000 -> {
+                    result = targetValue + sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b0001 -> {
+                    // sub
+                    result = targetValue - sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b0010 -> {
+                    // mul
+                    result = targetValue * sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b0011 -> {
+                    // div
+                    result = targetValue / sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b0100 -> {
+                    // mod
+                    result = targetValue % sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b0101 -> {
+                    // and
+                    result = targetValue & sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b0110 -> {
+                    // or
+                    result = targetValue | sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b0111 -> {
+                    // xor
+                    result = targetValue ^ sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b1000 -> {
+                    // shift left
+                    result = targetValue << sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b1001 -> {
+                    result = targetValue >>> sourceValue;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b1010 -> {
+                    result = Math.min(targetValue, sourceValue);
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b1011 -> {
+                    result = Math.max(targetValue, sourceValue);
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b1100 -> {
+                    result = ~targetValue;
+                    setRegisterValue(targetReg, (short) result);
+                }
+                case 0b1101 -> {
+                    result = targetValue == 0 ? 1 : 0;
+                    setRegisterValue(targetReg, result);
+                }
+                case 0b1110 -> {
+                    // negate
+                    result = -targetValue;
+                    setRegisterValue(targetReg, (short) result);
+                }
+                default -> badInstruction(instruction);
             }
-        } else if (instructionType == 0x2) {
-            short stackInstructionType = getBits(12, 4, instruction);
+
+            setFlagTestBit(result != 0);
+        } else if (instructionType == 0b0010) {
+            short opcode = getBits(12, 4, instruction);
             short stackReg = getBits(4, 4, instruction);
-            if(stackInstructionType == 0x0) {
-                // push
-                short sourceRegister = getBits(8, 4, instruction);
-                // decrement the stack pointer
-                setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
-                // write the value out to the location
-                writeWordToMemory(getRegisterValue(stackReg), getRegisterValue(sourceRegister));
-            } if(stackInstructionType == 0x1) {
-                // pop
-                short targetRegister = getBits(8, 4, instruction);
-                // save the value into the location
-                setRegisterValue(targetRegister, fetchWordFromMemory(getRegisterValue(stackReg)));
-                // increment the stack pointer
-                setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-            } if(stackInstructionType == 0x2) {
-                short stackOpSubType = getBits(8, 4, instruction);
-                if(stackOpSubType == 0x0) {
+            switch (opcode) {
+                case 0b0000 -> {
+                    // push
+                    short sourceRegister = getBits(8, 4, instruction);
+                    // decrement the stack pointer
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
+                    // write the value out to the location
+                    short stackPointerValue = getRegisterValue(stackReg);
+                    short valueToPush = getRegisterValue(sourceRegister);
+                    writeWordToMemory(stackPointerValue, valueToPush);
+                }
+                case 0b0001 -> {
+                    // pop
+                    short targetRegister = getBits(8, 4, instruction);
+                    short stackPointerValue = getRegisterValue(stackReg);
+                    short value = fetchWordFromMemory(stackPointerValue);
+                    setRegisterValue(targetRegister, value);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                }
+                case 0b0010 -> {
                     // dup
                     short currentVal = fetchWordFromMemory(getRegisterValue(stackReg));
                     setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
                     writeWordToMemory(getRegisterValue(stackReg), currentVal);
-                } else if(stackOpSubType == 0x1) {
+                }
+                case 0b0011 -> {
                     // swap
                     short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
                     short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
                     writeWordToMemory(getRegisterValue(stackReg), nextDown);
                     writeWordToMemory(getRegisterValue(stackReg) + WORD_SIZE, currentTop);
-                } else if(stackOpSubType == 0x2) {
-                    // drop
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                } else if(stackOpSubType == 0x3) {
+                }
+                case 0b0100 -> // drop
+                        setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                case 0b0101 -> {
                     // over
                     short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
                     setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
                     // write the value out to the location
                     writeWordToMemory(getRegisterValue(stackReg), nextDown);
-                } else if(stackOpSubType == 0x4) {
+                }
+                case 0b0110 -> {
                     // rot
                     short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
                     short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
@@ -257,97 +294,232 @@ public class MonTanaMiniComputer {
                     writeWordToMemory(getRegisterValue(stackReg), thirdDown);
                     writeWordToMemory(getRegisterValue(stackReg) + WORD_SIZE, currentTop);
                     writeWordToMemory(getRegisterValue(stackReg) + 2 * WORD_SIZE, nextDown);
-                } else {
-                    // TODO error state
                 }
-            } if(stackInstructionType == 0x3) {
-                short aluOp = getBits(8, 4, instruction);
-                if (aluOp == 0x0) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown + currentTop);
-                } else if (aluOp == 0x1) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown - currentTop);
-                } else if (aluOp == 0x2) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown * currentTop);
-                } else if (aluOp == 0x3) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown / currentTop);
-                } else if (aluOp == 0x4) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown % currentTop);
-                } else if (aluOp == 0x5) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown & currentTop);
-                } else if (aluOp == 0x6) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown | currentTop);
-                } else if (aluOp == 0x7) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown ^ currentTop);
-                } else if (aluOp == 0x8) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown << currentTop);
-                } else if (aluOp == 0x9) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown >>> currentTop);
-                } else if (aluOp == 0xA) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown == currentTop ? 1 : 0);
-                } else if (aluOp == 0xB) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown < currentTop ? 1 : 0);
-                } else if (aluOp == 0xC) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
-                    setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
-                    writeWordToMemory(getRegisterValue(stackReg), nextDown <= currentTop ? 1 : 0);
-                } else if (aluOp == 0xD) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    writeWordToMemory(getRegisterValue(stackReg), ~currentTop);
-                } else if (aluOp == 0xE) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    writeWordToMemory(getRegisterValue(stackReg), currentTop == 0 ? 1 : 0);
-                } else if (aluOp == 0xF) {
-                    short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
-                    writeWordToMemory(getRegisterValue(stackReg), -currentTop);
+                case 0b0111 -> {
+                    // sop
+                    short aluOpCode = getBits(8, 4, instruction);
+                    switch (aluOpCode) {
+                        case 0b0000 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown + currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b0001 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown - currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b0010 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown * currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b0011 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown / currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b0100 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown % currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b0101 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown & currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b0110 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown | currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b0111 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown ^ currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b1000 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown << currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b1001 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int value = nextDown >>> currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b1010 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int min = Math.min(currentTop, nextDown);
+                            writeWordToMemory(getRegisterValue(stackReg), min);
+                        }
+                        case 0b1011 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            short nextDown = fetchWordFromMemory(getRegisterValue(stackReg) + WORD_SIZE);
+                            setRegisterValue(stackReg, getRegisterValue(stackReg) + WORD_SIZE);
+                            int max = Math.max(currentTop, nextDown);
+                            writeWordToMemory(getRegisterValue(stackReg), max);
+                        }
+                        case 0b1100 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            int value = ~currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b1101 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            int value = currentTop == 0 ? 1 : 0;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        case 0b1110 -> {
+                            short currentTop = fetchWordFromMemory(getRegisterValue(stackReg));
+                            int value = -currentTop;
+                            writeWordToMemory(getRegisterValue(stackReg), value);
+                        }
+                        default -> badInstruction(instruction);
+                    }
                 }
-            } else {
-                // todo error state
+                case 0b1111 -> {
+                    short immediateValue = getRegisterValue(DR);
+                    setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
+                    writeWordToMemory(getRegisterValue(stackReg), immediateValue);
+                }
+                default -> badInstruction(instruction);
             }
-        } else if (instructionType == 0x3) {
-            // pushi
-            short stackReg = getBits(12, 4, instruction);
-            short value = getBits(8, 8, instruction);
-            setRegisterValue(stackReg, getRegisterValue(stackReg) - WORD_SIZE);
-            writeWordToMemory(getRegisterValue(stackReg), value);
-        } else if (0x4 <= instructionType && instructionType <= 0x7) {
-            // load store
+        } else if (instructionType == 0b0011) {
+            int opCode = getBits(12, 4, instruction);
+            int lhs = getBits(8, 4, instruction);
+            int rhs = getBits(4, 4, instruction);
+            switch (opCode) {
+                case 0b0000 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = getRegisterValue(rhs);
+                    setFlagTestBit(lhsVal == rhsVal);
+                }
+                case 0b0001 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = getRegisterValue(rhs);
+                    setFlagTestBit(lhsVal != rhsVal);
+                }
+                case 0b0010 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = getRegisterValue(rhs);
+                    setFlagTestBit(lhsVal > rhsVal);
+                }
+                case 0b0011 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = getRegisterValue(rhs);
+                    setFlagTestBit(lhsVal >= rhsVal);
+                }
+                case 0b0100 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = getRegisterValue(rhs);
+                    setFlagTestBit(lhsVal < rhsVal);
+                }
+                case 0b0101 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = getRegisterValue(rhs);
+                    setFlagTestBit(lhsVal <= rhsVal);
+                }
+                case 0b1000 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = (short) rhs;
+                    setFlagTestBit(lhsVal == rhsVal);
+                }
+                case 0b1001 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = (short) rhs;
+                    setFlagTestBit(lhsVal != rhsVal);
+                }
+                case 0b1010 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = (short) rhs;
+                    setFlagTestBit(lhsVal > rhsVal);
+                }
+                case 0b1011 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = (short) rhs;
+                    setFlagTestBit(lhsVal >= rhsVal);
+                }
+                case 0b1100 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = (short) rhs;
+                    setFlagTestBit(lhsVal < rhsVal);
+                }
+                case 0b1101 -> {
+                    short lhsVal = getRegisterValue(lhs);
+                    short rhsVal = (short) rhs;
+                    setFlagTestBit(lhsVal <= rhsVal);
+                }
+                default -> badInstruction(instruction);
+            }
+        } else if (0b0100 == instructionType) {
+            int opCode = getBits(12, 4, instruction);
+            int reg = getBits(8, 4, instruction);
+            int offsetReg = getBits(4, 4, instruction);
+            int address = getRegisterValue(DR);
+            switch(opCode) {
+                case 0b0000 -> {
+                    short value = fetchWordFromMemory(address);
+                    setRegisterValue(reg, value);
+                }
+                case 0b0001 -> {
+                    short value = fetchWordFromMemory(address + getRegisterValue(offsetReg));
+                    setRegisterValue(reg, value);
+                }
+                case 0b0010 -> {
+                    short value = fetchByteFromMemory(address);
+                    setRegisterValue(reg, value);
+                }
+                case 0b0011 -> {
+                    short value = fetchByteFromMemory(address + getRegisterValue(offsetReg));
+                    setRegisterValue(reg, value);
+                }
+                case 0b0100 -> {
+                    short value = getRegisterValue(reg);
+                    writeWordToMemory(address, value);
+                }
+                case 0b0101 -> {
+                    short value = getRegisterValue(reg);
+                    writeWordToMemory(address + getRegisterValue(offsetReg), value);
+                }
+                case 0b0110 -> {
+                    byte value = (byte) getRegisterValue(reg);
+                    writeByteToMemory(address, value);
+                }
+                case 0b0111 -> {
+                    byte value = (byte) getRegisterValue(reg);
+                    writeByteToMemory(address + getRegisterValue(offsetReg), value);
+                }
+                case 0b1111 -> {
+                    setRegisterValue(reg, address);
+                }
+                default -> badInstruction(instruction);
+            }
+        } else if (0b1000 <= instructionType && instructionType <= 0b1011) {
+            // load/store relative
             short loadStoreType = getBits(14, 2, instruction);
             short targetRegister = getBits(12, 4, instruction);
             short addressRegister = getBits(8, 4, instruction);
@@ -362,39 +534,83 @@ public class MonTanaMiniComputer {
             } else if (loadStoreType == 0x3) {
                 writeByteToMemory(targetAddress, (byte) getRegisterValue(targetRegister));
             }
-        } else if (0x8 <= instructionType && instructionType <= 0xB) {
-            // load immediate
-            short targetRegister = getBits(14, 2, instruction);
-            short value = getBits(12, 12, instruction);
-            setRegisterValue(targetRegister, value);
-        } else if (0xC <= instructionType && instructionType <= 0xF) {
+        } else if (0b1100 <= instructionType && instructionType <= 0b1111) {
             short jumpType = getBits(14, 2, instruction);
-            short location = getBits(12, 12, instruction);
-            if(jumpType == 0x0) {
+            if(jumpType == 0b00) {
+                // unconditional
+                short location = getBits(12, 12, instruction);
                 setRegisterValue(PC, location);
-            } else if (jumpType == 0x1) {
-                if (getRegisterValue(T0) == 0) {
+            } else if (jumpType == 0b01) {
+                // conditional
+                short location = getBits(12, 12, instruction);
+                if (!isFlagTestBitSet()) {
                     setRegisterValue(PC, location);
                 }
             } else if (jumpType == 0x2) {
-                if (getRegisterValue(T0) != 0) {
-                    setRegisterValue(PC, location);
-                }
+                // jump reg
+                short reg = getBits(4, 4, instruction);
+                short location = getRegisterValue(reg);
+                setRegisterValue(PC, location);
             } else if (jumpType == 0x3) {
+                // jump & link
+                short location = getBits(12, 12, instruction);
                 setRegisterValue(RA, getRegisterValue(PC));
                 setRegisterValue(PC, location);
             }
         } else {
-            status = PERMANENT_ERROR;
+            badInstruction(instruction);
         }
         observers.forEach(o -> o.afterExecution(instruction));
+    }
+
+    public boolean isFlagTestBitSet() {
+        int i = getRegisterValue(FLAGS) & 0b0001;
+        boolean b = i != 0;
+        return b;
+    }
+
+    public void setFlagTestBit(boolean testVal) {
+        short value = getRegisterValue(FLAGS);
+        if (testVal) {
+            value |= 0b0001;
+        } else {
+            value &= 0b1110;
+        }
+        setRegisterValue(FLAGS, value);
+    }
+
+    private void badInstruction(short instruction) {
+        status = PERMANENT_ERROR;
+        // TODO implement flags
     }
 
     public void fetchCurrentInstruction() {
         short pc = getRegisterValue(PC);
         short instruction = fetchWordFromMemory(pc);
         setRegisterValue(IR, instruction);
+        if (hasData(instruction)) {
+            short data = fetchWordFromMemory(pc + WORD_SIZE);
+            setRegisterValue(DR, data);
+        } else {
+            setRegisterValue(DR, 0);
+        }
         observers.forEach(o -> o.instructionFetched(instruction));
+    }
+
+    private boolean hasData(short instruction) {
+        boolean isLoadStore = getBits(16, 4, instruction) == 0b0100;
+        if (isLoadStore) {
+            return true;
+        }
+        boolean isALUImmediate = getBits(16, 8, instruction) == 0b0001_1111;
+        if (isALUImmediate) {
+            return true;
+        }
+        boolean isPushImmediate = getBits(16, 8, instruction) == 0b0010_1111;
+        if (isPushImmediate) {
+            return true;
+        }
+        return false;
     }
 
     public short fetchWordFromMemory(int address) {

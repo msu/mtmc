@@ -4,9 +4,10 @@ import static mtmc.asm.instructions.InstructionType.InstructionClass.*;
 
 public enum InstructionType {
     SYS(MISC),
-    MV(MISC),
-    NOOP(MISC),
-    MASK(MISC),
+    MOV(MISC),
+    INC(MISC),
+    DEC(MISC),
+    NOP(MISC),
     ADD(ALU),
     SUB(ALU),
     MUL(ALU),
@@ -17,12 +18,12 @@ public enum InstructionType {
     XOR(ALU),
     SHL(ALU),
     SHR(ALU),
-    EQ(ALU),
-    LT(ALU),
-    LTEQ(ALU),
-    BNOT(ALU),
+    MIN(ALU),
+    MAX(ALU),
     NOT(ALU),
+    LNOT(ALU),
     NEG(ALU),
+    IMM(ALU, 4),
     PUSH(STACK),
     POP(STACK),
     DUP(STACK),
@@ -31,34 +32,63 @@ public enum InstructionType {
     OVER(STACK),
     ROT(STACK),
     SOP(STACK),
-    PUSHI(STACK_IMMEDIATE),
-    LW(LOAD),
-    LB(LOAD),
-    SW(LOAD),
-    SB(LOAD),
-    LDI(LOAD_IMMEDIATE),
+    PUSHI(STACK, 4),
+    EQ(TEST),
+    NEQ(TEST),
+    GT(TEST),
+    GTE(TEST),
+    LT(TEST),
+    LTE(TEST),
+    EQI(TEST),
+    NEQI(TEST),
+    GTI(TEST),
+    GTEI(TEST),
+    LTI(TEST),
+    LTEI(TEST),
+    LW(LOAD_STORE, 4),
+    LWO(LOAD_STORE, 4),
+    LI(LOAD_STORE, 4),
+    LB(LOAD_STORE, 4),
+    LBO(LOAD_STORE, 4),
+    SW(LOAD_STORE, 4),
+    SWO(LOAD_STORE, 4),
+    SB(LOAD_STORE, 4),
+    SBO(LOAD_STORE, 4),
+    LWR(LOAD_STORE_RELATIVE),
+    LBR(LOAD_STORE_RELATIVE),
+    SWR(LOAD_STORE_RELATIVE),
+    SBR(LOAD_STORE_RELATIVE),
     J(JUMP),
     JZ(JUMP),
-    JNZ(JUMP),
+    JR(JUMP),
     JAL(JUMP),
     ;
+
+
+    public int getSizeInBytes() {
+        return size;
+    }
 
     public enum InstructionClass {
         MISC,
         ALU,
         STACK,
-        STACK_IMMEDIATE,
-        LOAD,
-        LOAD_IMMEDIATE,
+        TEST,
+        LOAD_STORE,
+        LOAD_STORE_RELATIVE,
         JUMP
     }
 
-    private final String string;
     private final InstructionClass instructionClass;
+    private final int size;
 
     InstructionType(InstructionClass instructionClass) {
-        this.string = this.name().toLowerCase();
+        this(instructionClass, 2);
+    }
+
+    InstructionType(InstructionClass instructionClass, int size) {
         this.instructionClass = instructionClass;
+        this.size = size;
     }
 
     public InstructionClass getInstructionClass() {

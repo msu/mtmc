@@ -11,12 +11,12 @@ public enum ALUOp {
     XOR(0x0007, false),
     SHL(0x0008, false),
     SHR(0x0009, false),
-    EQ(0x000A, false),
-    LT(0x000B, false),
-    LTEQ(0x000C, false),
-    BNOT(0x000D, true),
-    NOT(0x000E, true),
-    NEG(0x000F, true);
+    MIN(0x000A, false),
+    MAX(0x000B, false),
+    NOT(0x000C, true),
+    LNOT(0x000D, true),
+    NEG(0x000E, true),
+    IMM(0x000F, true);
 
     int opCode;
     boolean unary;

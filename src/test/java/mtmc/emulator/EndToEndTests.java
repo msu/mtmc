@@ -13,9 +13,8 @@ public class EndToEndTests {
     public void addOneToOne(){
         Assembler assembler = new Assembler();
         AssemblyResult result = assembler.assemble("""
-                mv t0 one
+                li t0 1
                 add t0 t0
-                sys exit
                 """);
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.load(result.code(), result.data());
@@ -33,7 +32,6 @@ public class EndToEndTests {
                 pushi 99
                 sop add
                 pop t0
-                sys exit
                 """);
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.load(result.code(), result.data());
@@ -46,12 +44,10 @@ public class EndToEndTests {
         Assembler assembler = new Assembler();
         AssemblyResult result = assembler.assemble("""
                 .data
-                hello_world: "hello world"
+                  hello_world: "hello world"
                 .text
-                ldi t0 hello_world
-                mv a0 t0
-                sys wstr
-                sys exit
+                  li a0 hello_world
+                  sys wstr
                 """);
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.load(result.code(), result.data());

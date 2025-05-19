@@ -92,13 +92,13 @@ Instruction types can be determined by looking at the four high-order bits (nibb
 
 Misc (miscellaneous) instructions start with the nibble `0000`.  There are three such instructions:
 
-| Instruction | Form                  | Description                                                  | Example                                    |
-|-------------|-----------------------|--------------------------------------------------------------|--------------------------------------------|
-| `sys`       | `0000 0000 vvvv vvvv` | Issues syscall `vvvv vvvv`                                   | `sys wstr`                                 |
-| `mov`       | `0000 0001 rrrr ssss` | Moves the value in register `rrrr` to `ssss`                 | `mov t0 a0`                                |
-| `inc`       | `0000 0010 rrrr vvvv` | Increments the value in register `rrrr` by the value `vvvv`  | `inc t0`                                   |
-| `dec`       | `0000 0011 rrrr vvvv` | Decrements the value in register `rrrr` by the value `vvvv`  | `dec t0`                                   |
-| `nop`       | `0000 1111 1111 1111` | A no-op instruction                                          | `nop`                                      |
+| Instruction | Form                  | Description                                                 | Example     |
+|-------------|-----------------------|-------------------------------------------------------------|-------------|
+| `sys`       | `0000 0000 vvvv vvvv` | Issues syscall `vvvv vvvv`                                  | `sys wstr`  |
+| `mov`       | `0000 0001 rrrr ssss` | Moves the value in register `rrrr` to `ssss`                | `mov t0 a0` |
+| `inc`       | `0000 0010 rrrr vvvv` | Increments the value in register `rrrr` by the value `vvvv` | `inc t0`    |
+| `dec`       | `0000 0011 rrrr vvvv` | Decrements the value in register `rrrr` by the value `vvvv` | `dec t0 2`  |
+| `nop`       | `0000 1111 1111 1111` | A no-op instruction                                         | `nop`       |
 
 ### ALU 
  

@@ -230,6 +230,11 @@ public class Assembler {
                     MTMCToken value = requireIntegerToken(tokens, miscInst, 15);
                     miscInst.setValue(value);
                 }
+            } else if (type == InstructionType.SET) {
+                MTMCToken toRegister = requireWriteableRegister(tokens, miscInst);
+                miscInst.setTo(toRegister);
+                MTMCToken value = requireIntegerToken(tokens, miscInst, 15);
+                miscInst.setValue(value);
             }
             instruction = miscInst;
         } else if (type.getInstructionClass() == ALU) {

@@ -49,8 +49,13 @@ public class MiscInstruction extends Instruction {
             }
             output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
         } else if (getType() == InstructionType.DEC) {
-            output[getLocation()] = 0b0000_0100;
-            output[getLocation() + 1] = toRegister.intValue().byteValue();
+            output[getLocation()] = 0b0000_0011;
+            int to = Register.toInteger(toRegister.stringValue());
+            int immediateVal = 1;
+            if (value != null) {
+                immediateVal = value.intValue();
+            }
+            output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
         } else if (getType() == InstructionType.NOP) {
             output[getLocation()] = 0b0000_1111;
             output[getLocation() + 1] = (byte) 0b1111_1111;

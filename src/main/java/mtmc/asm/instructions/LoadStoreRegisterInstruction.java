@@ -32,10 +32,10 @@ public class LoadStoreRegisterInstruction extends Instruction {
     public void genCode(byte[] output, Assembler assembler) {
         int opcode = 0;
         switch (getType()) {
-            case LWR -> opcode = 0b1000;
-            case LBR -> opcode = 0b1001;
-            case SWR -> opcode = 0b1010;
-            case SBR -> opcode = 0b1011;
+            case LWR -> opcode = 0b0100;
+            case LBR -> opcode = 0b0101;
+            case SWR -> opcode = 0b0110;
+            case SBR -> opcode = 0b0111;
         }
         int target = Register.toInteger(targetToken.stringValue());
         int pointer = Register.toInteger(pointerToken.stringValue());

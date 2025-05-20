@@ -199,7 +199,7 @@ public class Assembler {
     }
 
     private void parseInstruction(LinkedList<MTMCToken> tokens, MTMCToken labelToken) {
-        MTMCToken instructionToken = tokens.poll();
+        MTMCToken instructionToken = tokens.peekFirst();
         if (instructionToken == null) return;
 
         if (instructionToken.type() != IDENTIFIER) {
@@ -209,6 +209,7 @@ public class Assembler {
 
         tokens = handleSyntheticInstructions(tokens);
 
+        instructionToken = tokens.poll();
         InstructionType type = InstructionType.fromString(instructionToken.stringValue());
 
         if (type == null) {
@@ -252,6 +253,10 @@ public class Assembler {
                 MTMCToken immediateOp = requireALUOp(tokens, aluInst);
                 // TODO - validate is max or lower op
                 aluInst.setImmediateOp(immediateOp);
+
+                MTMCToken toRegister = requireWriteableRegister(tokens, aluInst);
+                aluInst.setTo(toRegister);
+
                 MTMCToken value = requireIntegerToken(tokens, aluInst, Short.MAX_VALUE);
                 aluInst.setImmediateValue(value);
             } else {
@@ -362,11 +367,23 @@ public class Assembler {
             MTMCToken first = tokens.peekFirst();
             if (first.type() == IDENTIFIER) {
                 String stringVal = first.stringValue();
-                String op = stringVal.substring(0, stringVal.length() - 2);
-                if (stringVal.endsWith("i") && ALUOp.isALUOp(op)) {
+                if (stringVal.endsWith("i")) {
+                    String op = stringVal.substring(0, stringVal.length() - 1);
+                    if (ALUOp.isALUOp(op)) {
+                        MTMCToken syntheticImmediate = tokens.removeFirst();
+                        tokens.addFirst(syntheticImmediate.cloneWithVal(op));
+                        tokens.addFirst(syntheticImmediate.cloneWithVal("imm"));
+                    }
+                } else if (stringVal.startsWith("s")) {
+                    String op = stringVal.substring(1, stringVal.length());
+                    if (ALUOp.isALUOp(op)) {
+                        MTMCToken syntheticImmediate = tokens.removeFirst();
+                        tokens.addFirst(syntheticImmediate.cloneWithVal(op));
+                        tokens.addFirst(syntheticImmediate.cloneWithVal("sop"));
+                    }
+                } else if (stringVal.equals("la")) {
                     MTMCToken syntheticImmediate = tokens.removeFirst();
-                    tokens.addFirst(syntheticImmediate.cloneWithVal(op));
-                    tokens.addFirst(syntheticImmediate.cloneWithVal("imm"));
+                    tokens.addFirst(syntheticImmediate.cloneWithVal("li"));
                 }
             }
         }

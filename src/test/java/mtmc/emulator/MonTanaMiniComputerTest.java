@@ -69,6 +69,15 @@ public class MonTanaMiniComputerTest {
     }
 
     @Test
+    void testSeti() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegisterValue(T0, 0);
+        short inst = 0b0000_0100_0000_0011; // seti t0 3
+        computer.execInstruction(inst);
+        assertEquals(3, computer.getRegisterValue(T0));
+    }
+
+    @Test
     void testNoOp() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
 

@@ -39,7 +39,7 @@ public abstract class Instruction extends ASMElement {
 
     @Override
     public int getSizeInBytes() {
-        return type.getSizeInBytes();
+        return type == null ? 0 : type.getSizeInBytes();
     }
 
     public static String disassembleInstruction(short instruction) {

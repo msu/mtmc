@@ -29,7 +29,7 @@ public class TestInstruction extends Instruction {
     }
 
     public boolean isImmediate() {
-        return getType().name().endsWith("i");
+        return getType().name().endsWith("I");
     }
 
     @Override

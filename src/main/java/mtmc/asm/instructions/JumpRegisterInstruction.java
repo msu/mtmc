@@ -18,7 +18,7 @@ public class JumpRegisterInstruction extends Instruction {
 
     @Override
     public void genCode(byte[] output, Assembler assembler) {
-        int opcode = 0b10001;
+        int opcode = 0b1001;
         output[getLocation()] = (byte) (opcode << 4);
         int reg = Register.toInteger(register.stringValue());
         output[getLocation()+1] = (byte) reg;

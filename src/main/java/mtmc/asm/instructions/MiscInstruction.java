@@ -56,6 +56,11 @@ public class MiscInstruction extends Instruction {
                 immediateVal = value.intValue();
             }
             output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
+        } else if (getType() == InstructionType.SETI) {
+            output[getLocation()] = 0b0000_0100;
+            int to = Register.toInteger(toRegister.stringValue());
+            int immediateVal = value.intValue();
+            output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
         } else if (getType() == InstructionType.NOP) {
             output[getLocation()] = 0b0000_1111;
             output[getLocation() + 1] = (byte) 0b1111_1111;

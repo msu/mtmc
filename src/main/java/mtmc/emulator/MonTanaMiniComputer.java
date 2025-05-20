@@ -141,6 +141,12 @@ public class MonTanaMiniComputer {
                     int value = registerValue - immediateValue;
                     setRegisterValue(target, value);
                 }
+                case 0b0100 -> {
+                    // dec
+                    short target = getBits(8, 4, instruction);
+                    short immediateValue = getBits(4, 4, instruction);
+                    setRegisterValue(target, immediateValue);
+                }
                 case 0b1111 -> {
                     // noop
                 }

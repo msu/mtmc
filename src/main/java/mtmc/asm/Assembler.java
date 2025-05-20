@@ -164,13 +164,13 @@ public class Assembler {
                 byte[] nullTerminated = new byte[stringBytes.length + 1];
                 System.arraycopy(stringBytes, 0, nullTerminated, 0, stringBytes.length);
                 nullTerminated[stringBytes.length] = '\0';
-                dataElt.setValue(nullTerminated);
+                dataElt.setValue(dataToken, nullTerminated);
             } else if (isInteger(dataToken)) {
                 int integerValue = dataToken.intValue();
                 if (integerValue > Short.MAX_VALUE) {
                     dataElt.addError(dataToken, "Number is too large");
                 }
-                dataElt.setValue(new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+                dataElt.setValue(dataToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
             } else if (dataToken.type() == MINUS) {
                 MTMCToken nextToken = tokens.poll(); // get next
                 if (nextToken == null || (nextToken.type() != INTEGER && nextToken.type() != HEX && nextToken.type() != BINARY)) {
@@ -180,7 +180,8 @@ public class Assembler {
                     if (integerValue < Short.MIN_VALUE) {
                         dataElt.addError(dataToken, "Number is too negative");
                     }
-                    dataElt.setValue(new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+                    var joinToken = MTMCToken.join(dataToken, nextToken, INTEGER);
+                    dataElt.setValue(joinToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
                 }
             } else {
                 dataElt.addError(dataToken, "Unknown token type");

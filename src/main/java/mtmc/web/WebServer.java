@@ -99,12 +99,8 @@ public class WebServer {
                         computer.fetchCurrentInstruction(); // fetch next instruction for display
                     }
                 })
-                .post("/registerFormat", ctx -> {
-                    computerView.toggleRegisterFormat();
-                    uiUpdater.updateRegistersImmediately();
-                })
-                .post("/memFormat", ctx -> {
-                    computerView.toggleMemoryFormat();
+                .post("/format", ctx -> {
+                    computerView.toggleFormat();
                     uiUpdater.updateMemoryImmediately();
                 })
                 .sse("/sse", client -> {
@@ -112,7 +108,6 @@ public class WebServer {
                     client.onClose(() -> sseClients.remove(client));
                     sseClients.add(client);
                 });
-        ;
 
         // start server
         javalinApp.start(PORT);
@@ -152,7 +147,8 @@ public class WebServer {
     }
 
     public static void main(String[] args) {
-        maybeInit(new MonTanaMiniComputer());
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        maybeInit(computer);
     }
 
 

@@ -8,6 +8,8 @@ public class MTMCDisplay {
     public static final String MEDIUM = "365d48";
     public static final String LIGHT = "577c44";
     public static final String WHITE = "7f860f";
+    public static final int ROWS = 128;
+    public static final int COLS = 128;
     private final MonTanaMiniComputer computer;
 
     public MTMCDisplay(MonTanaMiniComputer computer) {
@@ -15,15 +17,15 @@ public class MTMCDisplay {
     }
 
     public Iterable<Integer> getRows() {
-        return () -> IntStream.range(0, 64).iterator();
+        return () -> IntStream.range(0, ROWS).iterator();
     }
 
     public Iterable<Integer> getColumns() {
-        return () -> IntStream.range(0, 64).iterator();
+        return () -> IntStream.range(0, COLS).iterator();
     }
 
     public short getValueFor(short x, short y) {
-        int startingBit = 2 * ((x * 64) + y);
+        int startingBit = 2 * ((x * ROWS) + y);
         int startingByte = MonTanaMiniComputer.FRAME_BUFF_START + startingBit / 8;
         int bitOffset = startingBit % 8;
         byte value = computer.fetchByteFromMemory(startingByte);
@@ -34,7 +36,7 @@ public class MTMCDisplay {
 
     public void setValueFor(short x, short y, short value) {
         value = (short) Math.min(Math.max(value, 0), 3); // cap value
-        int startingBit = 2 * ((x * 64) + y);
+        int startingBit = 2 * ((x * ROWS) + y);
         int startingByte = MonTanaMiniComputer.FRAME_BUFF_START + startingBit / 8;
         int bitOffset = startingBit % 8;
         int shiftedVal = value << bitOffset;
@@ -49,19 +51,19 @@ public class MTMCDisplay {
         int diffX = endX - startX;
         int diffY = endY - startY;
         int steps = Math.max(Math.abs(diffX), Math.abs(diffY));
-        int scaledX = startX * 64;
-        int scaledY = startY * 64;
+        int scaledX = startX * COLS;
+        int scaledY = startY * ROWS;
         int step = 0;
         while (step <= steps) {
             step++;
-            int normalizedX = scaledX/64;
-            int normalizedY = scaledY/64;
-            if (0 <= normalizedX && normalizedX < 64 &&
-                    0 <= normalizedY && normalizedY < 64) {
+            int normalizedX = scaledX/ROWS;
+            int normalizedY = scaledY/COLS;
+            if (0 <= normalizedX && normalizedX < ROWS &&
+                    0 <= normalizedY && normalizedY < COLS) {
                 setValueFor((short) normalizedX, (short) normalizedY, (short) 3);
             }
-            scaledX += (diffX * 64) / steps;
-            scaledY += (diffY * 64) / steps;
+            scaledX += (diffX * ROWS) / steps;
+            scaledY += (diffY * COLS) / steps;
         }
     }
 }

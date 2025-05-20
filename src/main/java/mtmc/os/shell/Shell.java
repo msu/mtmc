@@ -4,6 +4,7 @@ import mtmc.asm.Assembler;
 import mtmc.asm.AssemblyResult;
 import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.MonTanaMiniComputer;
+import mtmc.emulator.Register;
 import mtmc.os.shell.builtins.*;
 import mtmc.tokenizer.MTMCToken;
 
@@ -12,6 +13,8 @@ import static mtmc.tokenizer.MTMCToken.TokenType.*;
 import mtmc.tokenizer.MTMCTokenizer;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class Shell {
@@ -21,6 +24,7 @@ public class Shell {
         COMMANDS.put("help", new HelpCommand());
         COMMANDS.put("exit", new ExitCommand());
         COMMANDS.put("set", new SetCommand());
+        COMMANDS.put("get", new GetCommand());
         COMMANDS.put("web", new WebCommand());
         COMMANDS.put("disp", new DisplayCommand());
         COMMANDS.put("asm", new AssembleCommand());
@@ -54,17 +58,21 @@ public class Shell {
             if (isCommand(cmd)) {
                 COMMANDS.get(cmd).exec(tokens, computer);
             } else {
-                if (Instruction.isInstruction(cmd)) {
+                tokens.reset();
+                LinkedList<MTMCToken> asm = new LinkedList<>(tokens.stream().toList());
+                LinkedList<MTMCToken> updatedAsm = Assembler.transformSyntheticInstructions(asm);
+                if (!updatedAsm.isEmpty() &&
+                        Instruction.isInstruction(updatedAsm.peekFirst().stringValue())) {
                     Assembler assembler = new Assembler();
                     AssemblyResult result = assembler.assemble(command);
                     if (result.errors().isEmpty()) {
                         byte[] code = result.code();
-                        for (int i = 0; i < code.length; i = i + 2) {
-                            int instCodeUpper = code[i] << 8;
-                            int instCodeLower = code[i + 1] & 0xFF;
-                            short inst = (short) (instCodeUpper | instCodeLower);
-                            computer.execInstruction(inst);
+                        if (code.length == 4) {
+                            int data = (code[2] << 8) | code[3];
+                            computer.setRegisterValue(Register.DR, data);
                         }
+                        int inst = (code[0] << 8) | code[1];
+                        computer.execInstruction((short) inst);
                     } else {
                         computer.getConsole().println(result.printErrors());
                     }

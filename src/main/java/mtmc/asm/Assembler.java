@@ -207,7 +207,7 @@ public class Assembler {
             return;
         }
 
-        tokens = handleSyntheticInstructions(tokens);
+        tokens = transformSyntheticInstructions(tokens);
 
         instructionToken = tokens.poll();
         InstructionType type = InstructionType.fromString(instructionToken.stringValue());
@@ -362,7 +362,7 @@ public class Assembler {
         instructions.add(instruction);
     }
 
-    private LinkedList<MTMCToken> handleSyntheticInstructions(LinkedList<MTMCToken> tokens) {
+    public static LinkedList<MTMCToken> transformSyntheticInstructions(LinkedList<MTMCToken> tokens) {
         if (!tokens.isEmpty()) {
             MTMCToken first = tokens.peekFirst();
             if (first.type() == IDENTIFIER) {

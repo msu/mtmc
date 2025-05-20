@@ -52,15 +52,15 @@ public class LoadStoreInstruction extends Instruction {
     @Override
     public void genCode(byte[] output, Assembler assembler) {
         int upperByte = switch (getType()) {
-            case LW -> 0b0100_0000;
-            case LWO -> 0b0100_0001;
-            case LB -> 0b0100_0010;
-            case LBO -> 0b0100_0011;
-            case SW -> 0b0100_0100;
-            case SWO -> 0b0100_0101;
-            case SB -> 0b0100_0110;
-            case SBO -> 0b0100_0111;
-            case LI -> 0b0100_1111;
+            case LW -> 0b1000_0000;
+            case LWO -> 0b1000_0001;
+            case LB -> 0b1000_0010;
+            case LBO -> 0b1000_0011;
+            case SW -> 0b1000_0100;
+            case SWO -> 0b1000_0101;
+            case SB -> 0b1000_0110;
+            case SBO -> 0b1000_0111;
+            case LI -> 0b1000_1111;
             default -> 0;
         };
 

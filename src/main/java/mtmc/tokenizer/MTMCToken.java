@@ -20,6 +20,11 @@ public record MTMCToken(
         );
     }
 
+    @Override
+    public String toString() {
+        return stringValue;
+    }
+
     public String stringValue() {
         return stringValue;
     }

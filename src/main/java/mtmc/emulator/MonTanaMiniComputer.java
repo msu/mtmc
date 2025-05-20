@@ -606,7 +606,7 @@ public class MonTanaMiniComputer {
     }
 
     private boolean hasData(short instruction) {
-        boolean isLoadStore = getBits(16, 4, instruction) == 0b0100;
+        boolean isLoadStore = getBits(16, 4, instruction) == 0b1000;
         if (isLoadStore) {
             return true;
         }

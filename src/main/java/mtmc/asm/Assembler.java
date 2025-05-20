@@ -359,7 +359,7 @@ public class Assembler {
 
     private LinkedList<MTMCToken> handleSyntheticInstructions(LinkedList<MTMCToken> tokens) {
         if (!tokens.isEmpty()) {
-            MTMCToken first = tokens.poll();
+            MTMCToken first = tokens.peekFirst();
             if (first.type() == IDENTIFIER) {
                 String stringVal = first.stringValue();
                 String op = stringVal.substring(0, stringVal.length() - 2);

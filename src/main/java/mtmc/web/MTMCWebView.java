@@ -15,8 +15,7 @@ public class MTMCWebView {
 
     private final MonTanaMiniComputer computer;
 
-    private DisplayFormat registerFormat = DisplayFormat.DYN;
-    private DisplayFormat memoryFormat = DisplayFormat.DYN;
+    private DisplayFormat format = DisplayFormat.DYN;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -135,7 +134,7 @@ public class MTMCWebView {
     }
 
     private DisplayFormat computeFormat(String memoryClass) {
-        if(memoryFormat == DisplayFormat.DYN) {
+        if(format == DisplayFormat.DYN) {
             return switch (memoryClass) {
                 case "sta" -> DisplayFormat.DEC;
                 case "curr", "code" -> DisplayFormat.INS;
@@ -143,18 +142,18 @@ public class MTMCWebView {
                 default -> DisplayFormat.HEX;
             };
         } else {
-            return memoryFormat;
+            return format;
         }
     }
 
     private DisplayFormat computeFormat(Register register) {
-        if(registerFormat == DisplayFormat.DYN) {
+        if(format == DisplayFormat.DYN) {
             return switch (register) {
                 case IR -> DisplayFormat.INS;
                 default -> DisplayFormat.DEC;
             };
         } else {
-            return registerFormat;
+            return format;
         }
     }
 
@@ -236,21 +235,10 @@ public class MTMCWebView {
         throw new IllegalStateException("Bad display value: "  + valueFor);
     }
 
-    public String getRegisterFormat() {
-        return registerFormat.toString().toLowerCase();
+    public void toggleFormat() {
+        format = DisplayFormat.values()[(format.ordinal() + 1) % format.values().length];
     }
 
-    public void toggleRegisterFormat() {
-        registerFormat = DisplayFormat.values()[(registerFormat.ordinal() + 1) % memoryFormat.values().length];
-    }
-
-    public String getMemoryFormat() {
-        return memoryFormat.toString().toLowerCase();
-    }
-
-    public void toggleMemoryFormat() {
-        memoryFormat = DisplayFormat.values()[(memoryFormat.ordinal() + 1) % memoryFormat.values().length];
-    }
 
     enum DisplayFormat {
         DYN,

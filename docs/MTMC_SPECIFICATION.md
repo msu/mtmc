@@ -10,11 +10,11 @@ tasks.
 - 16-bit binary computer
 - byte-addressable
 - 2 byte (16-bit) words
-- 4k of Memory 
-  - 4096 bytes/addresses
-  - Upper 1k is a frame buffer for a display
-  - 2048 total words
-  - 1536 words/3072 bytes free excluding frame buffer
+- 8k of Memory 
+  - 8192 bytes/addresses
+  - Upper 4k is a frame buffer for a 128x128 display
+  - 4096 total words
+  - 2048 words/4096 bytes free excluding frame buffer
 - 16 Registers (see below)
 - 64x64 2-bit green scale display
   - `00` - `#2a453b` - darkest

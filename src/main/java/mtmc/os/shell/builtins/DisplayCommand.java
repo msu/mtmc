@@ -57,10 +57,10 @@ public class DisplayCommand extends ShellCommand {
                         String imagePath = tokens.collapseTokensAsString();
                         File file = computer.getOS().loadFile(imagePath);
                         BufferedImage img = ImageIO.read(file);
-                        Dimension scaleDimensions = ImageUtils.getScaledDimension(img, 64, 64);
+                        Dimension scaleDimensions = ImageUtils.getScaledDimension(img, 128, 128);
                         BufferedImage scaledImage = ImageUtils.scaleImage(img, scaleDimensions);
-                        int xpad = (64 - scaledImage.getWidth()) / 2;
-                        int ypad = (64 - scaledImage.getHeight()) / 2;
+                        int xpad = (128 - scaledImage.getWidth()) / 2;
+                        int ypad = (128 - scaledImage.getHeight()) / 2;
                         for (int x = 0; x < scaledImage.getWidth(); x++) {
                             for (int y = 0; y < scaledImage.getHeight(); y++) {
                                 int rgb = scaledImage.getRGB(x, y);

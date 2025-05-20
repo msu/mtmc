@@ -15,8 +15,8 @@ public class MonTanaMiniComputer {
 
     // constants
     public static final short WORD_SIZE = 2;
-    public static final int MEMORY_SIZE = 4096;
-    public static final int FRAME_BUFF_START = 3072;
+    public static final int MEMORY_SIZE = 8192;
+    public static final int FRAME_BUFF_START = 4096;
 
     // core model
     short[] registerFile; // 16 user visible + the instruction register

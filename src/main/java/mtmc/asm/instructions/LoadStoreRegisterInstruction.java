@@ -6,13 +6,13 @@ import mtmc.tokenizer.MTMCToken;
 
 import static mtmc.util.BinaryUtils.getBits;
 
-public class LoadStoreRelativeInstruction extends Instruction {
+public class LoadStoreRegisterInstruction extends Instruction {
 
     private MTMCToken targetToken;
     private MTMCToken pointerToken;
     private MTMCToken offsetToken;
 
-    public LoadStoreRelativeInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+    public LoadStoreRegisterInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 

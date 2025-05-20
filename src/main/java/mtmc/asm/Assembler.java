@@ -205,6 +205,9 @@ public class Assembler {
             instructions.add(new ErrorInstruction(labelToken, instructionToken, "Invalid Token"));
             return;
         }
+
+        tokens = handleSyntheticInstructions(tokens);
+
         InstructionType type = InstructionType.fromString(instructionToken.stringValue());
 
         if (type == null) {
@@ -230,7 +233,7 @@ public class Assembler {
                     MTMCToken value = requireIntegerToken(tokens, miscInst, 15);
                     miscInst.setValue(value);
                 }
-            } else if (type == InstructionType.SET) {
+            } else if (type == InstructionType.SETI) {
                 MTMCToken toRegister = requireWriteableRegister(tokens, miscInst);
                 miscInst.setTo(toRegister);
                 MTMCToken value = requireIntegerToken(tokens, miscInst, 15);
@@ -302,8 +305,8 @@ public class Assembler {
             loadInst.setValue(value);
 
             instruction = loadInst;
-        } else if (type.getInstructionClass() == LOAD_STORE_RELATIVE) {
-            LoadStoreRelativeInstruction loadInst = new LoadStoreRelativeInstruction(type, labelToken, instructionToken);
+        } else if (type.getInstructionClass() == LOAD_STORE_REGISTER) {
+            LoadStoreRegisterInstruction loadInst = new LoadStoreRegisterInstruction(type, labelToken, instructionToken);
 
             MTMCToken targetReg = requireWriteableRegister(tokens, loadInst);
             loadInst.setTargetToken(targetReg);
@@ -317,22 +320,21 @@ public class Assembler {
                 loadInst.setOffsetToken(offsetReg);
             }
             instruction = loadInst;
+        } else if (type.getInstructionClass() == JUMP_REGISTER) {
+            JumpRegisterInstruction jumpInst = new JumpRegisterInstruction(type, labelToken, instructionToken);
+            MTMCToken register = requireReadableRegister(tokens, jumpInst);
+            jumpInst.setRegister(register);
+            instruction = jumpInst;
         } else if (type.getInstructionClass() == JUMP) {
             JumpInstruction jumpInst = new JumpInstruction(type, labelToken, instructionToken);
-
-            if (type == InstructionType.JR) {
-                MTMCToken register = requireReadableRegister(tokens, jumpInst);
-                jumpInst.setRegister(register);
+            MTMCToken labelValue = maybeGetLabelReference(tokens);
+            MTMCToken valueToken;
+            if (labelValue != null) {
+                valueToken = labelValue;
             } else {
-                MTMCToken labelValue = maybeGetLabelReference(tokens);
-                MTMCToken valueToken;
-                if (labelValue != null) {
-                    valueToken = labelValue;
-                } else {
-                    valueToken = requireIntegerToken(tokens, jumpInst, MonTanaMiniComputer.MEMORY_SIZE);
-                }
-                jumpInst.setAddressToken(valueToken);
+                valueToken = requireIntegerToken(tokens, jumpInst, MonTanaMiniComputer.MEMORY_SIZE);
             }
+            jumpInst.setAddressToken(valueToken);
             instruction = jumpInst;
         } else {
             instruction = new ErrorInstruction(null, instructionToken, "Unexpected Token");
@@ -352,6 +354,22 @@ public class Assembler {
         }
 
         instructions.add(instruction);
+    }
+
+    private LinkedList<MTMCToken> handleSyntheticInstructions(LinkedList<MTMCToken> tokens) {
+        if (!tokens.isEmpty()) {
+            MTMCToken first = tokens.poll();
+            if (first.type() == IDENTIFIER) {
+                String stringVal = first.stringValue();
+                String op = stringVal.substring(0, stringVal.length() - 2);
+                if (stringVal.endsWith("i") && ALUOp.isALUOp(op)) {
+                    MTMCToken syntheticImmediate = tokens.removeFirst();
+                    tokens.addFirst(syntheticImmediate.cloneWithVal(op));
+                    tokens.addFirst(syntheticImmediate.cloneWithVal("imm"));
+                }
+            }
+        }
+        return tokens;
     }
 
     //===================================================

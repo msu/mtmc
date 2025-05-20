@@ -32,6 +32,10 @@ public record MTMCToken(
         return stringValue.substring(0, stringValue.length() - 1);
     }
 
+    public MTMCToken cloneWithVal(String val) {
+        return new MTMCToken(start, end, line, lineOffset, val, type);
+    }
+
     public enum TokenType {
         LEFT_PAREN,
         RIGHT_PAREN,

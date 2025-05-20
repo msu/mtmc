@@ -72,7 +72,7 @@ The `flags` register is four bits:
 
 ## Instructions (16 bit)
 
-There are seven instruction types in the MTSC.  
+There are eight instruction types in the MTSC.  
 
 Instructions can be either one or two words long.
 
@@ -84,20 +84,22 @@ Instruction types can be determined by looking at the four high-order bits (nibb
 | `0001`     | `1`   | ALU                 |
 | `0010`     | `2`   | STACK               |
 | `0011`     | `3`   | TEST                |
-| `0100`     | `4-7` | LOAD/STORE          |
-| `10xx`     | `8-B` | LOAD/STORE RELATIVE |
+| `01xx`     | `4-7` | LOAD/STORE REGISTER |
+| `1000`     | `8`   | LOAD/STORE          |
+| `1001`     | `9`   | JUMP REGISTER       |
 | `11xx`     | `C-F` | JUMP                |
 
 ### MISC
 
-Misc (miscellaneous) instructions start with the nibble `0000`.  There are three such instructions:
+Misc (miscellaneous) instructions start with the nibble `0000`.
 
 | Instruction | Form                  | Description                                                 | Example     |
 |-------------|-----------------------|-------------------------------------------------------------|-------------|
 | `sys`       | `0000 0000 vvvv vvvv` | Issues syscall `vvvv vvvv`                                  | `sys wstr`  |
-| `mov`       | `0000 0001 rrrr ssss` | Moves the value in register `rrrr` to `ssss`                | `mov t0 a0` |
+| `mov`       | `0000 0001 rrrr ssss` | Moves the value in register `ssss` to `rrrr`                | `mov a0 t0` |
 | `inc`       | `0000 0010 rrrr vvvv` | Increments the value in register `rrrr` by the value `vvvv` | `inc t0`    |
 | `dec`       | `0000 0011 rrrr vvvv` | Decrements the value in register `rrrr` by the value `vvvv` | `dec t0 2`  |
+| `seti`      | `0000 0100 rrrr vvvv` | Sets the value in register `rrrr` to the value `vvvv`       | `seti t0 2` |
 | `nop`       | `0000 1111 1111 1111` | A no-op instruction                                         | `nop`       |
 
 ### ALU 
@@ -180,7 +182,6 @@ The MTMC offers the following stack manipulation instructions:
 * rot
 * stack operations (sop) ALU instructions
 * pushi - push an immediate value
-* push1 - push 1 onto the stack
 
 In the case of ALU stack operations, if the ALU operator is a binary operation, the top two values of the stack are 
 consumed and the result is pushed back onto the stack.  
@@ -230,11 +231,33 @@ These instructions all set the `test bit` of the `flags` register with their res
 | `lti`       | `0011 1100 rrrr vvvv` | Sets `test bit` to `1` if the value in `rrrr` is less than the value `vvvv`, `0` otherwise                | `lt0 t1`    |
 | `ltei`      | `0011 1101 rrrr vvvv` | Sets `test bit` to `1` if the value in `rrrr` is less than or equal to the value `vvvv`, `0` otherwise    | `lte0 t1`   |
 
+### LOAD/STORE REGISTER
+
+The MTMC allows you to load and store words and bytes in memory with "register" load & store instructions, that is
+relative to the values in registers.
+
+These instructions start with the two bits `01`.
+
+The next two bits then specify which type of load/store instruction it is.
+
+The next nibble specifies a register holding the address to save to or read from.
+
+The next nibble specifies the register holding the address of the memory location to read from or write to.
+
+The final nibble specifies an offset register, which holds a value to offset the address register by.
+
+| Instruction | Form                  | Description                                                                                        | Example        |
+|-------------|-----------------------|----------------------------------------------------------------------------------------------------|----------------|
+| `lwr`       | `0100 rrrr aaaa oooo` | Loads the word (16-bit) value at the address in `aaaa`, offset by the value in `oooo`, into `rrrr` | `lwr t0 fp t3` |
+| `lbr`       | `0101 rrrr aaaa oooo` | Loads the byte (8-bit) value at the address in `aaaa`, offset by the value in `oooo`, into `rrrr`  | `lbr t0 fp t3` |
+| `swr`       | `0110 rrrr aaaa oooo` | Saves the word (16-bit) value in `rrrr` to the address in `aaaa`, offset by the value in `oooo`    | `swr t0 fp t3` |
+| `sbr`       | `0111 rrrr aaaa oooo` | Saves the byte (8-bit) value in `rrrr` to the address in `aaaa`, offset by the value in `oooo`     | `swr t0 fp t3` |
+
 ### LOAD/STORE
 
 The MTMC allows you to load and store words and bytes in memory with "load" and "store" instructions.  
 
-These instructions start with the nibble `0100`. 
+These instructions start with the nibble `1000`. 
 
 The next nibble specify which type of load/store instruction it is.  
 
@@ -252,41 +275,27 @@ The address or value to load or store from is found in the word immediately afte
 
 | Instruction | Form                  | Description                                                                                                                      | Example                  |
 |-------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|--------------------------|
-| `lw`        | `0100 0000 rrrr 0000` | Loads the word (16-bit) value at the address found immediately after the instruction into `rrrr`                                 | `lw t0 GLOBAL_VAR_1`     |
-| `lwo`       | `0100 0001 rrrr oooo` | Loads the word (16-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr` | `lwo t0 GLOBAL_VAR_1 t1` |
-| `lb`        | `0100 0010 rrrr 0000` | Loads the word (8-bit) value at the address found immediately after the instruction into `rrrr`                                  | `lb t0 GLOBAL_VAR_1`     |
-| `lbo`       | `0100 0011 rrrr oooo` | Loads the word (8-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr`  | `lbo t0 GLOBAL_VAR_1 t1` |
-| `sw`        | `0100 0100 rrrr 0000` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction                                   | `sw t0 GLOBAL_VAR_1`     |
-| `swo`       | `0100 0101 rrrr oooo` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`    | `swo t0 GLOBAL_VAR_1 t1` |
-| `sb`        | `0100 0110 rrrr 0000` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction                                    | `sb t0 GLOBAL_VAR_2`     |
-| `sbo`       | `0100 0111 rrrr oooo` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo      | `sbo t0 GLOBAL_VAR_2 t1` |
-| `li`        | `0100 1111 rrrr 0000` | Loads the word (16-bit) value found immediately after the instruction into `rrrr`                                                | `lwi t0 1024`            |
+| `lw`        | `1000 0000 rrrr 0000` | Loads the word (16-bit) value at the address found immediately after the instruction into `rrrr`                                 | `lw t0 GLOBAL_VAR_1`     |
+| `lwo`       | `1000 0001 rrrr oooo` | Loads the word (16-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr` | `lwo t0 GLOBAL_VAR_1 t1` |
+| `lb`        | `1000 0010 rrrr 0000` | Loads the word (8-bit) value at the address found immediately after the instruction into `rrrr`                                  | `lb t0 GLOBAL_VAR_1`     |
+| `lbo`       | `1000 0011 rrrr oooo` | Loads the word (8-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr`  | `lbo t0 GLOBAL_VAR_1 t1` |
+| `sw`        | `1000 0100 rrrr 0000` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction                                   | `sw t0 GLOBAL_VAR_1`     |
+| `swo`       | `1000 0101 rrrr oooo` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`    | `swo t0 GLOBAL_VAR_1 t1` |
+| `sb`        | `1000 0110 rrrr 0000` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction                                    | `sb t0 GLOBAL_VAR_2`     |
+| `sbo`       | `1000 0111 rrrr oooo` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo      | `sbo t0 GLOBAL_VAR_2 t1` |
+| `li`        | `1000 1111 rrrr 0000` | Loads the word (16-bit) value found immediately after the instruction into `rrrr`                                                | `lwi t0 1024`            |
 
-### LOAD/STORE RELATIVE
+### JUMP REGISTER
 
-The MTMC also allows you to load and store words and bytes in memory with "relative" load & store instructions, that is
-relative to the values in registers.  
+The MTMC supports one jump command that uses a register as the address to jump to, `jr`
 
-These instructions start with the two bits `10`. 
-
-The next two bits then specify which type of load/store instruction it is.  
-
-The next nibble specifies a register holding the address to save to or read from.
-
-The next nibble specifies the register holding the address of the memory location to read from or write to.
-
-The final nibble specifies an offset register, which holds a value to offset the address register by.
-
-| Instruction | Form                  | Description                                                                                        | Example        |
-|-------------|-----------------------|----------------------------------------------------------------------------------------------------|----------------|
-| `lwr`       | `1000 rrrr aaaa oooo` | Loads the word (16-bit) value at the address in `aaaa`, offset by the value in `oooo`, into `rrrr` | `lwr t0 fp t3` |
-| `lbr`       | `1001 rrrr aaaa oooo` | Loads the byte (8-bit) value at the address in `aaaa`, offset by the value in `oooo`, into `rrrr`  | `lbr t0 fp t3` |
-| `swr`       | `1010 rrrr aaaa oooo` | Saves the word (16-bit) value in `rrrr` to the address in `aaaa`, offset by the value in `oooo`    | `swr t0 fp t3` |
-| `sbr`       | `1011 rrrr aaaa oooo` | Saves the byte (8-bit) value in `rrrr` to the address in `aaaa`, offset by the value in `oooo`     | `swr t0 fp t3` |
+| Instruction | Form                   | Description                                                                                       | Example                                    |
+|-------------|------------------------|---------------------------------------------------------------------------------------------------|--------------------------------------------|
+| `jr`        | `10001 0000 0000 rrrr` | Jumps to the location found in register `rrrr`                                                    | `jr ra` (aliased as `ret`)                 |
 
 ### JUMPS
 
-The MTMC supports four jump commands, which all start with the first two bits `11`.  
+The MTMC supports four absolute jump commands, which all start with the first two bits `11`.  
 
 The next two bits specify the type of jump, followed by 12-bits that specify the address to jump to.
 
@@ -300,7 +309,7 @@ after itself.
 |-------------|-----------------------|---------------------------------------------------------------------------------------------------|--------------------------------------------|
 | `j`         | `1100 vvvv vvvv vvvv` | Jumps unconditionally to the location `vvvv vvvv vvvv`                                            | `j loop`                                   |
 | `jz`        | `1101 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `test bit` of `flags` is 0                              | `jz end`                                   |
-| `jr`        | `1110 0000 0000 rrrr` | Jumps to the location found in register `rrrr`                                                    | `jr ra` (aliased as `ret`)                 |
+| `jnz`       | `1110 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `test bit` of `flags` is 1                              | `jz end`                                   |
 | `jal`       | `1111 vvvv vvvv vvvv` | Sets `ra` to the address of the next instruction (`pc` + 1) and sets the `pc` to `vvvv vvvv vvvv` | `jal square` (jump to function `square()`) |
 
 

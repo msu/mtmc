@@ -120,8 +120,8 @@ public class MonTanaMiniComputer {
                 }
                 case 0b0001 -> {
                     // mov
-                    short from = getBits(8, 4, instruction);
-                    short to = getBits(4, 4, instruction);
+                    short to = getBits(8, 4, instruction);
+                    short from = getBits(4, 4, instruction);
                     short value = getRegisterValue(from);
                     setRegisterValue(to, value);
                 }
@@ -475,7 +475,8 @@ public class MonTanaMiniComputer {
                 }
                 default -> badInstruction(instruction);
             }
-        } else if (0b0100 == instructionType) {
+        } else if (0b1000 == instructionType) {
+            // load/store
             int opCode = getBits(12, 4, instruction);
             int reg = getBits(8, 4, instruction);
             int offsetReg = getBits(4, 4, instruction);
@@ -518,8 +519,8 @@ public class MonTanaMiniComputer {
                 }
                 default -> badInstruction(instruction);
             }
-        } else if (0b1000 <= instructionType && instructionType <= 0b1011) {
-            // load/store relative
+        } else if (0b0100 <= instructionType && instructionType <= 0b0111) {
+            // load/store register
             short loadStoreType = getBits(14, 2, instruction);
             short targetRegister = getBits(12, 4, instruction);
             short addressRegister = getBits(8, 4, instruction);
@@ -534,24 +535,31 @@ public class MonTanaMiniComputer {
             } else if (loadStoreType == 0x3) {
                 writeByteToMemory(targetAddress, (byte) getRegisterValue(targetRegister));
             }
+        } else if (0b1001 == instructionType) {
+            // jump reg
+            short reg = getBits(4, 4, instruction);
+            short location = getRegisterValue(reg);
+            setRegisterValue(PC, location);
         } else if (0b1100 <= instructionType && instructionType <= 0b1111) {
+            // jumps
             short jumpType = getBits(14, 2, instruction);
             if(jumpType == 0b00) {
                 // unconditional
                 short location = getBits(12, 12, instruction);
                 setRegisterValue(PC, location);
             } else if (jumpType == 0b01) {
-                // conditional
+                // jz
                 short location = getBits(12, 12, instruction);
                 if (!isFlagTestBitSet()) {
                     setRegisterValue(PC, location);
                 }
-            } else if (jumpType == 0x2) {
-                // jump reg
-                short reg = getBits(4, 4, instruction);
-                short location = getRegisterValue(reg);
-                setRegisterValue(PC, location);
-            } else if (jumpType == 0x3) {
+            } else if (jumpType == 0b10) {
+                // jnz
+                short location = getBits(12, 12, instruction);
+                if (isFlagTestBitSet()) {
+                    setRegisterValue(PC, location);
+                }
+            } else if (jumpType == 0b11) {
                 // jump & link
                 short location = getBits(12, 12, instruction);
                 setRegisterValue(RA, getRegisterValue(PC));

@@ -7,6 +7,7 @@ public enum InstructionType {
     MOV(MISC),
     INC(MISC),
     DEC(MISC),
+    SETI(MISC),
     NOP(MISC),
     ADD(ALU),
     SUB(ALU),
@@ -45,6 +46,10 @@ public enum InstructionType {
     GTEI(TEST),
     LTI(TEST),
     LTEI(TEST),
+    LWR(LOAD_STORE_REGISTER),
+    LBR(LOAD_STORE_REGISTER),
+    SWR(LOAD_STORE_REGISTER),
+    SBR(LOAD_STORE_REGISTER),
     LW(LOAD_STORE, 4),
     LWO(LOAD_STORE, 4),
     LI(LOAD_STORE, 4),
@@ -54,13 +59,10 @@ public enum InstructionType {
     SWO(LOAD_STORE, 4),
     SB(LOAD_STORE, 4),
     SBO(LOAD_STORE, 4),
-    LWR(LOAD_STORE_RELATIVE),
-    LBR(LOAD_STORE_RELATIVE),
-    SWR(LOAD_STORE_RELATIVE),
-    SBR(LOAD_STORE_RELATIVE),
+    JR(JUMP_REGISTER),
     J(JUMP),
     JZ(JUMP),
-    JR(JUMP),
+    JNZ(JUMP),
     JAL(JUMP),
     ;
 
@@ -74,8 +76,9 @@ public enum InstructionType {
         ALU,
         STACK,
         TEST,
+        LOAD_STORE_REGISTER,
         LOAD_STORE,
-        LOAD_STORE_RELATIVE,
+        JUMP_REGISTER,
         JUMP
     }
 
@@ -96,6 +99,10 @@ public enum InstructionType {
     }
 
     public static InstructionType fromString(String string) {
-        return InstructionType.valueOf(string.toUpperCase());
+        try {
+            return InstructionType.valueOf(string.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

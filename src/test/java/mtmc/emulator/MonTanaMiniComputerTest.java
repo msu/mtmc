@@ -22,10 +22,10 @@ public class MonTanaMiniComputerTest {
     @Test
     void testMov() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        computer.setRegisterValue(T0, 0);
-        computer.setRegisterValue(T1, 10);
+        computer.setRegisterValue(T0, 10);
+        computer.setRegisterValue(T1, 0);
 
-        short moveInst = 0b0000_0001_0001_0000; // mv t1 t0
+        short moveInst = 0b0000_0001_0001_0000; // mov t1 t0
         computer.execInstruction(moveInst);
 
         assertEquals(10, computer.getRegisterValue(T0));
@@ -681,8 +681,8 @@ public class MonTanaMiniComputerTest {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(DR, 1024);
 
-        short loadImmediateInst = (short) 0b0010_1111_0000_1101; // pushi sp 1024
-        computer.execInstruction(loadImmediateInst);
+        short inst = (short) 0b0010_1111_0000_1101; // pushi sp 1024
+        computer.execInstruction(inst);
 
         assertEquals(1024, computer.fetchWordFromMemory(computer.getRegisterValue(SP)));
     }
@@ -1044,7 +1044,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(10, 20);
         assertEquals(0, computer.getRegisterValue(T0));
 
-        short inst = (short) 0b0100_0000_0000_0000; // lw t0 10
+        short inst = (short) 0b1000_0000_0000_0000; // lw t0 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.getRegisterValue(T0));
@@ -1058,7 +1058,7 @@ public class MonTanaMiniComputerTest {
         computer.writeWordToMemory(15, 20);
         assertEquals(0, computer.getRegisterValue(T0));
 
-        short inst = (short) 0b0100_0001_0000_0001; // lwo t0 t1 10
+        short inst = (short) 0b1000_0001_0000_0001; // lwo t0 t1 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.getRegisterValue(T0));
@@ -1071,7 +1071,7 @@ public class MonTanaMiniComputerTest {
         computer.writeByteToMemory(10, (byte) 20);
         assertEquals(0, computer.getRegisterValue(T0));
 
-        short inst = (short) 0b0100_0010_0000_0000; // lw t0 10
+        short inst = (short) 0b1000_0010_0000_0000; // lw t0 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.getRegisterValue(T0));
@@ -1085,7 +1085,7 @@ public class MonTanaMiniComputerTest {
         computer.writeByteToMemory(15, (byte) 20);
         assertEquals(0, computer.getRegisterValue(T0));
 
-        short inst = (short) 0b0100_0011_0000_0001; // lwo t0 t1 10
+        short inst = (short) 0b1000_0011_0000_0001; // lwo t0 t1 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.getRegisterValue(T0));
@@ -1098,7 +1098,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(T0, 20);
         assertEquals(0, computer.fetchWordFromMemory(10));
 
-        short inst = (short) 0b0100_0100_0000_0000; // sw t0 10
+        short inst = (short) 0b1000_0100_0000_0000; // sw t0 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.fetchWordFromMemory(10));
@@ -1112,7 +1112,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(T1, 10);
         assertEquals(0, computer.fetchWordFromMemory(20));
 
-        short inst = (short) 0b0100_0101_0000_0001; // swo t0 t1 10
+        short inst = (short) 0b1000_0101_0000_0001; // swo t0 t1 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.fetchWordFromMemory(20));
@@ -1125,7 +1125,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(T0, 20);
         assertEquals(0, computer.fetchByteFromMemory(10));
 
-        short inst = (short) 0b0100_0110_0000_0000; // sw t0 10
+        short inst = (short) 0b1000_0110_0000_0000; // sw t0 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.fetchByteFromMemory(10));
@@ -1139,7 +1139,7 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(T1, 10);
         assertEquals(0, computer.fetchByteFromMemory(20));
 
-        short inst = (short) 0b0100_0111_0000_0001; // swo t0 t1 10
+        short inst = (short) 0b1000_0111_0000_0001; // swo t0 t1 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.fetchByteFromMemory(20));
@@ -1151,114 +1151,124 @@ public class MonTanaMiniComputerTest {
         computer.setRegisterValue(DR, 20);
         assertEquals(0, computer.getRegisterValue(T0));
 
-        short inst = (short) 0b0100_1111_0000_0001; // li t0 t1 10
+        short inst = (short) 0b1000_1111_0000_0001; // li t0 t1 10
         computer.execInstruction(inst);
 
         assertEquals(20, computer.getRegisterValue(T0));
     }
 
     @Test
-    void testLoadRelativeWord() {
+    void testLoadRegisterWord() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(T1, 100);
         computer.setRegisterValue(T2, 0);
         computer.writeWordToMemory(100, (short) 10); // value written to memory
 
-        short loadWordInst = (short) 0b1000_0000_0001_0010; // lw t0, t1, t2
+        short loadWordInst = (short) 0b0100_0000_0001_0010; // lw t0, t1, t2
         computer.execInstruction(loadWordInst);
 
         assertEquals(10, computer.getRegisterValue(T0)); // should be loaded into t0
     }
 
     @Test
-    void testLoadWordRelativeWithOffset() {
+    void testLoadWordRegisterWithOffset() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(T1, 100);
         computer.setRegisterValue(T2, 5);
         computer.writeWordToMemory(105, (short) 10); // value written to memory
 
-        short loadWordInst = (short) 0b1000_0000_0001_0010; // lw t0, t1, t2
+        short loadWordInst = (short) 0b0100_0000_0001_0010; // lw t0, t1, t2
         computer.execInstruction(loadWordInst);
 
         assertEquals(10, computer.getRegisterValue(T0)); // should be loaded into t0
     }
 
     @Test
-    void testLoadByteRelative() {
+    void testLoadByteRegister() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(T1, 100);
         computer.setRegisterValue(T2, 0);
         computer.writeByteToMemory(100, (byte) 10); // value written to memory
 
-        short loadByteInst = (short) 0b1001_0000_0001_0010; // lb t0, t1, t2
+        short loadByteInst = (short) 0b0101_0000_0001_0010; // lb t0, t1, t2
         computer.execInstruction(loadByteInst);
 
         assertEquals(10, computer.getRegisterValue(T0)); // should be loaded into t0
     }
 
     @Test
-    void testLoadByteRelativeWithOffset() {
+    void testLoadByteRegisterWithOffset() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(T1, 100);
         computer.setRegisterValue(T2, 5);
         computer.writeByteToMemory(105, (byte) 10); // value written to memory
 
-        short loadByteInst = (short) 0b1001_0000_0001_0010; // lb t0, t1, t2
+        short loadByteInst = (short) 0b0101_0000_0001_0010; // lb t0, t1, t2
         computer.execInstruction(loadByteInst);
 
         assertEquals(10, computer.getRegisterValue(T0)); // should be loaded into t0
     }
 
     @Test
-    void testSaveRelativeWord() {
+    void testSaveRegisterWord() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(T0, 10);
         computer.setRegisterValue(T1, 100);
         computer.setRegisterValue(T2, 0);
 
-        short saveWordInst = (short) 0b1010_0000_0001_0010; // sw t0, t1, t2
+        short saveWordInst = (short) 0b0110_0000_0001_0010; // sw t0, t1, t2
         computer.execInstruction(saveWordInst);
 
         assertEquals(10, computer.fetchWordFromMemory(100));
     }
 
     @Test
-    void testSaveWordRelativeWithOffset() {
+    void testSaveWordRegisterWithOffset() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(T0, 10);
         computer.setRegisterValue(T1, 100);
         computer.setRegisterValue(T2, 5);
 
-        short saveWordInst = (short) 0b1010_0000_0001_0010; // sw t0, t1, t2
+        short saveWordInst = (short) 0b0110_0000_0001_0010; // sw t0, t1, t2
         computer.execInstruction(saveWordInst);
 
         assertEquals(10, computer.fetchWordFromMemory(105));
     }
 
     @Test
-    void testSaveByteRelative() {
+    void testSaveByteRegister() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(T0, 10);
         computer.setRegisterValue(T1, 100);
         computer.setRegisterValue(T2, 0);
 
-        short saveByteInst = (short) 0b1011_0000_0001_0010; // sw t0, t1, t2
+        short saveByteInst = (short) 0b0111_0000_0001_0010; // sw t0, t1, t2
         computer.execInstruction(saveByteInst);
 
         assertEquals(10, computer.fetchByteFromMemory(100));
     }
 
     @Test
-    void testSaveByteRelativeWithOffset() {
+    void testSaveByteRegisterWithOffset() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(T0, 10);
         computer.setRegisterValue(T1, 100);
         computer.setRegisterValue(T2, 5);
 
-        short saveByteInst = (short) 0b1011_0000_0001_0010; // sw t0, t1, t2
+        short saveByteInst = (short) 0b0111_0000_0001_0010; // sw t0, t1, t2
         computer.execInstruction(saveByteInst);
 
         assertEquals(10, computer.fetchByteFromMemory(105));
+    }
+
+
+    @Test
+    void testJumpRegister() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setRegisterValue(T0, 50);
+        short jumpIfZeroInst = (short) 0b1001_0000_0000_0000; // jr t0
+        computer.execInstruction(jumpIfZeroInst);
+        assertEquals(50, computer.getRegisterValue(PC));
     }
 
     @Test
@@ -1291,12 +1301,21 @@ public class MonTanaMiniComputerTest {
     }
 
     @Test
-    void testJumpRegister() {
+    void testJumpNotZeroIfFlagBitSetToZero() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        computer.setRegisterValue(T0, 50);
-        short jumpIfZeroInst = (short) 0b1110_0000_0000_0000; // jr t0
+        computer.setFlagTestBit(false);
+        short jumpIfZeroInst = (short) 0b1110_0000_0001_0000; // jnz 16
         computer.execInstruction(jumpIfZeroInst);
-        assertEquals(50, computer.getRegisterValue(PC));
+        assertEquals(0, computer.getRegisterValue(PC));
+    }
+
+    @Test
+    void testJumpNotZeroIfFlagBitSetToOne() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.setFlagTestBit(true);
+        short jumpIfZeroInst = (short) 0b1110_0000_0001_0000; // jnz 16
+        computer.execInstruction(jumpIfZeroInst);
+        assertEquals(16, computer.getRegisterValue(PC));
     }
 
     @Test

@@ -59,7 +59,7 @@ public abstract class Instruction extends ASMElement {
         if (test != null) {
             return test;
         }
-        String lsr = LoadStoreRelativeInstruction.disassemble(instruction);
+        String lsr = LoadStoreRegisterInstruction.disassemble(instruction);
         if (lsr != null) {
             return lsr;
         }

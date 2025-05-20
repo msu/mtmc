@@ -1,16 +1,15 @@
 package mtmc.os.fs;
 
+import org.eclipse.jetty.util.ArrayUtil;
+
 import java.io.File;
 import java.nio.file.Path;
+import java.sql.Array;
 import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
-
-import io.javalin.http.Context;
-import io.javalin.http.util.JsonEscapeUtil;
-import mtmc.web.WebServer;
 
 public class FileSystem {
     private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
@@ -18,17 +17,6 @@ public class FileSystem {
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
     static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
 
-    /*static Path getDiskPath(String pathString) { // C:\Users_username\folderParents\mtmc\disk
-        Path path = Path.of(pathString);
-        if (!path.isAbsolute()) {
-            path = DISK_PATH.resolve(path);
-        }
-        path = path.toAbsolutePath();
-        if (!path.startsWith(DISK_PATH)) {
-            throw new IllegalArgumentException(pathString + " is not a disk path");
-        }
-        return path;
-    }*/
 
     public void setCWD(String cd) {
         cwd = cd;
@@ -36,99 +24,72 @@ public class FileSystem {
 
 
     public String resolve(String fileName) {
+        String resolvedString = "";
+        String[] cwdPath = cwd.split("/");
+        ArrayList<String> cwdArrayList = new ArrayList<>(Arrays.asList(cwdPath)); // Convert to ArrayList
+        if (cwdPath[0].equals("")) { // Remove empty string (First slash)
+            cwdArrayList.removeFirst();
+        }
+        String[] path = fileName.split("/");
+        ArrayList<String> fileArrayList = new ArrayList<>(Arrays.asList(path)); // Convert to ArrayList
+        resolvedString = pathConstructor(cwdArrayList, fileArrayList); // Handles absolute and relative construction
 
-        ArrayList<String> resolvedArr = new ArrayList<>();
-        String pathString = null;
-        String[] parts = fileName.split("/");
-        String[] cwdSplit = cwd.split("/");             // Split the string by "/"
-        ArrayList<String> cwdString = new ArrayList<>(Arrays.asList(cwdSplit)); // Convert to ArrayList
-        cwdString.removeFirst();
-        System.out.println("CWD STRING: " + cwdString);
-        if(!parts[0].equals("") || parts[0].equals("..")){
-            resolvedArr = cwdString;
-        }
-        //System.out.println(List.of(parts)); // Input Path
-
-        //Construction of path given: Determining absolute or relative based on "..", ".", and "/"
-        if (parts.length == 0) {
-            return null;
-        }
-        for (int dirVar = 0; dirVar < parts.length; dirVar++) {
-            if (parts[dirVar].equals("") || parts[dirVar].equals(".")) {
-                continue;
-            } else if (parts[dirVar].equals("..")) {
-                if (!resolvedArr.isEmpty()) {
-                    resolvedArr.removeLast();
-                }
-            } else {
-                resolvedArr.add(parts[dirVar]);
-            }
-        }
-        if (parts[0].equals("")) {
-            pathString = absolutePathConstructor(resolvedArr);
-        } else {
-            pathString = relativePathConstructor(resolvedArr);
-            //pathString = absolutePathConstructor(resolvedArr);
-        }
-        return pathString;
+        return resolvedString;
     }
 
-    public String relativePathConstructor(ArrayList<String> relativeArr) { // Unfinished
+    public String pathConstructor(ArrayList<String> cwd, ArrayList<String> path) {
         String fileString = "";
-        if (relativeArr.size() != 0) {
-            if (relativeArr.getFirst().equals(cwd))
-                for (int resolvedDirs = 0; resolvedDirs < relativeArr.size(); resolvedDirs++) {
-                    fileString += ("/" + relativeArr.get(resolvedDirs));
-                }
-            else if (!relativeArr.getFirst().equals(cwd)) {
-                fileString += cwd;
-                for (int resolvedDirs = 0; resolvedDirs < relativeArr.size(); resolvedDirs++) {
-                    fileString += ("/" + relativeArr.get(resolvedDirs));
+        System.out.println("Path: " + path.toString());
+        ArrayList<String> constructedPath = new ArrayList<>();
+        if (path.isEmpty()) { // This fulfills (cd " ")
+            for (int cwdDir = 0; cwdDir < cwd.size(); cwdDir++) {
+                fileString += ("/" + cwd.get(cwdDir));
+            }
+        } else if (path.get(0).equals("") || path.get(0).equals("..") || path.get(0).equals(".")) { // Else-If given path is absolute
+            if (path.get(0).equals("")) { // Delete slash
+                path.removeFirst();
+            }
+            if (path.get(0).equals("..") || path.get(0).equals(".")) { // Add the cwd only if it starts with "." or ".."
+                constructedPath.addAll(cwd); // Only added when ".." or "." are at the beginning
+            }
+            for (int i = 0; i < path.size(); i++) {
+                if (path.get(i).equals("..") && !constructedPath.isEmpty()) { // Check if there is a directory to move up
+                    constructedPath.removeLast();
+                } else if (path.get(i).equals("..") && constructedPath.isEmpty()) { // Do nothing if no upper directory
+                    continue;
+                } else if (path.get(i).equals(".")) { // Don't add "." to path string
+                    continue;
+                } else {
+                    constructedPath.add(path.get(i));
                 }
             }
+            for (int i = 0; i < constructedPath.size(); i++) { // Construct file string for absolute path
+                fileString += ("/" + constructedPath.get(i));
+            }
+
+        } else { // Relative handling
+            constructedPath.addAll(cwd); // Add cwd to empty path
+            constructedPath.addAll(path); // Add path to cwd because relative
+            for (int i = 0; i < constructedPath.size(); i++) { // Construct file string with "/"
+                fileString += ("/" + constructedPath.get(i));
+            }
         }
-        //System.out.println("Relative string: " + fileString);
-        //System.out.println("\n");
         return fileString;
     }
 
-    public String absolutePathConstructor(ArrayList<String> absoluteArr) {
-        String fileString = "";
-        if (absoluteArr.size() != 0) {
-            if (!absoluteArr.getFirst().equals("home")) {
-                for (int resolvedDirs = 0; resolvedDirs < absoluteArr.size(); resolvedDirs++) {
-                    fileString += ("/" + absoluteArr.get(resolvedDirs));
-                }
-            } else if (absoluteArr.getFirst().equals("home")) {
-                for (int resolvedDirs = 0; resolvedDirs < absoluteArr.size(); resolvedDirs++) {
-                    fileString += ("/" + absoluteArr.get(resolvedDirs));
-                }
-            }
-        }
-        //System.out.println("Absolute string: " + fileString);
-        //System.out.println("\n");
-        return fileString;
-    }
-
-    public String join(String upperPath, String lowerPath) {
+    public String join(String front, String back) {
         String joinedPath = "";
-        String[] parts = lowerPath.split("/");
+        String[] parts = back.split("/");
         if (!parts[0].equals("/")) {
-            joinedPath = upperPath + "/" + lowerPath;
+            joinedPath = front + "/" + back;
         } else if (parts[0].equals("/")) {
-            joinedPath = upperPath + lowerPath;
+            joinedPath = front + back;
         }
         return joinedPath;
     }
 
-    private File toRealPath(String path) {
-        String resolvedPath = resolve(path);
-        String slashGone = resolvedPath.substring(1);
-        return DISK_PATH.resolve(slashGone).toFile();
-    }
-
     public void listFiles(String path) {
-        File resolvedPath = toRealPath(path);
+        /*File resolvedPath = toRealPath(path);
         File[] files = resolvedPath.listFiles();
         System.out.println(Arrays.toString(files));
         if(files == null){
@@ -141,9 +102,9 @@ public class FileSystem {
 
             if (file.isDirectory()) {
                 System.out.println("Directory: " + file.getName());
-                /*for (int i = 0; i < files[file].length; i++) {
+                *//*for (int i = -1; i < files[file].length; i++) {
 
-                }*/
+                }*//*
                 System.out.println("test: " + Arrays.toString(file.listFiles()));
             }
             else {
@@ -151,29 +112,7 @@ public class FileSystem {
                 System.out.println("File: " + file.getName());
             }
         }
+        return;*/
     }
 
-    //TODO: Ensure relative absolute something:
-    // Compare paths to $user/disk
-
-    /*
-    TODO: Create "directories" variable to iterate
-    for (directory = 0; directory < directories.length; directory++) // Iterate through directories
-        if (directory.isDirectory){
-            return;
-        }
-        else if(!directory.isDirectory){ // If directory doesn't exist, add to TreeMap. Then iterate and add files within
-            // TODO:
-                - Create array of files within directory
-                - Input array(files[directory.length] into TreeMap
-                - TreeMap <directory, files>
-
-            DIRECTORY_W_FILES.put(directory, TODO:ARRAY_VAR);
-        } throws FileNotFoundException("File not found");
-
-        public static boolean isDirectory(String directory) {return DIRECTORIES.containsKey(directory);}
-
-     */
-
 }
-

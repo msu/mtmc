@@ -1,11 +1,27 @@
-<div class="panel" id="display-panel">
+
+<div class="panel" id="display">
     <div>
-        <div id="display" class="display">
-            {% for row in computer.displayRows %}
-            {% for col in computer.displayCols %}
-            <div id="display_{{row}}_{{col}}" style="background:{{computer.colorForPixel(row, col)}}"></div>
-            {% endfor %}
-            {% endfor %}
+        <img id="display-img" src="/display" alt="the display" width="400">
+    </div>
+    <div style="padding: 4px; display: grid; grid-template-rows: 70px; grid-template-columns: 100px 150px 150px; justify-items: center">
+        <div style="display: grid;grid-template-rows: 25px 25px 25px;grid-template-columns: 25px 25px 25px;">
+            <div></div>
+            <div style="background-color: dimgray; text-align: center; vertical-align: center">&uparrow;</div>
+            <div></div>
+            <div style="background-color: dimgray ; text-align: center; vertical-align: center">&larr;</div>
+            <div style="background-color: dimgray"></div>
+            <div style="background-color: dimgray; text-align: center; vertical-align: center ">&rarr;</div>
+            <div></div>
+            <div style="background-color: dimgray ; text-align: center; vertical-align: center">&downarrow;</div>
+            <div></div>
+        </div>
+        <div style="display: block">
+            <button>select</button>
+            <button>start</button>
+        </div>
+        <div style="display: block">
+            <button style="color: white; background-color: red; width: 50px; height: 50px; border-radius: 50px">B</button>
+            <button style="color: white; background-color: red; width: 50px; height: 50px; border-radius: 50px">A</button>
         </div>
     </div>
 </div>

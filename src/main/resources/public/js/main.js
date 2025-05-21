@@ -1,12 +1,21 @@
 // connect to sse endpoint
 const sseSource = new EventSource("/sse", {withCredentials: true});
 
-sseSource.addEventListener("update", (e) => {
-    let updateInfo = JSON.parse(e.data);
-    for (let id in updateInfo) {
-        let element = document.querySelector("#" + id);
-        element.outerHTML = updateInfo[id]
-    }
+sseSource.addEventListener("update:display", (e) => {
+    console.log("here")
+    let element = document.getElementById("display-img");
+    console.log("here", element)
+    element.src = "/display?" + Date.now()
+})
+
+sseSource.addEventListener("update:reg", (e) => {
+    let element = document.getElementById("register-panel");
+    element.outerHTML = e.data
+})
+
+sseSource.addEventListener("update:mem", (e) => {
+    let element = document.getElementById("memory-table");
+    element.outerHTML = e.data
 })
 
 sseSource.onerror = (err) => {

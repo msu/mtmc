@@ -7,10 +7,9 @@ import io.javalin.http.sse.SseClient;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
@@ -69,6 +68,10 @@ public class WebServer {
         javalinApp
                 .get("/", ctx -> {
                     ctx.html(render("templates/index.html"));
+                })
+                .get("/display", ctx -> {
+                    ctx.header("Content-Type", "image/png");
+                    ctx.result(computer.getDisplay().toPng());
                 })
                 .post("/cmd", ctx -> {
                     Map vals = json.fromJson(ctx.body(), Map.class);

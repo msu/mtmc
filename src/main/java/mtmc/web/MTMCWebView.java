@@ -62,6 +62,24 @@ public class MTMCWebView {
         return "0x" + padded;
     }
 
+    public String flagsBlinken() {
+        StringBuilder blinken = new StringBuilder();
+        blinken.append("t: <div class='blinken ");
+        if (computer.isFlagTestBitSet()) {
+            blinken.append("on");
+        } else {
+            blinken.append("off");
+        }
+        blinken.append("'></div>");
+        blinken.append(" o: <div class='blinken ");
+        blinken.append("off");
+        blinken.append("'></div>");
+        blinken.append(" e: <div class='blinken ");
+        blinken.append("off");
+        blinken.append("'></div>");
+        return blinken.toString();
+    }
+
     public String regBlinken(String reg) {
         Integer regIndex = Register.toInteger(reg);
         StringBuilder blinken = new StringBuilder();
@@ -158,9 +176,7 @@ public class MTMCWebView {
     }
 
     public String classFor(int address) {
-        if (address >= MonTanaMiniComputer.FRAME_BUFF_START) {
-            return "buff";
-        } else if (address >= computer.getRegisterValue(Register.SP)) {
+        if (address >= computer.getRegisterValue(Register.SP)) {
             return "sta";
         } else if (address == computer.getRegisterValue(Register.PC)) {
             return "curr";
@@ -211,26 +227,35 @@ public class MTMCWebView {
             "SUB", "ESC", "FS", "GS", "RS", "US",
     };
 
-    public Iterable getDisplayRows() {
-        return computer.getDisplay().getRows();
-    }
 
-    public Iterable getDisplayCols() {
-        return computer.getDisplay().getRows();
+    public String classForPixel(int row, int column) {
+        short x = (short) column;
+        short y = (short) row;
+        short valueFor = computer.getDisplay().getPixel(x, y);
+        if (valueFor == 0) {
+            return "d";
+        } else if (valueFor == 1) {
+            return "m";
+        } else if (valueFor == 2) {
+            return "l";
+        } else if (valueFor == 3) {
+            return "w";
+        }
+        throw new IllegalStateException("Bad display value: "  + valueFor);
     }
 
     public String colorForPixel(int row, int column) {
         short x = (short) column;
         short y = (short) row;
-        short valueFor = computer.getDisplay().getValueFor(x, y);
+        short valueFor = computer.getDisplay().getPixel(x, y);
         if (valueFor == 0) {
-            return "#" + MTMCDisplay.DARK;
+            return MTMCDisplay.DisplayColor.DARK.toRGBString();
         } else if (valueFor == 1) {
-            return "#" + MTMCDisplay.MEDIUM;
+            return MTMCDisplay.DisplayColor.MEDIUM.toRGBString();
         } else if (valueFor == 2) {
-            return "#" + MTMCDisplay.LIGHT;
+            return MTMCDisplay.DisplayColor.LIGHT.toRGBString();
         } else if (valueFor == 3) {
-            return "#" + MTMCDisplay.WHITE;
+            return MTMCDisplay.DisplayColor.LIGHTEST.toRGBString();
         }
         throw new IllegalStateException("Bad display value: "  + valueFor);
     }

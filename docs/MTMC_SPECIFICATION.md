@@ -1,22 +1,27 @@
 # MTMC - MonTana state Mini Computer
 
-The MonTana state Mini Computer is a virtual computer intended to show how digital computation works in a fun and visual 
-way.  The MTSC combines ideas from the [PDP-11](https://en.wikipedia.org/wiki/PDP-11), [MIPS](https://en.wikipedia.org/wiki/MIPS_architecture),
-the [Scott CPU](https://www.youtube.com/watch?v=RRg5hRlywIg) and the [JVM](https://en.wikipedia.org/wiki/Java_virtual_machine) to make an understandable 16-bit computer that can accomplish basic computing
-tasks.
+The MonTana state Mini Computer is a virtual computer intended to show how digital computation works in a fun and visual
+way.
+
+The MTSC combines ideas from
+the [PDP-11](https://en.wikipedia.org/wiki/PDP-11), 
+[MIPS](https://en.wikipedia.org/wiki/MIPS_architecture),
+the [Scott CPU](https://www.youtube.com/watch?v=RRg5hRlywIg), 
+the [Game Boy](https://en.wikipedia.org/wiki/Game_Boy) and
+the [JVM](https://en.wikipedia.org/wiki/Java_virtual_machine) 
+to make a relatively simple 16-bit computer that can
+accomplish basic computing tasks.
 
 ## Overall Architecture
 
 - 16-bit binary computer
 - byte-addressable
 - 2 byte (16-bit) words
-- 8k of Memory 
-  - 8192 bytes/addresses
-  - Upper 4k is a frame buffer for a 128x128 display
-  - 4096 total words
-  - 2048 words/4096 bytes free excluding frame buffer
+- 4k of Memory 
+  - 4096 bytes/addresses
+  - 2048 words
 - 16 Registers (see below)
-- 64x64 2-bit green scale display
+- 160x140 2-bit green scale display
   - `00` - `#2a453b` - darkest
   - `01` - `#365d48` - dark
   - `10` - `#577c44` - light
@@ -56,7 +61,6 @@ In addition to these registers, there are the following non-user facing register
 | `dr`    | holds data associated with the current instruction if it is multi-word |
 | `cb`    | a pointer to the boundary of the code segment                          |
 | `db`    | a pointer to the boundary of the data segment                          |
-| `io`    | the value of the latest non-console user input                         |
 | `flags` | holds flag values                                                      |
 
 ### Flags Register
@@ -323,45 +327,19 @@ after itself.
 
 ## MTMC IO - WORK IN PROGRESS
 
-The MTMC has two forms of input/output: console and interactive
-
-Console I/O is done via the text console attached to the machine.  String and integer values can be read and written
-using system calls.
-
-Interactive I/O is done via the screen, with the input event left in the user-invisible `io` register.  This register
-can be accessed via the `io` syscall.  This call can either be blocking or non-blocking.  If the `a0` register is set to
-`1`, the call will block, otherwise it will not block.
-
-Calling the `io` syscall returns the current value of `io` in `rv` and clears `io`.
-
-The value in `io` is a 16-bit value split in the following manner:
-
-`xxxx xxyy yyyy eeee`
-
-The first six bits indicate the x position of the event, if any.
-
-The next six bits indicate the y position of the event, if any.
-
-The final nibble of the value indicate what event occurred, with the following values:
 
 | Name       | Hex | binary | Description                                  |
 |------------|-----|--------|----------------------------------------------|
-| `none`     | `0` | `0000` | no event has occurred since the last read    |
 | `up`       | `1` | `0001` | the up arrow key was pressed                 |
 | `right`    | `2` | `0010` | the right arrow key was pressed              |
-| `down`     | `3` | `0011` | the down arrow key was pressed               |
-| `left`     | `4` | `0100` | the left arrow key was pressed               |
-| `space`    | `5` | `0101` | the space bar was pressed                    |
-| `a`        | `6` | `0110` | the a key was pressed                        |
-| `s`        | `7` | `0111` | the s key was pressed                        |
-| `d`        | `8` | `1000` | the d key was pressed                        |
-| `f`        | `9` | `1001` | the f key was pressed                        |
-| `esc`      | `A` | `1010` | the escape key was pressed                   |
 | `down`     | `B` | `1011` | the mouse was pressed down (but not clicked) |
 | `up`       | `C` | `1100` | the mouse was released                       |
-| `move`     | `D` | `1101` | the mouse was moved                          |
-| `click`    | `E` | `1110` | the mouse was clicked                        |
-| `dblclick` | `F` | `1111` | the mouse was double clicked                 |
+| `down`     | `3` | `0011` | the down arrow key was pressed               |
+| `left`     | `4` | `0100` | the left arrow key was pressed               |
+| `a`        | `6` | `0110` | the A button was pressed                     |
+| `b`        | `7` | `0111` | the B key was pressed                        |
+| `start`    | `8` | `1000` | the d key was pressed                        |
+| `select`   | `9` | `1001` | the f key was pressed                        |
 
 #### System Codes
 

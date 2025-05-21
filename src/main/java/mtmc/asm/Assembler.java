@@ -33,7 +33,6 @@ public class Assembler {
 
     public Assembler() {
         labels = new HashMap<>();
-        labels.put(FrameBufferLocation.FRAME_BUFFER, new FrameBufferLocation());
     }
 
     public AssemblyResult assemble(String asm) {

@@ -15,8 +15,7 @@ public class MonTanaMiniComputer {
 
     // constants
     public static final short WORD_SIZE = 2;
-    public static final int MEMORY_SIZE = 8192;
-    public static final int FRAME_BUFF_START = 4096;
+    public static final int MEMORY_SIZE = 4096;
 
     // core model
     short[] registerFile; // 16 user visible + the instruction register
@@ -39,7 +38,7 @@ public class MonTanaMiniComputer {
     public void initMemory() {
         registerFile = new short[Register.values().length];
         memory = new byte[MEMORY_SIZE];
-        setRegisterValue(SP, (short) FRAME_BUFF_START);  // default the stack pointer to the top of normal memory
+        setRegisterValue(SP, (short) MEMORY_SIZE);  // default the stack pointer to the top of memory
         observers.forEach(MTMCObserver::computerReset);
     }
 
@@ -649,9 +648,6 @@ public class MonTanaMiniComputer {
     public void writeByteToMemory(int address, byte value) {
         memory[address] = value;
         observers.forEach(o -> o.memoryUpdated(address, value));
-        if (address >= FRAME_BUFF_START) {
-            observers.forEach(o -> o.displayUpdated(address, value));
-        }
     }
 
     public void setRegisterValue(Register register, int value) {
@@ -710,18 +706,20 @@ public class MonTanaMiniComputer {
         observers.remove(observer);
     }
 
-    public void resetFrameBuffer() {
-        for (int i = MonTanaMiniComputer.FRAME_BUFF_START; i < memory.length; i++) {
-            memory[i] = 0;
-        }
-    }
-
     public void pause() {
         status = READY;
     }
 
     public void setSpeed(int speed) {
         this.speed = speed;
+    }
+
+    public void notifyOfDisplayUpdate() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.displayUpdated();
+            }
+        }
     }
 
     public enum ComputerStatus {

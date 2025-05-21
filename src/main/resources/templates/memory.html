@@ -1,11 +1,5 @@
 <div class="panel" id="memory-panel">
-    <button>jump</button>
-    <button fx-action="/memFormat"
-            fx-method="post"
-            fx-swap="none">
-        {{computer.getMemoryFormat()}}
-    </button>
     <div id="memory" class="memory">
-        {{computer.getMemoryTable() | raw}}
+        {{computer.memoryTable() | raw}}
     </div>
 </div>

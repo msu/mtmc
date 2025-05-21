@@ -343,7 +343,7 @@ public class MonTanaMiniComputerTest {
         short pushInst = 0b0010_0000_0000_1101; // push t0, sp
         computer.execInstruction(pushInst);
 
-        int newStackAddress = MonTanaMiniComputer.FRAME_BUFF_START - WORD_SIZE;
+        int newStackAddress = MonTanaMiniComputer.MEMORY_SIZE - WORD_SIZE;
         assertEquals(newStackAddress, computer.getRegisterValue(SP));
         assertEquals(5, computer.fetchWordFromMemory(newStackAddress));
     }

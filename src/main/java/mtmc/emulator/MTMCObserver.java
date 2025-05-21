@@ -6,7 +6,7 @@ public interface MTMCObserver {
 
     void memoryUpdated(int address, byte value);
 
-    void displayUpdated(int address, byte value);
+    void displayUpdated();
 
     void instructionFetched(short instruction);
 

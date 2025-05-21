@@ -51,6 +51,19 @@
     margin-right: 0;
 }
 
+.px.d {
+    background-color: #2a453b;
+}
+.px.m {
+    background-color: #365d48;
+}
+.px.l {
+    background-color: #577c44;
+}
+.px.w {
+    background-color: #7f860f;
+}
+
 #control-buttons {
     text-align: right;
 }
@@ -61,7 +74,7 @@ body {
 
 main {
     display: grid;
-    grid-template-columns: 450px 530px 1fr;
+    grid-template-columns: 450px 450px 1fr;
     grid-gap: 4px;
 }
 
@@ -117,7 +130,7 @@ main {
     grid-template-columns: repeat(128, 1fr);
     border: 4px solid #4a4a4a;
     border-radius: 8px;
-    width: 512px;
+    width: 435px;
     aspect-ratio: 1;
 }
 
@@ -152,10 +165,10 @@ main {
 .blinken {
     display: inline-block;
     margin-right: 2px;
-    height: 8px;
-    width: 8px;
-    border-radius: 8px;
-    padding: 4px;
+    height: 6px;
+    width: 6px;
+    border-radius: 6px;
+    padding: 3px;
 }
 
 .blinken.on {
@@ -180,6 +193,10 @@ main {
 }
 #register-table td {
     text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0;
 }
 
 .mem-highlight {

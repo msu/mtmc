@@ -65,19 +65,19 @@ public class MTOS {
             }
         } else if (syscallNumber == SysCall.getValue("fbreset")) {
             // fbreset
-            computer.resetFrameBuffer();
+            computer.getDisplay().reset();
         } else if (syscallNumber == SysCall.getValue("fbstat")) {
             // fbstat
             short x = computer.getRegisterValue(A0);
             short y = computer.getRegisterValue(A1);
-            short val = computer.getDisplay().getValueFor(x, y);
+            short val = computer.getDisplay().getPixel(x, y);
             computer.setRegisterValue(RV, val);
         } else if (syscallNumber == SysCall.getValue("fbset")) {
             // fbset
             short x = computer.getRegisterValue(A0);
             short y = computer.getRegisterValue(A1);
             short color = computer.getRegisterValue(A2);
-            computer.getDisplay().setValueFor(x, y, color);
+            computer.getDisplay().setPixel(x, y, color);
         } else if (syscallNumber == SysCall.getValue("fbline")) {
             short startX = computer.getRegisterValue(A0);
             short startY = computer.getRegisterValue(A1);

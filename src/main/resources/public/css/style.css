@@ -125,13 +125,95 @@ main {
     overflow-y: scroll;
 }
 
-.display {
+#display {
+    background-color: #c7c3c0;
+    padding: 8px;
+}
+
+#display-wrapper {
+    text-align: center;
+    padding: 28px 8px;
+    background-color: #918e93;
+    border: 1px solid dimgray;
+    border-radius: 8px 8px 32px 8px;
+    box-shadow: inset rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+#display-wrapper img {
+    border: 1px solid dimgray;
+    border-radius: 2px;
+}
+
+#display-control-wrapper {
+    padding: 12px;
     display: grid;
-    grid-template-columns: repeat(128, 1fr);
-    border: 4px solid #4a4a4a;
+    width: 405px;
+    grid-template-rows: 70px;
+    grid-template-columns: 1fr 1fr 1fr;
+    background-color: #c7c3c0;
+}
+
+#display-control-wrapper > div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#direction-cross {
+    width: 75px;
+    height: 75px;
+    display: grid;
+    grid-template-rows: 25px 25px 25px;
+    grid-template-columns: 25px 25px 25px;
+}
+
+.cross-button {
+    background-color: #232426;
+    background-image: repeating-linear-gradient(36deg, rgba(255,255,255, 0.1), rgba(255,255,255, 0.1) 1px, transparent 0px, transparent 2px);
+    text-align: center;
+    vertical-align: center
+}
+
+.cross-button.down {
+    border-radius: 0 0 4px 4px;
+    box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.cross-button.right {
+    border-radius: 0 4px 4px 0;
+    box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.cross-button.left {
+    border-radius: 4px 0 0 4px;
+    box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.cross-button.up {
+    border-radius: 4px 4px 0 0;
+    box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.big-button {
+    color: whitesmoke;
+    background-color: #93335a;
+    border: 1px solid dimgray;
+    width: 50px;
+    height: 50px;
+    border-radius: 50px;
+    margin: 4px;
+    box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.small-button {
+    transform: rotate(-25deg) translateY(20px) translateX(-20px);
+    margin: 2px;
+    width:50px;
+    background-color: #7e777b;
+    border: 1px solid dimgray;
     border-radius: 8px;
-    width: 435px;
-    aspect-ratio: 1;
+    color: whitesmoke;
+    box-shadow: rgb(0, 0, 0, .2) 2px 2px 1px 1px;
 }
 
 .buff {

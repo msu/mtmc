@@ -244,21 +244,7 @@ public class MTMCWebView {
         throw new IllegalStateException("Bad display value: "  + valueFor);
     }
 
-    public String colorForPixel(int row, int column) {
-        short x = (short) column;
-        short y = (short) row;
-        short valueFor = computer.getDisplay().getPixel(x, y);
-        if (valueFor == 0) {
-            return MTMCDisplay.DisplayColor.DARK.toRGBString();
-        } else if (valueFor == 1) {
-            return MTMCDisplay.DisplayColor.MEDIUM.toRGBString();
-        } else if (valueFor == 2) {
-            return MTMCDisplay.DisplayColor.LIGHT.toRGBString();
-        } else if (valueFor == 3) {
-            return MTMCDisplay.DisplayColor.LIGHTEST.toRGBString();
-        }
-        throw new IllegalStateException("Bad display value: "  + valueFor);
-    }
+
 
     public void toggleFormat() {
         format = DisplayFormat.values()[(format.ordinal() + 1) % format.values().length];

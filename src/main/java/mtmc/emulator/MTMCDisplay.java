@@ -42,9 +42,6 @@ public class MTMCDisplay {
             int square = dr * dr + dg * dg + db * db;
             return square;
         }
-        public String toRGBString() {
-            return "rgb(" + this.r + "," + this.g + "," + this.b + ")";
-        }
     }
 
     private final MonTanaMiniComputer computer;
@@ -57,7 +54,7 @@ public class MTMCDisplay {
     public void reset() {
         for(int col = 0; col < COLS; col++ ) {
             for(int row = 0; row < ROWS; row++ ) {
-                setPixel(col, row, DisplayColor.DARK);
+                setPixel(col, row, DisplayColor.LIGHTEST);
             }
         }
     }
@@ -107,7 +104,7 @@ public class MTMCDisplay {
             for (int y = 0; y < scaledImage.getHeight(); y++) {
                 int rgb = scaledImage.getRGB(x, y);
                 int alpha = (rgb >> 24) & 0xff;
-                if (alpha > 128) {
+                if (alpha > 0xFF/2) {
                     DisplayColor displayColor = findClosestColor(rgb);
                     setPixel((short) (x + xpad), (short) (y + ypad), displayColor);
                 }

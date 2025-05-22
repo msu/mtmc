@@ -35,10 +35,10 @@ public class WebUIUpdater implements MTMCObserver {
                     int updates = updateFlags.getAndUpdate(ignored -> 0); // get and zero out any changes
                     if (updates != 0) {
                         if ((updates & UPDATE_REGISTER_UI) != 0) {
-                            webServer.sendEvent("update:reg", webServer.render("templates/registers.html"));
+                            webServer.sendEvent("update:registers", webServer.render("templates/registers.html"));
                         }
                         if ((updates & UPDATE_MEMORY_UI) != 0) {
-                            webServer.sendEvent("update:mem", webServer.getComputerView().getMemoryTable());
+                            webServer.sendEvent("update:memory", webServer.getComputerView().getMemoryTable());
                         }
                         if ((updates & UPDATE_DISPLAY_UI) != 0) {
                             webServer.sendEvent("update:display", "dummy");
@@ -89,15 +89,8 @@ public class WebUIUpdater implements MTMCObserver {
         updateFlags.updateAndGet(operand -> operand | UPDATE_DISPLAY_UI | UPDATE_MEMORY_UI | UPDATE_REGISTER_UI);
     }
 
-    public void updateRegistersImmediately() {
-        webServer.sendEvent("update", json.toJson(Map.of("register-panel", webServer.render("templates/registers.html"))));
-    }
-
     public void updateMemoryImmediately() {
-        webServer.sendEvent("update", json.toJson(Map.of("memory-panel", webServer.render("templates/memory.html"))));
+        webServer.sendEvent("update:memory-panel", webServer.render("templates/memory.html"));
     }
 
-    public void updateDisplayImmediately() {
-        webServer.sendEvent("update", json.toJson(Map.of("display-panel", webServer.render("templates/display.html"))));
-    }
 }

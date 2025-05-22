@@ -8,13 +8,18 @@ sseSource.addEventListener("update:display", (e) => {
     element.src = "/display?" + Date.now()
 })
 
-sseSource.addEventListener("update:reg", (e) => {
+sseSource.addEventListener("update:registers", (e) => {
     let element = document.getElementById("register-panel");
     element.outerHTML = e.data
 })
 
-sseSource.addEventListener("update:mem", (e) => {
+sseSource.addEventListener("update:memory", (e) => {
     let element = document.getElementById("memory-table");
+    element.outerHTML = e.data
+})
+
+sseSource.addEventListener("update:memory-panel", (e) => {
+    let element = document.getElementById("memory-panel");
     element.outerHTML = e.data
 })
 

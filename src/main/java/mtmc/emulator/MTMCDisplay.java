@@ -10,19 +10,24 @@ public class MTMCDisplay {
 
     public static final int ROWS = 140;
     public static final int COLS = 160;
-    BufferedImage buffer = new BufferedImage(COLS, ROWS, BufferedImage.TYPE_INT_ARGB);
+    private BufferedImage buffer = new BufferedImage(COLS, ROWS, BufferedImage.TYPE_INT_ARGB);
+    private DisplayColor currentColor;
+    private byte[] byteArray;
 
     public enum DisplayColor {
         DARK(42, 69, 59),
         MEDIUM(54, 93, 72),
         LIGHT(87, 124, 68),
         LIGHTEST(127, 134, 15);
-        int r, g, b, intVal;
+        final int r, g, b, intVal;
+        final private Color javaColor;
+
         DisplayColor(int r, int g, int b){
             this.r = r;
             this.g = g;
             this.b = b;
             this.intVal = 0xFF << 24 | r << 16 | g << 8 | b;
+            javaColor = new Color(r, g, b);
         }
         static short indexFromInt(int val) {
             if (val == LIGHTEST.intVal) {
@@ -42,6 +47,10 @@ public class MTMCDisplay {
             int square = dr * dr + dg * dg + db * db;
             return square;
         }
+
+        public Color getJavaColor() {
+            return javaColor;
+        }
     }
 
     private final MonTanaMiniComputer computer;
@@ -49,9 +58,11 @@ public class MTMCDisplay {
     public MTMCDisplay(MonTanaMiniComputer computer) {
         this.computer = computer;
         reset();
+        sync();
     }
 
     public void reset() {
+        currentColor = DisplayColor.DARK;
         for(int col = 0; col < COLS; col++ ) {
             for(int row = 0; row < ROWS; row++ ) {
                 setPixel(col, row, DisplayColor.LIGHTEST);
@@ -66,7 +77,6 @@ public class MTMCDisplay {
 
     public void setPixel(int col, int row, DisplayColor color) {
         buffer.setRGB(col, row, color.intVal);
-        computer.notifyOfDisplayUpdate();
     }
 
     public short getPixel(int col, int row) {
@@ -76,19 +86,32 @@ public class MTMCDisplay {
 
     public void drawLine(short startCol, short startRow, short endCol, short endRow) {
         Graphics graphics = buffer.getGraphics();
-        graphics.setColor(Color.WHITE);
+        graphics.setColor(currentColor.getJavaColor());
         graphics.drawLine(startCol, startRow, endCol, endRow);
+        graphics.dispose();
     }
 
-    public byte[] toPng() {
+    public void drawRectangle(short startCol, short startRow, short width, short height) {
+        Graphics graphics = buffer.getGraphics();
+        graphics.setColor(currentColor.getJavaColor());
+        graphics.drawRect(startCol, startRow, width, height);
+        graphics.dispose();
+    }
+
+    public void sync() {
         var baos = new ByteArrayOutputStream();
         try {
             buffer.flush();
             ImageIO.write(buffer, "png", baos);
-            return baos.toByteArray();
+            byteArray = baos.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        computer.notifyOfDisplayUpdate();
+    }
+
+    public byte[] toPng() {
+        return byteArray;
     }
 
     //=============================================

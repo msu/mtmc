@@ -74,37 +74,32 @@ public class StackInstruction extends Instruction {
 
     public static String disassemble(short instruction) {
         if(getBits(16, 4, instruction) == 2) {
-            short type = getBits(12, 4, instruction);
-            if (type == 0) {
+            short opCode = getBits(12, 4, instruction);
+            short stackReg = getBits(4, 4, instruction);
+            if (opCode == 0b0000) {
                 short sourceReg = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
                 return "push " + Register.fromInteger(sourceReg) + " " + Register.fromInteger(stackReg);
             }
-            if (type == 1) {
+            if (opCode == 0b0001) {
                 short destReg = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
                 return "pop " + Register.fromInteger(destReg) + " " + Register.fromInteger(stackReg);
             }
-            if (type == 2) {
-                short opcode = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
-                if (opcode == 0) {
-                    return "dup " + Register.fromInteger(stackReg);
-                } else if(opcode == 1) {
-                    return "swap " + Register.fromInteger(stackReg);
-                } else if(opcode == 2) {
-                    return "drop " + Register.fromInteger(stackReg);
-                } else if(opcode == 3) {
-                    return "over " + Register.fromInteger(stackReg);
-                } else if(opcode == 4) {
-                    return "rot " + Register.fromInteger(stackReg);
-                }
-            }
-            if (type == 3) {
-                short opcode = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
-                String op = ALUOp.fromInt(opcode);
+            if (opCode == 0b010) {
+                return "dup " + Register.fromInteger(stackReg);
+            } else if(opCode == 0b011) {
+                return "swap " + Register.fromInteger(stackReg);
+            } else if(opCode == 0b0100) {
+                return "drop " + Register.fromInteger(stackReg);
+            } else if(opCode == 0b0101) {
+                return "over " + Register.fromInteger(stackReg);
+            } else if(opCode == 0b0110) {
+                return "rot " + Register.fromInteger(stackReg);
+            } else if (opCode == 0b0111) {
+                short aluOp = getBits(8, 4, instruction);
+                String op = ALUOp.fromInt(aluOp);
                 return "sop " + op + " " + Register.fromInteger(stackReg);
+            } else if (opCode == 0b1111) {
+                return "pushi " + Register.fromInteger(stackReg);
             }
         }
         return null;

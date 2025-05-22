@@ -65,6 +65,7 @@ public class DisplayCommand extends ShellCommand {
         } else {
             usageException();
         }
+        computer.getDisplay().sync();
     }
 
     @NotNull

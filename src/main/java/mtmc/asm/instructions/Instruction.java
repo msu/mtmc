@@ -2,6 +2,7 @@ package mtmc.asm.instructions;
 
 import mtmc.asm.ASMElement;
 import mtmc.asm.Assembler;
+import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.tokenizer.MTMCToken;
 
 public abstract class Instruction extends ASMElement {
@@ -42,7 +43,10 @@ public abstract class Instruction extends ASMElement {
         return type == null ? 0 : type.getSizeInBytes();
     }
 
-    public static String disassembleInstruction(short instruction) {
+    public static String disassembleInstruction(short instruction, short previousInstruction) {
+        if (MonTanaMiniComputer.isDoubleWordInstruction(previousInstruction)) {
+            return String.valueOf(instruction);
+        }
         String misc = MiscInstruction.disassemble(instruction);
         if (misc != null) {
             return misc;
@@ -66,6 +70,10 @@ public abstract class Instruction extends ASMElement {
         String ls = LoadStoreInstruction.disassemble(instruction);
         if (ls != null) {
             return ls;
+        }
+        String jumpReg = JumpInstruction.disassemble(instruction);
+        if (jumpReg != null) {
+            return jumpReg;
         }
         String jump = JumpInstruction.disassemble(instruction);
         if (jump != null) {

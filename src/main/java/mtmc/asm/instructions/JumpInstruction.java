@@ -50,6 +50,22 @@ public class JumpInstruction extends Instruction {
     }
 
     public static String disassemble(short instruction) {
+        if (getBits(16, 2, instruction) == 0b11) {
+            short jumpType = getBits(14, 2, instruction);
+            StringBuilder sb = new StringBuilder();
+            if (jumpType == 0b00) {
+                sb.append("j");
+            } else if (jumpType == 0b01) {
+                sb.append("jz");
+            } else if (jumpType == 0b10) {
+                sb.append("jnz");
+            } else if (jumpType == 0b11) {
+                sb.append("jal");
+            }
+            short target = getBits(12, 12, instruction);
+            sb.append(" ").append(target);
+            return sb.toString();
+        }
         return null;
     }
 }

@@ -2,9 +2,7 @@
 const sseSource = new EventSource("/sse", {withCredentials: true});
 
 sseSource.addEventListener("update:display", (e) => {
-    console.log("here")
     let element = document.getElementById("display-img");
-    console.log("here", element)
     element.src = "/display?" + Date.now()
 })
 
@@ -80,6 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const history = document.getElementById('console-history');
     const input = document.getElementById('console-input');
     const consolePanel = document.getElementById('console-panel');
+    let historyIndex = -1;
+    let historyStack = [];
 
     consolePanel.addEventListener('click', (e)=> {
         if (!history.contains(e.target)) {
@@ -98,14 +98,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
+            historyIndex = -1;
             e.preventDefault();
             const line = document.createElement('DIV');
-            line.textContent = `mtmc$ ${(input.value)}`;
+            let cmd = input.value;
+            historyStack.unshift(cmd);
+            line.textContent = `mtmc$ ${cmd}`;
             history.appendChild(line);
-            fetch("/cmd", {method: 'POST', body: JSON.stringify({'cmd': input.value})})
+            fetch("/cmd", {method: 'POST', body: JSON.stringify({'cmd': cmd})})
             input.value = '';
             input.focus();
             input.scrollIntoView({behavior:"instant"})
+        }
+        if (e.key === 'ArrowUp') {
+            historyIndex++;
+            e.preventDefault();
+            if (historyIndex >= historyStack.length) {
+                historyIndex = historyStack.length - 1;
+            }
+            input.value = historyStack[historyIndex];
+        }
+        if (e.key === 'ArrowDown') {
+            historyIndex--;
+            e.preventDefault();
+            if (historyIndex < 0) {
+                historyIndex = 0;
+                input.value = ""
+            } else {
+                input.value = historyStack[historyIndex];
+            }
         }
     });
 

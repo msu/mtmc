@@ -244,6 +244,11 @@ main {
     font-family: monospace;
 }
 
+.memory td {
+    align-content: center;
+    overflow: hidden;
+}
+
 #memory-header {
     font-family: monospace;
     font-weight: bold;
@@ -292,6 +297,8 @@ main {
     text-overflow: ellipsis;
     padding: 0;
 }
+
+
 
 .mem-highlight {
     box-shadow: inset 0 0 10px purple;

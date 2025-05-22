@@ -98,7 +98,7 @@ public class MonTanaMiniComputer {
     public void fetchAndExecute() {
         fetchCurrentInstruction();
         short instruction = getRegisterValue(IR);
-        if (hasData(instruction)) {
+        if (isDoubleWordInstruction(instruction)) {
             setRegisterValue(PC, (short) (getRegisterValue(PC) + 2 * WORD_SIZE));
         } else {
             setRegisterValue(PC, (short) (getRegisterValue(PC) + WORD_SIZE));
@@ -601,7 +601,7 @@ public class MonTanaMiniComputer {
         short pc = getRegisterValue(PC);
         short instruction = fetchWordFromMemory(pc);
         setRegisterValue(IR, instruction);
-        if (hasData(instruction)) {
+        if (isDoubleWordInstruction(instruction)) {
             short data = fetchWordFromMemory(pc + WORD_SIZE);
             setRegisterValue(DR, data);
         } else {
@@ -610,7 +610,7 @@ public class MonTanaMiniComputer {
         observers.forEach(o -> o.instructionFetched(instruction));
     }
 
-    private boolean hasData(short instruction) {
+    public static boolean isDoubleWordInstruction(short instruction) {
         boolean isLoadStore = getBits(16, 4, instruction) == 0b1000;
         if (isLoadStore) {
             return true;

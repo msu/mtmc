@@ -117,7 +117,7 @@ public class FileSystem {
                     }
                     else{
                         String[] fileList = file.list();
-                        for(int i = 0; i< fileList.l; i++){
+                        for(int i = 0; i< fileList.length; i++){
                             System.out.println("\tFile: " + file.getName());
                         }
                     }

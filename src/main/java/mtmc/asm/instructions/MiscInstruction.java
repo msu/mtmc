@@ -70,31 +70,47 @@ public class MiscInstruction extends Instruction {
     public static String disassemble(short instruction) {
         if (getBits(16, 4, instruction) == 0) {
             short topNibble = getBits(12, 4, instruction);
-            if (topNibble == 0b1111) {
+            if (topNibble == 0b0000) {
                 StringBuilder builder = new StringBuilder("sys ");
                 short bits = getBits(8, 8, instruction);
                 String name = SysCall.getString((byte) bits);
                 builder.append(name);
                 return builder.toString();
-            } else if (topNibble == 0b1110) {
-                StringBuilder builder = new StringBuilder("mask ");
-                short bits = getBits(8, 8, instruction);
-                builder.append(bits);
+            } else if (topNibble == 0b0001) {
+                StringBuilder builder = new StringBuilder("mov ");
+                short to = getBits(8, 4, instruction);
+                short from = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                builder.append(toName).append(" ");
+                String fromName = Register.fromInteger(from);
+                builder.append(fromName);
                 return builder.toString();
-            } else {
-                short to = topNibble;
-                short from = getBits(8, 4, instruction);
-                short shift = getBits(4, 4, instruction);
-                if(to == 0 && from == 0 && shift == 0) {
-                    return "noop";
-                }
-
-                StringBuilder builder = new StringBuilder("mv ");
-                builder.append(Register.fromInteger(to)).append(" ");
-                builder.append(Register.fromInteger(from)).append(" ");
-                if(shift != 0) {
-                    builder.append(shift);
-                }
+            } else if (topNibble == 0b0010) {
+                StringBuilder builder = new StringBuilder("inc ");
+                short to = getBits(8, 4, instruction);
+                short amount = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                builder.append(toName).append(" ");
+                builder.append(amount);
+                return builder.toString();
+            } else if (topNibble == 0b0011) {
+                StringBuilder builder = new StringBuilder("dec ");
+                short to = getBits(8, 4, instruction);
+                short amount = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                builder.append(toName).append(" ");
+                builder.append(amount);
+                return builder.toString();
+            } else if (topNibble == 0b0100) {
+                StringBuilder builder = new StringBuilder("seti ");
+                short to = getBits(8, 4, instruction);
+                short amount = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                builder.append(toName).append(" ");
+                builder.append(amount);
+                return builder.toString();
+            } else if (topNibble == 0b1111) {
+                StringBuilder builder = new StringBuilder("noop");
                 return builder.toString();
             }
         }

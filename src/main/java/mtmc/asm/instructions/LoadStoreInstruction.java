@@ -81,6 +81,38 @@ public class LoadStoreInstruction extends Instruction {
     }
 
     public static String disassemble(short instruction) {
+        if (getBits(16, 4, instruction) == 0b1000) {
+            short topNibble = getBits(12, 4, instruction);
+            StringBuilder sb = new StringBuilder();
+            if (topNibble == 0b1111) {
+                sb.append("li ");
+            } else if (topNibble == 0b000) {
+                sb.append("lw");
+            } else if (topNibble == 0b001) {
+                sb.append("lwo");
+            } else if (topNibble == 0b010) {
+                sb.append("lb");
+            } else if (topNibble == 0b011) {
+                sb.append("lbo");
+            } else if (topNibble == 0b100) {
+                sb.append("sw");
+            } else if (topNibble == 0b101) {
+                sb.append("swo");
+            } else if (topNibble == 0b110) {
+                sb.append("sb");
+            } else if (topNibble == 0b111) {
+                sb.append("sbo");
+            }
+            short target = getBits(8, 4, instruction);
+            String reg = Register.fromInteger(target);
+            sb.append(reg);
+            if (topNibble == 0b001 || topNibble == 0b011 || topNibble == 0b101 || topNibble == 0b111) {
+                short offset = getBits(4, 4, instruction);
+                String offsetReg = Register.fromInteger(target);
+                sb.append(offset);
+            }
+            return sb.toString();
+        }
         return null;
     }
 

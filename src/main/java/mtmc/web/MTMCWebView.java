@@ -45,7 +45,7 @@ public class MTMCWebView {
             int regIndex = register.ordinal();
             short val = computer.getRegisterValue(regIndex);
             DisplayFormat format = computeRegisterFormat(register);
-            String str = displayValue(format, val);
+            String str = displayValue(format, val, (short) 0);
             return str;
         } catch (Exception e) {
             return "No such register: " + reg;
@@ -98,6 +98,7 @@ public class MTMCWebView {
     public String getMemoryTable(){
         StringBuilder builder = new StringBuilder("<table id='memory-table' style='width:100%; table-layout:fixed'>");
         byte[] memory = computer.getMemory();
+        short previousValue = 0;
         for (int i = 0; i < memory.length; i++) {
             if (i % 16 == 0) {
                 builder.append("<tr>");
@@ -115,7 +116,7 @@ public class MTMCWebView {
                 val = (short) (val << 8);
                 val = (short) (val | (memory[i] & 0xFF));
             }
-            String displayStr = displayValue(format, val);
+            String displayStr = displayValue(format, val, previousValue);
 
             // build table cell
             builder.append("<td title='");
@@ -138,6 +139,7 @@ public class MTMCWebView {
             if (i % COLS_FOR_MEM == 15) {
                 builder.append("</tr>");
             }
+            previousValue = val;
         }
         builder.append("</table>");
         return builder.toString();
@@ -186,11 +188,11 @@ public class MTMCWebView {
         }
     }
 
-    public String displayValue(DisplayFormat format, short val) {
+    public String displayValue(DisplayFormat format, short val, short previousValue) {
         return switch (format) {
             case HEX -> String.format("%02X ", val);
             case DEC -> String.valueOf(val);
-            case INS -> Instruction.disassembleInstruction(val);
+            case INS -> Instruction.disassembleInstruction(val, previousValue);
             case STR -> get1252String(val);
             default -> throw new IllegalArgumentException("Can't render displayValue " + format);
         };

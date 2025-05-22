@@ -68,9 +68,19 @@ public class ALUInstruction extends Instruction {
             StringBuilder builder = new StringBuilder();
             short opCode = getBits(12, 4, instruction);
             String op = ALUOp.fromInt(opCode);
-            builder.append(op).append(" ");
-            builder.append(Register.fromInteger(getBits(8, 4, instruction))).append(" ");
-            builder.append(Register.fromInteger(getBits(4, 4, instruction))).append(" ");
+            ALUOp aluOp = ALUOp.valueOf(op.toUpperCase());
+            if (aluOp == ALUOp.IMM) {
+                builder.append(op).append(" ");
+                builder.append(Register.fromInteger(getBits(8, 4, instruction))).append(" ");
+                builder.append(ALUOp.fromInt(getBits(4, 4, instruction))).append(" ");
+            } else if (aluOp.isUnary()) {
+                builder.append(op).append(" ");
+                builder.append(Register.fromInteger(getBits(8, 4, instruction))).append(" ");
+            } else {
+                builder.append(op).append(" ");
+                builder.append(Register.fromInteger(getBits(8, 4, instruction))).append(" ");
+                builder.append(Register.fromInteger(getBits(4, 4, instruction))).append(" ");
+            }
             return builder.toString();
         }
         return null;

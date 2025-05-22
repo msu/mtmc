@@ -84,6 +84,14 @@ public class MTOS {
             short endX = computer.getRegisterValue(A2);
             short endY = computer.getRegisterValue(A3);
             computer.getDisplay().drawLine(startX, startY, endX, endY);
+        } else if (syscallNumber == SysCall.getValue("fbrect")) {
+            short startX = computer.getRegisterValue(A0);
+            short startY = computer.getRegisterValue(A1);
+            short endX = computer.getRegisterValue(A2);
+            short endY = computer.getRegisterValue(A3);
+            computer.getDisplay().drawRectangle(startX, startY, endX, endY);
+        } else if (syscallNumber == SysCall.getValue("fbflush")) {
+            computer.getDisplay().sync();
         }
     }
 

@@ -4,6 +4,8 @@ import mtmc.asm.Assembler;
 import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
+import static mtmc.util.BinaryUtils.getBits;
+
 public class JumpRegisterInstruction extends Instruction {
 
     private MTMCToken register;
@@ -25,6 +27,11 @@ public class JumpRegisterInstruction extends Instruction {
     }
 
     public static String disassemble(short instruction) {
+        if (getBits(16, 5, instruction) == 0b1001) {
+            short reg = getBits(4, 4, instruction);
+            StringBuilder sb = new StringBuilder("jr");
+            sb.append(Register.fromInteger(reg));
+        }
         return null;
     }
 }

@@ -13,4 +13,6 @@ public class ErrorInstruction extends Instruction {
     public void genCode(byte[] output, Assembler assembler) {
         // do nothing
     }
+
+
 }

@@ -296,3 +296,46 @@ main {
 .mem-highlight {
     box-shadow: inset 0 0 10px purple;
 }
+
+:root {
+    --console-primary: #ffcc00;
+    --console-primary-fringe: rgba(var(--console-primary), 110%);
+    --console-background: #35291c;
+}
+
+#console-panel {
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 445px;
+    overflow: hidden;
+}
+
+#console {
+    width: 99%;
+    background: var(--console-background);
+    color: var(--console-primary);
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    word-break: break-all;
+    margin: 0;
+    padding: 8px;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+#console-input {
+    display: inline;
+    outline: none;
+    visibility: visible;
+    caret: var(--console-primary) block;
+    background-color: var(--console-background);
+    font-family: monospace;
+    font-weight: bold;
+    color: var(--console-primary);
+    border: none;
+}
+
+#console-history div {
+    white-space: pre;
+}

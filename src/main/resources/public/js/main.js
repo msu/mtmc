@@ -81,13 +81,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById('console-input');
     const consolePanel = document.getElementById('console-panel');
 
-
     consolePanel.addEventListener('click', (e)=> {
         if (!history.contains(e.target)) {
             input.focus();
         }
     })
-
 
     sseSource.addEventListener("console-output", (e) => {
         e.data.split("\n").forEach((txt)=>{

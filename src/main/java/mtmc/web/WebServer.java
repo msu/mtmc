@@ -102,8 +102,8 @@ public class WebServer {
                         computer.fetchCurrentInstruction(); // fetch next instruction for display
                     }
                 })
-                .post("/format", ctx -> {
-                    computerView.toggleFormat();
+                .post("/memFormat", ctx -> {
+                    computerView.toggleMemoryFormat();
                     uiUpdater.updateMemoryImmediately();
                 })
                 .sse("/sse", client -> {

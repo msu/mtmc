@@ -244,6 +244,18 @@ main {
     font-family: monospace;
 }
 
+#memory-header {
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 16px;
+    overflow: auto;
+    padding: 4px;
+}
+
+#memory-header button {
+    float: right;
+}
+
 .blinken {
     display: inline-block;
     margin-right: 2px;

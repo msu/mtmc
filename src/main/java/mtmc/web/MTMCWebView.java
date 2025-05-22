@@ -1,7 +1,6 @@
 package mtmc.web;
 
 import mtmc.asm.instructions.Instruction;
-import mtmc.emulator.MTMCDisplay;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +14,7 @@ public class MTMCWebView {
 
     private final MonTanaMiniComputer computer;
 
-    private DisplayFormat format = DisplayFormat.DYN;
+    private DisplayFormat memoryDisplayFormat = DisplayFormat.DYN;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -45,7 +44,7 @@ public class MTMCWebView {
             Register register = Register.valueOf(reg.toUpperCase());
             int regIndex = register.ordinal();
             short val = computer.getRegisterValue(regIndex);
-            DisplayFormat format = computeFormat(register);
+            DisplayFormat format = computeRegisterFormat(register);
             String str = displayValue(format, val);
             return str;
         } catch (Exception e) {
@@ -106,7 +105,7 @@ public class MTMCWebView {
 
             // figure out how we are displaying this location
             String memoryClass = classFor(i);
-            DisplayFormat format = computeFormat(memoryClass);
+            DisplayFormat format = computeMemoryFormat(memoryClass);
             int cols = computeCols(format);
 
             short val = (short) (memory[i] & 0xFF);
@@ -151,8 +150,8 @@ public class MTMCWebView {
         };
     }
 
-    private DisplayFormat computeFormat(String memoryClass) {
-        if(format == DisplayFormat.DYN) {
+    private DisplayFormat computeMemoryFormat(String memoryClass) {
+        if(memoryDisplayFormat == DisplayFormat.DYN) {
             return switch (memoryClass) {
                 case "sta" -> DisplayFormat.DEC;
                 case "curr", "code" -> DisplayFormat.INS;
@@ -160,19 +159,15 @@ public class MTMCWebView {
                 default -> DisplayFormat.HEX;
             };
         } else {
-            return format;
+            return memoryDisplayFormat;
         }
     }
 
-    private DisplayFormat computeFormat(Register register) {
-        if(format == DisplayFormat.DYN) {
-            return switch (register) {
-                case IR -> DisplayFormat.INS;
-                default -> DisplayFormat.DEC;
-            };
-        } else {
-            return format;
-        }
+    private DisplayFormat computeRegisterFormat(Register register) {
+        return switch (register) {
+            case IR -> DisplayFormat.INS;
+            default -> DisplayFormat.DEC;
+        };
     }
 
     public String classFor(int address) {
@@ -245,11 +240,16 @@ public class MTMCWebView {
     }
 
 
-
-    public void toggleFormat() {
-        format = DisplayFormat.values()[(format.ordinal() + 1) % format.values().length];
+    public String getMemoryFormat() {
+        return memoryDisplayFormat.name().toLowerCase();
     }
 
+    public void toggleMemoryFormat() {
+        int currentIndex = memoryDisplayFormat.ordinal() + 1;
+        DisplayFormat[] vals = DisplayFormat.values();
+        int nextIndex = (currentIndex + 1) % vals.length;
+        memoryDisplayFormat = vals[nextIndex];
+    }
 
     enum DisplayFormat {
         DYN,

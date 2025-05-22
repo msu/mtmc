@@ -74,3 +74,42 @@ document.addEventListener("click", (evt) => {
         }
     }
 })
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const history = document.getElementById('console-history');
+    const input = document.getElementById('console-input');
+    const consolePanel = document.getElementById('console-panel');
+
+
+    consolePanel.addEventListener('click', (e)=> {
+        if (!history.contains(e.target)) {
+            input.focus();
+        }
+    })
+
+
+    sseSource.addEventListener("console-output", (e) => {
+        e.data.split("\n").forEach((txt)=>{
+            const line = document.createElement('DIV');
+            line.textContent = txt;
+            history.appendChild(line);
+        })
+        input.scrollIntoView({behavior:"instant"})
+    })
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const line = document.createElement('DIV');
+            line.textContent = `mtmc$ ${(input.value)}`;
+            history.appendChild(line);
+            fetch("/cmd", {method: 'POST', body: JSON.stringify({'cmd': input.value})})
+            input.value = '';
+            input.focus();
+            input.scrollIntoView({behavior:"instant"})
+        }
+    });
+
+    input.focus();
+})

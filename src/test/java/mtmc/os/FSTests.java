@@ -50,5 +50,6 @@ public class FSTests {
     public void testListFiles() {
         var fs = new FileSystem();
         fs.listFiles("../bin");
+        //fs.listFiles("..");
     }
 }

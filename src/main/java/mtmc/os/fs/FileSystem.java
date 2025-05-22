@@ -39,7 +39,6 @@ public class FileSystem {
 
     public String pathConstructor(ArrayList<String> cwd, ArrayList<String> path) {
         String fileString = "";
-        System.out.println("Path: " + path.toString());
         ArrayList<String> constructedPath = new ArrayList<>();
         if (path.isEmpty()) { // This fulfills (cd " ")
             for (int cwdDir = 0; cwdDir < cwd.size(); cwdDir++) {
@@ -74,6 +73,9 @@ public class FileSystem {
                 fileString += ("/" + constructedPath.get(i));
             }
         }
+        if(fileString.equals("")){
+            fileString = "/";
+        }
         return fileString;
     }
 
@@ -87,11 +89,15 @@ public class FileSystem {
         }
         return joinedPath;
     }
-
+    private File toRealPath(String path) { // Resolves given path and returns /disk/ + path
+        String resolvedPath = resolve(path);
+        String slashGone = resolvedPath.substring(1);
+        return DISK_PATH.resolve(slashGone).toFile();
+    }
     public void listFiles(String path) {
-        /*File resolvedPath = toRealPath(path);
+        System.out.println("\n");
+        File resolvedPath = toRealPath(path);
         File[] files = resolvedPath.listFiles();
-        System.out.println(Arrays.toString(files));
         if(files == null){
             System.out.println("File path does not exist or has no children.");
             return;
@@ -100,19 +106,34 @@ public class FileSystem {
             // If a subdirectory is found,
             // print the name of the subdirectory
 
-            if (file.isDirectory()) {
-                System.out.println("Directory: " + file.getName());
-                *//*for (int i = -1; i < files[file].length; i++) {
+            /*if (file.isDirectory()) {
+                Path directory = file.toPath();*/
+                // Recursive
 
-                }*//*
-                System.out.println("test: " + Arrays.toString(file.listFiles()));
-            }
-            else {
+            // TODO: Make sure there is only an array if there are children
+                    if (file.isDirectory()){
+                        System.out.println("Directory: " +file.getName());
+                        file.listFiles();
+                    }
+                    else{
+                        String[] fileList = file.list();
+                        for(int i = 0; i< fileList.l; i++){
+                            System.out.println("\tFile: " + file.getName());
+                        }
+                    }
+                // TODO: if !fileList().length.equals(null) || fileList().equals("");
+
+              /*  System.out.println("Directory: " + file.getName());
+                String[] fileList = file.list();
+                for (int i = 0; i < fileList.length; i++) { // Print out files in current directory
+                    System.out.println("\tFile: " + fileList[i]);
+                }
+            }else{
                 // Print the file name
                 System.out.println("File: " + file.getName());
-            }
+            }*/
         }
-        return;*/
+        return;
     }
 
 }

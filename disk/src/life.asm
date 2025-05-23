@@ -1,6 +1,7 @@
 .data
 INIT_FILE: "/gol/gun.gol"
-BUFFER: bytes[512]
+OLD: byte[512]
+NEW: byte[512]
 
 .text
 # load the init file into the bit map

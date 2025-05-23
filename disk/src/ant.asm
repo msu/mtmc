@@ -1,15 +1,50 @@
 .text
 main:
-  seti t0  0       # ant col
-  seti t1  0       # ant row
+  li t0  78       # ant col
+  li t1  68       # ant row
 
   loop:
-    inc t0 4         # increment col
-    modi t0 160    # mod col by 160
-    jnz cont       # if mod was zero
-      inc t1 4       # increment y by one
-      modi t1 140  # mod it by 140
-    cont:
+
+    # get the latest IO
+    sys joystick
+    mov t2 rv
+
+    mov t3 t2
+    andi t3 0b1000_0000 # up
+    jz l1
+      dec t1 4
+    l1:
+
+    mov t3 t2
+    andi t3 0b0100_0000 # down
+    jz l2
+      inc t1 4
+    l2:
+
+    mov t3 t2
+    andi t3 0b0010_0000 # left
+    jz l3
+      dec t0 4
+    l3:
+
+    mov t3 t2
+    andi t3 0b0001_0000 # right
+    jz l4
+      inc t0 4
+    l4:
+
+    lti t0 0
+    jz l5
+      li t0 159
+    l5:
+
+    lti t1 0
+    jz l6
+      li t1 139
+    l6:
+
+    modi t0 160
+    modi t1 140
 
     sys fbreset   # reset the frame buffer
 

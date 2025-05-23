@@ -22,6 +22,7 @@ public class MonTanaMiniComputer {
     byte[]  memory;
     ComputerStatus status = READY;
     private int speed = 0;
+    private MTMCIO io = new MTMCIO();
 
     // helpers
     MTOS os = new MTOS(this);
@@ -720,6 +721,14 @@ public class MonTanaMiniComputer {
                 observer.displayUpdated();
             }
         }
+    }
+
+    public int getIOState() {
+        return io.getValue();
+    }
+
+    public MTMCIO getIO() {
+        return io;
     }
 
     public enum ComputerStatus {

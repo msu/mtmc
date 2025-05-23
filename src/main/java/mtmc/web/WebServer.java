@@ -1,6 +1,7 @@
 package mtmc.web;
 
 import com.google.gson.Gson;
+import mtmc.emulator.MTMCIO;
 import mtmc.emulator.MonTanaMiniComputer;
 import io.javalin.Javalin;
 import io.javalin.http.sse.SseClient;
@@ -100,6 +101,15 @@ public class WebServer {
                         computer.setStatus(MonTanaMiniComputer.ComputerStatus.EXECUTING);
                         computer.fetchAndExecute();
                         computer.fetchCurrentInstruction(); // fetch next instruction for display
+                    }
+                })
+                .post("/io/{button}/{action}", ctx -> {
+                    MTMCIO io = computer.getIO();
+                    if(ctx.pathParam("action").equals("pressed")) {
+                        io.keyPressed(ctx.pathParam("button"));
+                    }
+                    if(ctx.pathParam("action").equals("released")) {
+                        io.keyReleased(ctx.pathParam("button"));
                     }
                 })
                 .post("/memFormat", ctx -> {

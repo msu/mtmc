@@ -426,6 +426,20 @@ public class AssemblerTest {
         assertEquals(4, computer.getRegisterValue(RA));
     }
 
+    @Test
+    public void endToEndMax() {
+        var computer = assemble("""
+                pushi 1
+                pushi 2
+                smax
+                pop t0
+                """);
+        computer.run();
+        assertEquals(2, computer.getRegisterValue(T0));
+        assertEquals(MonTanaMiniComputer.MEMORY_SIZE, computer.getRegisterValue(SP));
+    }
+
+
     //--------------------------------------
     // helpers
     //--------------------------------------

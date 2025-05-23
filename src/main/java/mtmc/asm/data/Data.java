@@ -14,6 +14,7 @@ public class Data extends ASMElement {
         super(label);
     }
 
+
     @Override
     public int getSizeInBytes() {
         if (value == null) {
@@ -42,4 +43,10 @@ public class Data extends ASMElement {
                 "value=" + Arrays.toString(value) +
                 '}';
     }
+
+    @Override
+    public void addError(String err) {
+        addError(getLabel(), err);
+    }
+
 }

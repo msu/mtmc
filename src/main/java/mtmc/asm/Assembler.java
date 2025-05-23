@@ -170,6 +170,24 @@ public class Assembler {
                     dataElt.addError(dataToken, "Number is too large");
                 }
                 dataElt.setValue(dataToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+            } else if (dataToken.type() == IDENTIFIER) {
+                if (dataToken.stringValue().equals("int")) {
+                    requireToken(tokens, LEFT_BRACE, dataElt);
+                    MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
+                    if (intToken != null) {
+                        dataElt.setValue(intToken, new byte[intToken.intValue() * 2]);
+                    }
+                    requireToken(tokens, RIGHT_BRACE, dataElt);
+                } else if (dataToken.stringValue().equals("byte")) {
+                    requireToken(tokens, LEFT_BRACE, dataElt);
+                    MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
+                    if (intToken != null) {
+                        dataElt.setValue(intToken, new byte[intToken.intValue()]);
+                    }
+                    requireToken(tokens, RIGHT_BRACE, dataElt);
+                } else {
+                    dataElt.addError(dataToken, "only data types are int & byte");
+                }
             } else if (dataToken.type() == MINUS) {
                 MTMCToken nextToken = tokens.poll(); // get next
                 if (nextToken == null || (nextToken.type() != INTEGER && nextToken.type() != HEX && nextToken.type() != BINARY)) {
@@ -383,6 +401,10 @@ public class Assembler {
                 } else if (stringVal.equals("la")) {
                     MTMCToken syntheticImmediate = tokens.removeFirst();
                     tokens.addFirst(syntheticImmediate.cloneWithVal("li"));
+                } else if (stringVal.equals("ret")) {
+                    MTMCToken syntheticImmediate = tokens.removeFirst();
+                    tokens.addFirst(syntheticImmediate.cloneWithVal("ra"));
+                    tokens.addFirst(syntheticImmediate.cloneWithVal("jr"));
                 }
             }
         }
@@ -465,11 +487,11 @@ public class Assembler {
     }
 
     private MTMCToken requireIntegerToken(LinkedList<MTMCToken> tokens,
-                                          Instruction inst,
+                                          ASMElement inst,
                                           int max) {
         MTMCToken token = tokens.poll();
         if (token == null) {
-            inst.addError("Integer value required");
+            inst.addError( "Integer value required");
         } else if (isInteger(token)) {
             Integer integerValue = token.intValue();
             if (integerValue < 0 || max < integerValue) {
@@ -477,6 +499,14 @@ public class Assembler {
             }
         } else {
             inst.addError(token, "Integer value expected");
+        }
+        return token;
+    }
+
+    private MTMCToken requireToken(LinkedList<MTMCToken> tokens, MTMCToken.TokenType type, ASMElement inst) {
+        MTMCToken token = tokens.poll();
+        if (token == null || token.type() != type) {
+            inst.addError(token, "Token "  + type.name() + " required");
         }
         return token;
     }

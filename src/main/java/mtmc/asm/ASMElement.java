@@ -35,4 +35,5 @@ public abstract class ASMElement implements HasLocation {
         errors.add(new ASMError(token, error));
     }
 
+    abstract public void addError(String integerValueRequired);
 }

@@ -14,6 +14,10 @@ public class MTMCDisplay {
     private DisplayColor currentColor;
     private byte[] byteArray;
 
+    public void setColor(short registerValue) {
+        currentColor = DisplayColor.values()[Math.min(registerValue, 3)];
+    }
+
     public enum DisplayColor {
         DARK(42, 69, 59),
         MEDIUM(54, 93, 72),

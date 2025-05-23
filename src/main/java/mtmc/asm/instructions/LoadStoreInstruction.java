@@ -87,29 +87,29 @@ public class LoadStoreInstruction extends Instruction {
             if (topNibble == 0b1111) {
                 sb.append("li ");
             } else if (topNibble == 0b000) {
-                sb.append("lw");
+                sb.append("lw ");
             } else if (topNibble == 0b001) {
-                sb.append("lwo");
+                sb.append("lwo ");
             } else if (topNibble == 0b010) {
-                sb.append("lb");
+                sb.append("lb ");
             } else if (topNibble == 0b011) {
-                sb.append("lbo");
+                sb.append("lbo ");
             } else if (topNibble == 0b100) {
-                sb.append("sw");
+                sb.append("sw ");
             } else if (topNibble == 0b101) {
-                sb.append("swo");
+                sb.append("swo ");
             } else if (topNibble == 0b110) {
-                sb.append("sb");
+                sb.append("sb ");
             } else if (topNibble == 0b111) {
-                sb.append("sbo");
+                sb.append("sbo ");
             }
             short target = getBits(8, 4, instruction);
             String reg = Register.fromInteger(target);
             sb.append(reg);
             if (topNibble == 0b001 || topNibble == 0b011 || topNibble == 0b101 || topNibble == 0b111) {
                 short offset = getBits(4, 4, instruction);
-                String offsetReg = Register.fromInteger(target);
-                sb.append(offset);
+                String offsetReg = Register.fromInteger(offset);
+                sb.append(" ").append(offsetReg);
             }
             return sb.toString();
         }

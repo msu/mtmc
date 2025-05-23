@@ -16,6 +16,7 @@ public enum SysCall {
     FBLINE(0x0C),
     FBRECT(0x0D),
     FBFLUSH(0x0E),
+    JOYSTICK(0x0F),
     ERROR(0xFF);
 
     private final byte value;

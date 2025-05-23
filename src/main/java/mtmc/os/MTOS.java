@@ -92,6 +92,8 @@ public class MTOS {
             computer.getDisplay().drawRectangle(startX, startY, endX, endY);
         } else if (syscallNumber == SysCall.getValue("fbflush")) {
             computer.getDisplay().sync();
+        } else if (syscallNumber == SysCall.getValue("joystick")) {
+            computer.setRegisterValue(RV, computer.getIOState());
         }
     }
 

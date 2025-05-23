@@ -65,6 +65,63 @@ public class TestInstruction extends Instruction {
     }
 
     public static String disassemble(short instruction) {
+        if (getBits(16, 4, instruction) == 0b0011) {
+            StringBuilder sb = new StringBuilder();
+            short opCode = getBits(12, 4, instruction);
+            short thirdNibble = getBits(8, 4, instruction);
+            short fourthNibble = getBits(4, 4, instruction);
+            if (opCode == 0b0000) {
+                sb.append("eq ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(Register.fromInteger(fourthNibble));
+            } else if (opCode == 0b0001) {
+                sb.append("neq ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(Register.fromInteger(fourthNibble));
+            } else if (opCode == 0b0010) {
+                sb.append("gt ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(Register.fromInteger(fourthNibble));
+            } else if (opCode == 0b0011) {
+                sb.append("gte ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(Register.fromInteger(fourthNibble));
+            } else if (opCode == 0b0100) {
+                sb.append("lt ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(Register.fromInteger(fourthNibble));
+            } else if (opCode == 0b0101) {
+                sb.append("lte ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(Register.fromInteger(fourthNibble));
+            }
+            if (opCode == 0b1000) {
+                sb.append("eqi ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(fourthNibble);
+            } else if (opCode == 0b1001) {
+                sb.append("neqi ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(fourthNibble);
+            } else if (opCode == 0b1010) {
+                sb.append("gti ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(fourthNibble);
+            } else if (opCode == 0b1011) {
+                sb.append("gtei ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(fourthNibble);
+            } else if (opCode == 0b1100) {
+                sb.append("lti ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(fourthNibble);
+            } else if (opCode == 0b1101) {
+                sb.append("ltei ");
+                sb.append(Register.fromInteger(thirdNibble))
+                        .append(" ").append(fourthNibble);
+            }
+            return sb.toString();
+        }
         return null;
     }
 

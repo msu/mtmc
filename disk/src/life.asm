@@ -314,8 +314,8 @@ load_file:
     # load the init file into the bit map
     li a0 INIT_FILE
     li a1 NEW_WORLD
-    li a2 700   # max bytes
-    li a3 42    # gol file
+    li a2 80    # 80 cols
+    li a3 70    # 70 rows
     sys rfile
     ret
 

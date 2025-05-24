@@ -17,7 +17,7 @@ public class EndToEndTests {
                 add t0 t0
                 """);
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        computer.load(result.code(), result.data());
+        computer.load(result.code(), result.data(), result.debugInfo());
         computer.run();
         assertEquals(2, computer.getRegisterValue(T0));
     }
@@ -34,7 +34,7 @@ public class EndToEndTests {
                 pop t0
                 """);
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        computer.load(result.code(), result.data());
+        computer.load(result.code(), result.data(), result.debugInfo());
         computer.run();
         assertEquals(208, computer.getRegisterValue(T0));
     }
@@ -50,7 +50,7 @@ public class EndToEndTests {
                   sys wstr
                 """);
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        computer.load(result.code(), result.data());
+        computer.load(result.code(), result.data(), result.debugInfo());
         computer.run();
         assertEquals("hello world", computer.getConsole().getOutput());
     }

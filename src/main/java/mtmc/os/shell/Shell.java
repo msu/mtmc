@@ -3,6 +3,7 @@ package mtmc.os.shell;
 import mtmc.asm.Assembler;
 import mtmc.asm.AssemblyResult;
 import mtmc.asm.instructions.Instruction;
+import mtmc.emulator.DebugInfo;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import mtmc.os.shell.builtins.*;
@@ -72,7 +73,10 @@ public class Shell {
                             computer.setRegisterValue(Register.DR, data);
                         }
                         int inst = (code[0] << 8) | code[1];
+                        DebugInfo originalDebugInfo = computer.getDebugInfo();
+                        computer.setDebugInfo(result.debugInfo());
                         computer.execInstruction((short) inst);
+                        computer.setDebugInfo(originalDebugInfo);
                     } else {
                         computer.getConsole().println(result.printErrors());
                     }

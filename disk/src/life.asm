@@ -1,8 +1,5 @@
 .data
 INIT_FILE: "/data/gun.gol"
-DEBUG: "DEBUG "
-SP: " "
-NL: "\n"
 OLD_WORLD: byte[700] # 80x70 = 700
 NEW_WORLD: byte[700]
 
@@ -42,7 +39,9 @@ update:
             # get neighbor count of the cell
             push a0
             push a1
+            push a2
             jal get_neighbor_count
+            pop a2
             pop a1
             pop a0
             mov a3 rv
@@ -82,7 +81,7 @@ get_neighbor_count:
     dec a1
     push a1
     push a0
-    li a3 OLD_WORLD
+    li a2 OLD_WORLD
     jal get_bit_val
     pop a0
     pop a1
@@ -92,7 +91,7 @@ get_neighbor_count:
     inc a0
     push a1
     push a0
-    li a3 OLD_WORLD
+    li a2 OLD_WORLD
     jal get_bit_val
     pop a0
     pop a1
@@ -102,7 +101,7 @@ get_neighbor_count:
     inc a0
     push a1
     push a0
-    li a3 OLD_WORLD
+    li a2 OLD_WORLD
     jal get_bit_val
     pop a0
     pop a1
@@ -110,10 +109,10 @@ get_neighbor_count:
 
     # col - 1, row
     dec a0 2
-    inc a0
+    inc a1
     push a1
     push a0
-    li a3 OLD_WORLD
+    li a2 OLD_WORLD
     jal get_bit_val
     pop a0
     pop a1
@@ -123,7 +122,7 @@ get_neighbor_count:
     inc a0 2
     push a1
     push a0
-    li a3 OLD_WORLD
+    li a2 OLD_WORLD
     jal get_bit_val
     pop a0
     pop a1
@@ -134,7 +133,7 @@ get_neighbor_count:
     inc a1 1
     push a1
     push a0
-    li a3 OLD_WORLD
+    li a2 OLD_WORLD
     jal get_bit_val
     pop a0
     pop a1
@@ -144,7 +143,7 @@ get_neighbor_count:
     inc a0
     push a1
     push a0
-    li a3 OLD_WORLD
+    li a2 OLD_WORLD
     jal get_bit_val
     pop a0
     pop a1
@@ -154,7 +153,7 @@ get_neighbor_count:
     inc a0
     push a1
     push a0
-    li a3 OLD_WORLD
+    li a2 OLD_WORLD
     jal get_bit_val
     pop a0
     pop a1
@@ -174,7 +173,7 @@ get_neighbor_count:
 ######################################################################
 update_new_world_cell:
     push ra
-    seti a3 0 # assume value will be zero
+    seti t0 0 # assume value will be zero
 
     # if current value is zero
     eqi a2 0
@@ -183,7 +182,7 @@ update_new_world_cell:
         eqi a3 3
         jz update_new_world_cell_done
         # set new value to 1
-        seti a3 1
+        seti t0 1
         j update_new_world_cell_done
     update_new_world_cell_non_zero:
         # curr val is one, so if neighbor count is greater than one
@@ -193,9 +192,10 @@ update_new_world_cell:
         lti a3 4
         jz update_new_world_cell_done
         # set new value to 1
-        seti a3 1
+        seti t0 1
     update_new_world_cell_done:
     la a2 NEW_WORLD
+    mov a3 t0
     jal set_bit_val
     pop ra
     ret
@@ -210,10 +210,39 @@ update_new_world_cell:
 ######################################################################
 get_bit_val:
 
+    # If the col or row is out of bounds, return zero
+    lti a0 0
+    jz get_bit_val_row_gt_zero
+      seti rv 0
+      ret
+    get_bit_val_row_gt_zero:
+
+    li rv 79
+    gt a0 rv
+    jz get_bit_val_row_gt_79
+      seti rv 0
+      ret
+    get_bit_val_row_gt_79:
+
+    lti a1 0
+    jz get_bit_val_col_gt_zero
+      seti rv 0
+      ret
+    get_bit_val_col_gt_zero:
+
+    li rv 69
+    gt a1 rv
+    jz get_bit_val_col_lt_69
+      seti rv 0
+      ret
+    get_bit_val_col_lt_69:
+
+
     # compute offset in array
     muli a1 80
     add a1 a0
     mov a0 a1
+
 
     # compute byte offset in array
     divi a0 8
@@ -227,8 +256,7 @@ get_bit_val:
     # mask the bit
     seti a0 1
     shl a0 a1
-    and rv a1
-    sys debug
+    and rv a0
 
     # convert to 1 or 0
     lnot rv
@@ -262,24 +290,24 @@ set_bit_val:
     # load the byte value into t2
     lbr t2 a2 t0
 
-    # compute bit-mask in t0
-    seti t0 1
-    shl t0 a1
+    # compute bit-mask in t3
+    seti t3 1
+    shl t3 t1
 
     # test if the value is 1 or 0
     eqi a3 1
     jz set_bit_val_zero
       # new val is 1 so or current byte w/t0
-      or t2 t0
+      or t2 t3
       j set_bit_val_end
     set_bit_val_zero:
       # new val is 0 so and current byte w/~t0
-      not t0
-      and t2 t0
+      not t3
+      and t2 t3
     set_bit_val_end:
 
-    # save the byte to memory
-    sbr rv a2 a0
+    # save the byte back to memory
+    sbr t2 a2 t0
     ret
 
 load_file:
@@ -311,8 +339,9 @@ sys fbreset   # reset the frame buffer
         
             # set the color to DARK or WHITE depending on the bit val
             eqi rv 0
-            jnz write_to_display_set_dark
+            jz write_to_display_set_dark
               seti a0 3
+              j write_to_display_set_end
             write_to_display_set_dark:
               seti a0 0
             write_to_display_set_end:
@@ -333,14 +362,12 @@ sys fbreset   # reset the frame buffer
             divi a0 2
             divi a1 2
 
-            sys fbflush   # sync the screen
-
             inc a0
             modi a0 80
             jnz write_to_display_col_loop
         inc a1
         modi a1 70
         jnz write_to_display_row_loop
-
+    sys fbflush   # sync the screen
     pop ra
     ret

@@ -30,6 +30,10 @@ public class MiscInstruction extends Instruction {
         this.toRegister = toRegister;
     }
 
+    public void setValue(MTMCToken value) {
+        this.value = value;
+    }
+
     @Override
     public void genCode(byte[] output, Assembler assembler) {
         if (getType() == InstructionType.SYS) {
@@ -61,6 +65,9 @@ public class MiscInstruction extends Instruction {
             int to = Register.toInteger(toRegister.stringValue());
             int immediateVal = value.intValue();
             output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
+        } else if (getType() == InstructionType.DEBUG) {
+            output[getLocation()] = 0b0000_1000;
+            output[getLocation() + 1] = value.intValue().byteValue();
         } else if (getType() == InstructionType.NOP) {
             output[getLocation()] = 0b0000_1111;
             output[getLocation() + 1] = (byte) 0b1111_1111;
@@ -109,6 +116,11 @@ public class MiscInstruction extends Instruction {
                 builder.append(toName).append(" ");
                 builder.append(amount);
                 return builder.toString();
+            } else if (topNibble == 0b1000) {
+                StringBuilder builder = new StringBuilder("debug ");
+                short stringIndex = getBits(8, 8, instruction);
+                builder.append(stringIndex);
+                return builder.toString();
             } else if (topNibble == 0b1111) {
                 StringBuilder builder = new StringBuilder("noop");
                 return builder.toString();
@@ -117,7 +129,4 @@ public class MiscInstruction extends Instruction {
         return null;
     }
 
-    public void setValue(MTMCToken value) {
-        this.value = value;
-    }
 }

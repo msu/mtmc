@@ -32,7 +32,7 @@ public class LoadCommand extends ShellCommand {
         Path srcPath = getDiskPath(src);
 
         Executable exec = Executable.load(srcPath);
-        computer.load(exec.code(), exec.data());
+        computer.load(exec.code(), exec.data(), exec.debugInfo());
     }
 
     @Override

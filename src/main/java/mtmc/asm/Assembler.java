@@ -2,6 +2,7 @@ package mtmc.asm;
 
 import mtmc.asm.data.Data;
 import mtmc.asm.instructions.*;
+import mtmc.emulator.DebugInfo;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import mtmc.os.SysCall;
@@ -26,6 +27,7 @@ public class Assembler {
     List<Data> data = new ArrayList<>();
     int dataSize = 0;
     HashMap<String, HasLocation> labels;
+    DebugInfo debugInfo = new DebugInfo(new ArrayList<>());
 
     ASMMode mode = ASMMode.TEXT;
     MTMCTokenizer tokenizer;
@@ -45,7 +47,7 @@ public class Assembler {
             code = codeGen();
             data = dataGen();
         }
-        return new AssemblyResult(code, data, errors, asm);
+        return new AssemblyResult(code, data, debugInfo, errors, asm);
     }
 
     public Executable assembleExecutable(String srcName, String asm) {
@@ -61,7 +63,8 @@ public class Assembler {
                 Executable.Format.Orc1,
                 result.code(),
                 result.data(),
-                srcName
+                srcName,
+                result.debugInfo()
         );
     }
 
@@ -256,6 +259,12 @@ public class Assembler {
                 MTMCToken toRegister = requireWriteableRegister(tokens, miscInst);
                 miscInst.setTo(toRegister);
                 MTMCToken value = requireIntegerToken(tokens, miscInst, 15);
+                miscInst.setValue(value);
+            } else if (type == InstructionType.DEBUG) {
+                MTMCToken debugString = requireString(tokens, miscInst);
+                // create a dummy int token representing the offset of the debug string
+                int debugStringIndex = debugInfo.addDebugString(debugString.stringValue());
+                MTMCToken value = new MTMCToken(0, 0, 0, 0, String.valueOf(debugStringIndex), INTEGER);
                 miscInst.setValue(value);
             }
             instruction = miscInst;
@@ -482,6 +491,14 @@ public class Assembler {
         MTMCToken nextToken = tokens.poll();
         if (nextToken == null || nextToken.type() != IDENTIFIER || !ALUOp.isALUOp(nextToken.stringValue())) {
             instruction.addError("ALU operation required");
+        }
+        return nextToken;
+    }
+
+    private MTMCToken requireString(LinkedList<MTMCToken> tokens, Instruction instruction) {
+        MTMCToken nextToken = tokens.poll();
+        if (nextToken == null || nextToken.type() != STRING) {
+            instruction.addError("String required");
         }
         return nextToken;
     }

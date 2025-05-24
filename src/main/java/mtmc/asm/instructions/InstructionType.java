@@ -9,6 +9,7 @@ public enum InstructionType {
     DEC(MISC),
     SETI(MISC),
     NOP(MISC),
+    DEBUG(MISC),
     ADD(ALU),
     SUB(ALU),
     MUL(ALU),

@@ -1,6 +1,7 @@
 package mtmc.os.exec;
 
 import com.google.gson.Gson;
+import mtmc.emulator.DebugInfo;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -9,8 +10,8 @@ public record Executable(
         Format format,
         byte[] code,
         byte[] data,
-        String sourceName
-) {
+        String sourceName,
+        DebugInfo debugInfo) {
     public enum Format {
         Orc1("orc1");
 

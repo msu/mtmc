@@ -31,6 +31,7 @@ public class MonTanaMiniComputer {
 
     // listeners
     private List<MTMCObserver> observers = new ArrayList<>();
+    private DebugInfo debugInfo = null;
 
     public MonTanaMiniComputer() {
         initMemory();
@@ -43,9 +44,13 @@ public class MonTanaMiniComputer {
         observers.forEach(MTMCObserver::computerReset);
     }
 
-    public void load(byte[] code, byte[] data) {
+    public void load(byte[] code, byte[] data, DebugInfo debugInfo) {
+
+        this.debugInfo = debugInfo;
+
         // reset memory
         initMemory();
+
 
         int codeBoundary = code.length;
         System.arraycopy(code, 0, memory, 0, codeBoundary);
@@ -146,6 +151,11 @@ public class MonTanaMiniComputer {
                     short target = getBits(8, 4, instruction);
                     short immediateValue = getBits(4, 4, instruction);
                     setRegisterValue(target, immediateValue);
+                }
+                case 0b1000 -> {
+                    // debug
+                    short debugIndex = getBits(8, 8, instruction);
+                    debugInfo.handleDebugString(debugIndex, this);
                 }
                 case 0b1111 -> {
                     // noop
@@ -729,6 +739,14 @@ public class MonTanaMiniComputer {
 
     public MTMCIO getIO() {
         return io;
+    }
+
+    public DebugInfo getDebugInfo() {
+        return debugInfo;
+    }
+
+    public void setDebugInfo(DebugInfo debugInfo) {
+        this.debugInfo = debugInfo;
     }
 
     public enum ComputerStatus {

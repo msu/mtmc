@@ -474,7 +474,7 @@ public class AssemblerTest {
         AssemblyResult result = assembler.assemble(assembly);
         if (result.errors().isEmpty()) {
             MonTanaMiniComputer computer = new MonTanaMiniComputer();
-            computer.load(result.code(), result.data());
+            computer.load(result.code(), result.data(), result.debugInfo());
             return computer;
         } else {
             throw new RuntimeException("Assembly errors: \n\n" + result.printErrors());

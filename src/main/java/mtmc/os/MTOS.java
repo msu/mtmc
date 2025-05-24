@@ -110,21 +110,34 @@ public class MTOS {
             String fileName = readStringFromMemory(fileNamePtr);
             File file = new File("disk/" + fileName);
 
+            if (!file.exists()) {
+                computer.setRegisterValue(RV, 0);
+                return;
+            }
+
             short destination = computer.getRegisterValue(A1);
 
-            short maxSize = computer.getRegisterValue(A2);
+            short maxSize1 = computer.getRegisterValue(A2);
+            short maxSize2 = computer.getRegisterValue(A3);
 
-            short fileType = computer.getRegisterValue(A3);
+            String fileType = fileName.substring(fileName.lastIndexOf('.') + 1);
+
             try {
-                if (fileType == 42) {
+                // special handling for game-of-life files
+                if ("gol".equals(fileType)) {
+
                     String str = Files.readString(file.toPath());
                     List<String> lines = Arrays
                             .stream(str.split("\n"))
                             .filter(s -> !s.startsWith("!"))
                             .toList();
-                    for (int lineNum = 0; lineNum < lines.size(); lineNum++) {
+
+                    int linesTotal = lines.size();
+                    int cappedLines = Math.min(linesTotal, maxSize2);
+
+                    for (int lineNum = 0; lineNum < cappedLines; lineNum++) {
                         String line = lines.get(lineNum);
-                        for (int colNum = 0; colNum < 80; colNum++) {
+                        for (int colNum = 0; colNum < maxSize1; colNum++) {
                             int offset = lineNum * 80 + colNum;
                             int byteOffset = offset / 8;
                             int bitOffset = offset % 8;
@@ -139,16 +152,15 @@ public class MTOS {
                             computer.writeByteToMemory(destination + byteOffset, newVal);
                         }
                     }
-
                 } else {
                     byte[] bytes = Files.readAllBytes(file.toPath());
-                    for (int i = 0; i < maxSize; i++) {
+                    for (int i = 0; i < maxSize1; i++) {
                         byte aByte = bytes[i];
                         computer.writeByteToMemory(destination + i, aByte);
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                computer.setRegisterValue(RV, -1);
             }
 
         }

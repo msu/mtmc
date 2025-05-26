@@ -118,4 +118,7 @@ public class MTMCTokenizer {
         }
     }
 
+    public String getSource() {
+        return src;
+    }
 }

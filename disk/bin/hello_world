@@ -1,1 +1,1 @@
-{"format":"Orc1","code":[79,0,0,10,1,96,0,4,0,0],"data":[72,101,108,108,111,32,87,111,114,108,100,33,0],"sourceName":"/src/hello_world.asm"}
+{"format":"Orc1","code":[-113,96,0,8,0,4,0,0],"data":[72,101,108,108,111,32,87,111,114,108,100,33,0],"sourceName":"/src/hello_world.asm","debugInfo":{"debugStrings":[]}}

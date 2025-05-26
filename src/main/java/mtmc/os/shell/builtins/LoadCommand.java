@@ -3,6 +3,7 @@ package mtmc.os.shell.builtins;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.os.exec.Executable;
 import mtmc.os.shell.ShellCommand;
+import mtmc.tokenizer.MTMCToken;
 import mtmc.tokenizer.MTMCTokenizer;
 
 import java.nio.file.Path;
@@ -25,14 +26,26 @@ public class LoadCommand extends ShellCommand {
 
     @Override
     public void exec(MTMCTokenizer tokens, MonTanaMiniComputer computer) throws Exception {
-        String src = tokens.collapseTokensAsString();
-        if (src == null || src.isBlank()) {
+        String program = tokens.collapseTokensAsString();
+        if (program == null || program.isBlank()) {
             throw new IllegalArgumentException("missing or required argument 'src'");
         }
-        Path srcPath = getDiskPath(src);
+        Path srcPath = getDiskPath(program);
 
         Executable exec = Executable.load(srcPath);
         computer.load(exec.code(), exec.data(), exec.debugInfo());
+        String source = tokens.getSource();
+
+        // set up an argument if given
+        if (tokens.more()) {
+            MTMCToken firstArgToken = tokens.consume();
+            int startChar = firstArgToken.start();
+            String arg = source.substring(startChar);
+            String strippedArg = arg.strip();
+            if(!strippedArg.isEmpty()) {
+                computer.setArg(strippedArg);
+            }
+        }
     }
 
     @Override

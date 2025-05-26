@@ -31,11 +31,7 @@ public class DisplayCommand extends ShellCommand {
                     }
                 }
                 case "reset" -> {
-                    for (int row = 0; row < MTMCDisplay.ROWS; row++) {
-                        for (int col = 0; col < MTMCDisplay.COLS; col++) {
-                            computer.getDisplay().setPixel(col, row, (short) 0);
-                        }
-                    }
+                    computer.getDisplay().reset();
                 }
                 case "invert" -> {
                     for (int row = 0; row < MTMCDisplay.ROWS; row++) {

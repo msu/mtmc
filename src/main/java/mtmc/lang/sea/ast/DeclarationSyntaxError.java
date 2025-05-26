@@ -1,15 +1,14 @@
 package mtmc.lang.sea.ast;
 
-import mtmc.lang.sea.ParseException;
-import mtmc.lang.sea.Span;
+import mtmc.lang.ParseException;
 import mtmc.lang.sea.Token;
 
 public final class DeclarationSyntaxError extends Declaration implements SyntaxError {
     public final ParseException exception;
 
-    public DeclarationSyntaxError(Token token, String message) {
+    public DeclarationSyntaxError(Token token, ParseException parseException) {
         super(token, token);
-        this.exception = new ParseException(new Span(token.start(), token.end()), message);
+        this.exception = parseException;
     }
 
     @Override

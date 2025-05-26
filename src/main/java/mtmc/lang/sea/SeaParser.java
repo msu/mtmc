@@ -1,5 +1,6 @@
 package mtmc.lang.sea;
 
+import mtmc.lang.ParseException;
 import mtmc.lang.sea.ast.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,6 +15,9 @@ public class SeaParser {
 
     private final LinkedHashMap<String, Object> symbols;
     private Vector<LinkedHashMap<String, Token>> scope = new Vector<>();
+    {
+        scope.add(new LinkedHashMap<>());
+    }
 
     public SeaParser(@NotNull List<Token> tokens) {
         this.tokens = tokens;
@@ -30,7 +34,7 @@ public class SeaParser {
                 var decl = parseDeclaration();
                 declarations.add(decl);
             } catch (ParseException e) {
-                declarations.add(new DeclarationSyntaxError(start, e.getMessage()));
+                declarations.add(new DeclarationSyntaxError(start, e));
                 if (bodyBrace != null) {
                     consumeMatchingBrace(bodyBrace);
                 } else {
@@ -39,12 +43,14 @@ public class SeaParser {
             }
 
             if (peekToken().equals(start)) {
-                throw new ParseException(start.span(), "INFINITE LOOP DETECTED");
+                var msg = new Message(start, "fatal(langdev): infinite loop detected");
+                throw new ParseException(msg);
             }
         }
 
         if (!symbols.containsKey("main")) {
-            declarations.add(new DeclarationSyntaxError(Token.SOF, "no main function defined"));
+            var msg = new Message(Token.SOF, "no entrypoint, 'int main(int, char**)' was defined");
+            declarations.add(new DeclarationSyntaxError(Token.SOF, new ParseException(msg)));
         }
 
         return new Unit(declarations, this.symbols);
@@ -56,7 +62,7 @@ public class SeaParser {
             TypeExpr paramType = parseSimpleType();
 
             if (!match(LIT_IDENT)) {
-                throw new ParseException(peekToken().span(), "expected parameter name");
+                throw new ParseException(new Message(paramType.span(), "expected parameter name after type declarator"));
             }
             var paramName = consume();
 
@@ -69,11 +75,13 @@ public class SeaParser {
         if (!take(RIGHT_PAREN)) {
             try {
                 parseSimpleType();
-                throw new ParseException(lastToken().endSpan(), "expected ')', did you forget a comma?");
+                var msg = new Message(peekToken(), "expected ')', did you forget a comma?");
+                throw new ParseException(msg);
             } catch (ParseException ignored) {
             }
 
-            throw new ParseException(lastToken().endSpan(), "expected ')' after parameter list");
+            var msg = new Message(Span.of(peekToken()), "expected ')' after parameter list");
+            throw new ParseException(msg);
         }
 
         return params;
@@ -88,17 +96,17 @@ public class SeaParser {
         var type = parseSimpleType();
 
         if (!take(LIT_IDENT)) {
-            throw new ParseException(peekToken().span(), "expected new type name after");
+            throw new ParseException(new Message(type.span(), "expected typedef name after type declarator"));
         }
         var name = lastToken();
         if (symbols.containsKey(name.content())) {
-            throw new ParseException(name.span(), "the symbol '" + name.content() + "' was previously defined");
+            throw new ParseException(new Message(name, "the symbol '" + name.content() + "' was previously defined"));
         }
 
         type = parseCompoundType(type, name);
 
         if (!take(SEMICOLON)) {
-            throw new ParseException(lastToken().endSpan(), "expected ';' after typedef");
+            throw new ParseException(new Message(lastToken(), "expected ';' after typedef"));
         }
 
         var typedef = new DeclarationTypedef(start, type, name, type.end.end() < name.end() ? name : type.end);
@@ -122,11 +130,11 @@ public class SeaParser {
         }
 
         if (!match(LIT_IDENT)) {
-            throw new ParseException(peekToken().span(), "expected declaration name");
+            throw new ParseException(new Message(type.span(), "expected declaration name after type expression"));
         }
         final Token name = consume();
         if (symbols.containsKey(name.content())) {
-            throw new ParseException(name.span(), "the symbol '" + name.content() + "' was previously defined");
+            throw new ParseException(new Message(name, "the symbol '" + name.content() + "' was previously defined"));
         }
 
         if (take(LEFT_PAREN)) {
@@ -139,7 +147,7 @@ public class SeaParser {
             StatementBlock body = null;
             if (!match(LEFT_BRACE)) {
                 if (!take(SEMICOLON)) {
-                    throw new ParseException(lastToken().span(), "expected ';' after function declaration");
+                    throw new ParseException(new Message(lastToken(), "expected ';' after function declaration"));
                 }
             } else {
                 bodyBrace = peekToken();
@@ -161,7 +169,7 @@ public class SeaParser {
             }
 
             if (!take(SEMICOLON)) {
-                throw new ParseException(lastToken().span(), "expected ';' after variable declaration");
+                throw new ParseException(new Message(init == null ? Span.of(lastToken()) : init.span(), "expected ';' after variable declaration"));
             }
 
             var decl = new DeclarationVar(type, name, init);
@@ -173,7 +181,8 @@ public class SeaParser {
     public TypeExpr parseCompoundType(TypeExpr simpleType, @Nullable Token ignored) throws ParseException {
         if (take(LEFT_BRACKET)) {
             if (!take(RIGHT_BRACKET)) {
-                throw new ParseException(peekToken().span(), "expected ']' after '[' in compound-type");
+                var msg = new Message(peekToken(), "expected '[]' in array type");
+                throw new ParseException(msg);
             }
             return new TypeExprArray(simpleType, lastToken());
         } else {
@@ -203,17 +212,17 @@ public class SeaParser {
         if (take(KW_CHAR)) return new TypeExprChar(lastToken());
 
         if (!take(LIT_IDENT)) {
-            throw new ParseException(peekToken().span(), "expected simple type name");
+            throw new ParseException(new Message(peekToken(), "expected a simple type name"));
         }
         var tok = lastToken();
         if (symbols.containsKey(tok.content())) {
             if (symbols.get(tok.content()) instanceof TypeDeclaration decl) {
                 return new TypeExprRef(tok, decl);
             } else {
-                throw new ParseException(tok.span(), tok.content() + " is not a type");
+                throw new ParseException(new Message(tok, tok.content() + " is not a type"));
             }
         } else {
-            throw new ParseException(tok.span(), "unknown type '" + tok.content() + "'");
+            throw new ParseException(new Message(tok, "unknown type '" + tok.content() + "'"));
         }
     }
 
@@ -221,7 +230,7 @@ public class SeaParser {
         Token label = null;
         if (peekToken2().type().equals(COLON)) {
             if (!take(LIT_IDENT)) {
-                throw new ParseException(peekToken().span(), "expected label!");
+                throw new ParseException(new Message(peekToken(), "expected label!"));
             }
             label = lastToken();
             consume();
@@ -253,69 +262,65 @@ public class SeaParser {
 
         var doWhileStmt = parseStatementDoWhile();
         if (doWhileStmt != null) {
-            if (!take(SEMICOLON))
-                throw new ParseException(lastToken().endSpan(), "expected ';' after do-while statement");
+            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after do-while statement"));
             doWhileStmt.setLabelAnchor(label);
             return doWhileStmt;
         }
 
         var varStmt = parseStatementVar();
         if (varStmt != null) {
-            if (!take(SEMICOLON))
-                throw new ParseException(lastToken().endSpan(), "expected ';' after variable statement");
+            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after variable statement"));
             varStmt.setLabelAnchor(label);
             return varStmt;
         }
 
         var gotoStmt = parseGotoStatement();
         if (gotoStmt != null) {
-            if (!take(SEMICOLON)) throw new ParseException(lastToken().endSpan(), "expected ';' after goto statement");
+            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after goto statement"));
             gotoStmt.setLabelAnchor(label);
             return gotoStmt;
         }
 
         var continueStmt = parseStatementContinue();
         if (continueStmt != null) {
-            if (!take(SEMICOLON))
-                throw new ParseException(lastToken().endSpan(), "expected ';' after continue statement");
+            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after continue statement"));
             continueStmt.setLabelAnchor(label);
             return continueStmt;
         }
 
         var breakStmt = parseStatementBreak();
         if (breakStmt != null) {
-            if (!take(SEMICOLON)) throw new ParseException(lastToken().endSpan(), "expected ';' after break statement");
+            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after break statement"));
             breakStmt.setLabelAnchor(label);
             return breakStmt;
         }
 
         var returnStmt = parseStatementReturn();
         if (returnStmt != null) {
-            if (!take(SEMICOLON))
-                throw new ParseException(lastToken().endSpan(), "expected ';' after return statement");
+            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after return statement"));
             returnStmt.setLabelAnchor(label);
             return returnStmt;
         }
 
         Expression expr = parseExpression();
         if (expr != null) {
-            if (!take(SEMICOLON)) throw new ParseException(lastToken().endSpan(), "expected ';' after expression");
+            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after expression"));
             var stmt = new StatementExpression(expr);
             stmt.setLabelAnchor(label);
             return stmt;
         }
 
-        throw new ParseException(lastToken().span(), "expected statement");
+        throw new ParseException(new Message(lastToken(), "expected statement"));
     }
 
     StatementIf parseStatementIf() throws ParseException {
         if (!take(KW_IF)) return null;
         var start = lastToken();
 
-        if (!take(LEFT_PAREN)) throw new ParseException(lastToken().span(), "expected '(' after 'if'");
+        if (!take(LEFT_PAREN)) throw new ParseException(new Message(lastToken(), "expected '(' after 'if'"));
         var cond = parseExpression();
-        if (cond == null) throw new ParseException(lastToken().endSpan(), "expected 'if' condition");
-        if (!take(RIGHT_PAREN)) throw new ParseException(lastToken().endSpan(), "expected ')' after 'if'");
+        if (cond == null) throw new ParseException(new Message(lastToken(), "expected 'if' condition"));
+        if (!take(RIGHT_PAREN)) throw new ParseException(new Message(lastToken(), "expected ')' after 'if'"));
 
         var body = parseStatement();
 
@@ -331,7 +336,7 @@ public class SeaParser {
         if (!take(KW_FOR)) return null;
         var start = lastToken();
 
-        if (!take(LEFT_PAREN)) throw new ParseException(lastToken().span(), "expected '(' after 'for'");
+        if (!take(LEFT_PAREN)) throw new ParseException(new Message(lastToken(), "expected '(' after 'for'"));
 
         scope.add(new LinkedHashMap<>());
         Expression initExpr = null;
@@ -342,16 +347,17 @@ public class SeaParser {
             initExpr = parseExpression();
         }
 
-        if (!take(SEMICOLON)) throw new ParseException(lastToken().span(), "expected ';' after for initializer");
+        if (!take(SEMICOLON)) {
+            throw new ParseException(new Message(peekToken(), "expected ';' after for initializer"));
+        }
 
         @Nullable
         Expression condition = parseExpression();
 
-        if (!take(SEMICOLON)) throw new ParseException(lastToken().span(), "expected ';' after for condition");
+        if (!take(SEMICOLON)) throw new ParseException(new Message(peekToken(), "expected ';' after for condition"));
         Expression incr = parseExpression();
 
-        if (!take(RIGHT_PAREN))
-            throw new ParseException(lastToken().endSpan(), "expected ')' after for-loop condition");
+        if (!take(RIGHT_PAREN)) throw new ParseException(new Message(peekToken(), "expected ')' after for-loop condition"));
 
         var body = parseStatement();
 
@@ -375,10 +381,10 @@ public class SeaParser {
 
         TypeExpr type = parseSimpleType();
 
-        if (!take(LIT_IDENT)) throw new ParseException(peekToken().span(), "expected variable name");
+        if (!take(LIT_IDENT)) throw new ParseException(new Message(peekToken(), "expected variable name"));
         Token name = lastToken();
         if (!defineLocal(name)) {
-            throw new ParseException(name.span(), "the symbol '" + name.content() + "' shadows a previously defined symbol");
+            throw new ParseException(new Message(name, "the symbol '" + name.content() + "' shadows a previously defined symbol"));
         }
 
         type = parseCompoundType(type, name);
@@ -387,7 +393,7 @@ public class SeaParser {
         if (take(EQUAL)) {
             value = parseExpression();
             if (value == null) {
-                throw new ParseException(lastToken().span(), "expected initializer value after '='");
+                throw new ParseException(new Message(lastToken(), "expected initializer value after '='"));
             }
         }
 
@@ -398,10 +404,10 @@ public class SeaParser {
         if (!take(KW_WHILE)) return null;
         var start = lastToken();
 
-        if (!take(LEFT_PAREN)) throw new ParseException(lastToken().span(), "expected '(' after 'while'");
+        if (!take(LEFT_PAREN)) throw new ParseException(new Message(lastToken(), "expected '(' after 'while'"));
         Expression condition = parseExpression();
-        if (condition == null) throw new ParseException(lastToken().span(), "expected while-condition");
-        if (!take(RIGHT_PAREN)) throw new ParseException(lastToken().endSpan(), "expected ')' after 'while'");
+        if (condition == null) throw new ParseException(new Message(lastToken(), "expected while-condition"));
+        if (!take(RIGHT_PAREN)) throw new ParseException(new Message(lastToken(), "expected ')' after 'while'"));
 
         var body = parseStatement();
         return new StatementWhile(start, condition, body);
@@ -413,11 +419,10 @@ public class SeaParser {
 
         var body = parseStatement();
 
-        if (!take(LEFT_PAREN)) throw new ParseException(lastToken().span(), "expected '(' after do body");
+        if (!take(LEFT_PAREN)) throw new ParseException(new Message(lastToken(), "expected '(' after do body"));
         Expression condition = parseExpression();
-        if (condition == null) throw new ParseException(lastToken().span(), "expected do-while-condition");
-        if (!take(RIGHT_PAREN))
-            throw new ParseException(lastToken().endSpan(), "expected ')' after do-while condition");
+        if (condition == null) throw new ParseException(new Message(lastToken(), "expected do-while-condition"));
+        if (!take(RIGHT_PAREN)) throw new ParseException(new Message(lastToken(), "expected ')' after do-while condition"));
 
         return new StatementDoWhile(start, body, condition, lastToken());
     }
@@ -426,7 +431,7 @@ public class SeaParser {
         if (!take(KW_GOTO)) return null;
         var start = lastToken();
 
-        if (!take(LIT_IDENT)) throw new ParseException(start.span(), "expected label name after 'goto'");
+        if (!take(LIT_IDENT)) throw new ParseException(new Message(peekToken(), "expected label name after 'goto'"));
         var labelName = lastToken();
 
         return new StatementGoto(start, labelName);
@@ -491,7 +496,7 @@ public class SeaParser {
                 var stmt = parseStatement();
                 stmts.add(stmt);
             } catch (ParseException e) {
-                var stmt = new StatementSyntaxError(before, e.getMessage());
+                var stmt = new StatementSyntaxError(before, e);
                 stmts.add(stmt);
                 recover(start);
                 if (peekToken() == before) break;
@@ -500,7 +505,8 @@ public class SeaParser {
         scope.removeLast();
 
         if (!take(RIGHT_BRACE)) {
-            throw new ParseException(lastToken().span(), "expected '}' after block statement");
+            var msg = new Message(lastToken(), "expected '}' after block statement");
+            throw new ParseException(msg);
         }
 
         return new StatementBlock(start, stmts, lastToken());
@@ -1137,15 +1143,12 @@ public class SeaParser {
             else consume();
         }
         if (open > 0) {
-            throw new ParseException(openingBrace.span(), "unterminated '{'");
+            var msg = new Message(openingBrace, "unterminated '{'");
+            throw new ParseException(msg);
         }
     }
 
     public List<Token> remainingTokens() {
         return tokens.subList(index, tokens.size());
-    }
-
-    protected Span spanOf(Token start, Token end) {
-        return new Span(start.start(), end.end());
     }
 }

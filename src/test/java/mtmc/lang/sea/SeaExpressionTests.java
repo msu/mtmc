@@ -254,4 +254,11 @@ public class SeaExpressionTests {
         ExpressionString expr = parseExpr("\"Hello, world\\n\"");
         assertArrayEquals("Hello, world\n".getBytes(), expr.getBytes());
     }
+
+    @Test
+    public void testTypeChecking() {
+        Expression expr = parseExpr("""
+                "hello, world" * 8
+                """);
+    }
 }

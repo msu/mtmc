@@ -1,6 +1,6 @@
 package mtmc.lang.sea.ast;
 
-import mtmc.lang.sea.ParseException;
+import mtmc.lang.ParseException;
 import mtmc.lang.sea.Token;
 
 public abstract sealed class Statement extends Ast permits StatementBlock, StatementBreak, StatementContinue, StatementDoWhile, StatementExpression, StatementFor, StatementGoto, StatementIf, StatementReturn, StatementSyntaxError, StatementVar, StatementWhile
@@ -14,7 +14,7 @@ public abstract sealed class Statement extends Ast permits StatementBlock, State
     public void setLabelAnchor(Token labelAnchor) throws ParseException {
         if (labelAnchor == null) return;
         if (this.labelAnchor != null) {
-            throw new ParseException(labelAnchor, "this statement has been labeled twice!!");
+            throw new ParseException(new ParseException.Message(labelAnchor, "this statement has been labeled twice!!"));
         }
         this.labelAnchor = labelAnchor;
     }

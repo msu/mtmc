@@ -6,6 +6,7 @@ import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.DebugInfo;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
+import mtmc.os.exec.Executable;
 import mtmc.os.shell.builtins.*;
 import mtmc.tokenizer.MTMCToken;
 
@@ -13,6 +14,7 @@ import static mtmc.tokenizer.MTMCToken.TokenType.*;
 
 import mtmc.tokenizer.MTMCTokenizer;
 
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -62,8 +64,9 @@ public class Shell {
                 tokens.reset();
                 LinkedList<MTMCToken> asm = new LinkedList<>(tokens.stream().toList());
                 LinkedList<MTMCToken> updatedAsm = Assembler.transformSyntheticInstructions(asm);
-                if (!updatedAsm.isEmpty() &&
-                        Instruction.isInstruction(updatedAsm.peekFirst().stringValue())) {
+                MTMCToken firstToken = updatedAsm.peekFirst();
+                String firstTokenStr = firstToken.stringValue();
+                if (!updatedAsm.isEmpty() && Instruction.isInstruction(firstTokenStr)) {
                     Assembler assembler = new Assembler();
                     AssemblyResult result = assembler.assemble(command);
                     if (result.errors().isEmpty()) {
@@ -81,7 +84,17 @@ public class Shell {
                         computer.getConsole().println(result.printErrors());
                     }
                 } else {
-                    printShellHelp(computer);
+                    Path srcPath = Path.of("disk/bin/" + firstTokenStr);
+                    if (srcPath.toFile().exists()) {
+                        Executable exec = Executable.load(srcPath);
+                        computer.load(exec.code(), exec.data(), exec.debugInfo());
+                        tokens.consume();
+                        String arg = command.substring(firstToken.end()).strip();
+                        computer.setArg(arg);
+                        computer.run();
+                    } else {
+                        printShellHelp(computer);
+                    }
                 }
             }
         } catch (Exception e) {

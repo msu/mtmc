@@ -156,7 +156,7 @@ public class MTMCWebView {
         if(memoryDisplayFormat == DisplayFormat.DYN) {
             return switch (memoryClass) {
                 case "sta" -> DisplayFormat.DEC;
-                case "curr", "code" -> DisplayFormat.INS;
+                case "code" -> DisplayFormat.INS;
                 case "data", "heap" -> DisplayFormat.STR;
                 default -> DisplayFormat.HEX;
             };

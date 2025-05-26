@@ -749,6 +749,25 @@ public class MonTanaMiniComputer {
         this.debugInfo = debugInfo;
     }
 
+    public void setArg(String arg) {
+        if (!arg.isEmpty()) {
+            short start = getRegisterValue(BP);
+            byte[] bytes = arg.getBytes();
+            writeStringToMemory(start, bytes);
+            setRegisterValue(A0, start);
+            setRegisterValue(BP, start + bytes.length + 1);
+        }
+    }
+
+    public void writeStringToMemory(int start, byte[] bytes) {
+        for (int i = 0; i < bytes.length; i++) {
+            byte aByte = bytes[i];
+            writeByteToMemory(start + i, aByte);
+        }
+        // null terminate
+        writeByteToMemory(start + bytes.length, (byte) 0);
+    }
+
     public enum ComputerStatus {
         READY,
         EXECUTING,

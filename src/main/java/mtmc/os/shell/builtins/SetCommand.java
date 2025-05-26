@@ -30,12 +30,7 @@ public class SetCommand extends ShellCommand {
             if (value.type() == INTEGER || value.type() == BINARY || value.type() == HEX) {
                 computer.writeWordToMemory(memLocation.intValue(), value.intValue().shortValue());
             } else {
-                byte[] bytes = value.stringValue().getBytes();
-                Integer start = memLocation.intValue();
-                for (int i = 0; i < bytes.length; i++) {
-                    byte aByte = bytes[i];
-                    computer.writeByteToMemory(start + i, aByte);
-                }
+                computer.writeStringToMemory(memLocation.intValue(), value.stringValue().getBytes());
             }
         }
     }

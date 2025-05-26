@@ -13,4 +13,8 @@ public final class ExpressionBin extends Expression {
         this.op = op;
         this.rhs = rhs;
     }
+
+    public String op() {
+        return op.content();
+    }
 }

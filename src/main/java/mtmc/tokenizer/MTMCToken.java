@@ -83,6 +83,7 @@ public record MTMCToken(
         HEX,
         BINARY,
         ERROR,
+        SOF,
         EOF
     }
 }

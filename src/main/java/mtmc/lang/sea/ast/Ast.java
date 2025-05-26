@@ -1,5 +1,6 @@
 package mtmc.lang.sea.ast;
 
+import mtmc.lang.sea.Span;
 import mtmc.lang.sea.Token;
 
 import java.util.stream.Stream;
@@ -10,6 +11,10 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
     public Ast(Token start, Token end) {
         this.start = start;
         this.end = end;
+    }
+
+    public Span span() {
+        return new Span(start.start(), end.end());
     }
 
     public Stream<Ast> getChildren() {

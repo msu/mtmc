@@ -3,7 +3,6 @@ package mtmc.lang.sea.ast;
 import mtmc.lang.sea.ParseException;
 import mtmc.lang.sea.Token;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,7 +24,7 @@ public final class Unit extends Ast {
     }
 
     public static List<ParseException> collectErrors(Ast ast) {
-        if (ast instanceof SyntaxError e) {
+        if (ast instanceof Error e) {
             return List.of(e.exception());
         }
 

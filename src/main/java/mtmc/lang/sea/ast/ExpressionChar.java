@@ -7,7 +7,7 @@ public final class ExpressionChar extends Expression {
         super(token, token);
     }
 
-    public byte getByte() {
-        throw new RuntimeException("UNIMPLEMENTED");
+    public Character content() {
+        return start.content().charAt(0);
     }
 }

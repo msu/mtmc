@@ -9,4 +9,8 @@ public final class ExpressionPrefix extends Expression {
         super(operator, rhs.end);
         this.inner = rhs;
     }
+
+    public String op() {
+        return start.content();
+    }
 }

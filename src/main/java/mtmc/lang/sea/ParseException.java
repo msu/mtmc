@@ -1,10 +1,10 @@
 package mtmc.lang.sea;
 
 public class ParseException extends Exception {
-    public final Token token;
+    public final Span span;
 
-    public ParseException(Token token, String message) {
+    public ParseException(Span span, String message) {
         super(message);
-        this.token = token;
+        this.span = span;
     }
 }

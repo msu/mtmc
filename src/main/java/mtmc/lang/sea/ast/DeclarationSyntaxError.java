@@ -1,6 +1,7 @@
 package mtmc.lang.sea.ast;
 
 import mtmc.lang.sea.ParseException;
+import mtmc.lang.sea.Span;
 import mtmc.lang.sea.Token;
 
 public final class DeclarationSyntaxError extends Declaration implements SyntaxError {
@@ -8,7 +9,7 @@ public final class DeclarationSyntaxError extends Declaration implements SyntaxE
 
     public DeclarationSyntaxError(Token token, String message) {
         super(token, token);
-        this.exception = new ParseException(token, message);
+        this.exception = new ParseException(new Span(token.start(), token.end()), message);
     }
 
     @Override

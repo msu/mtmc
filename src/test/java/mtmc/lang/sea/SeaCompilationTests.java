@@ -1,6 +1,8 @@
 package mtmc.lang.sea;
 
 
+import mtmc.lang.CompilationException;
+import mtmc.lang.ParseException;
 import mtmc.lang.sea.ast.Unit;
 import mtmc.os.exec.Executable;
 import org.junit.jupiter.api.Test;
@@ -20,15 +22,21 @@ public class SeaCompilationTests {
         var errors = program.collectErrors();
         if (!errors.isEmpty()) {
             for (var error : errors) {
-                int[] lo = Token.getLineAndOffset(src, error.token.start());
-                System.out.println("at " + lo[0] + ":" + lo[1]);
-                System.out.println("  " + error.getMessage());
+                for (var msg : error.messages) {
+                    int[] lo = Token.getLineAndOffset(src, msg.span().start().start());
+                    System.out.println("at " + lo[0] + ":" + lo[1]);
+                    System.out.println("  " + error.getMessage());
+                }
             }
             fail();
         }
 
         var compiler = new SeaCompiler(program);
-        return compiler.compile();
+        try {
+            return compiler.compile();
+        } catch (CompilationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

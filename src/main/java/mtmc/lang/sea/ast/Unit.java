@@ -1,6 +1,6 @@
 package mtmc.lang.sea.ast;
 
-import mtmc.lang.sea.ParseException;
+import mtmc.lang.ParseException;
 import mtmc.lang.sea.Token;
 
 import java.util.LinkedHashMap;

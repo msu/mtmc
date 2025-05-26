@@ -1,7 +1,9 @@
 package mtmc.lang.sea;
 
+import mtmc.lang.ParseException;
 import mtmc.lang.sea.ast.*;
 import org.junit.jupiter.api.Test;
+
 
 import static mtmc.lang.sea.SeaExpressionTests.Matching.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,13 +19,23 @@ public class SeaStatementTests {
             if (parser.hasMoreTokens()) fail("more tokens in parser: " + parser.remainingTokens());
             return (T) stmt;
         } catch (ParseException e) {
-            var lo = Token.getLineAndOffset(lex, e.token.start());
-            int lineNo = lo[0];
-            int column = lo[1];
-            var line = Token.getLineFor(lex, e.token.start());
-            var msg = "error at " + lineNo + ":" + column + ":\n" + e.getMessage() + "\n\n | " + line
-                    + "\n : " + (" ".repeat(column - 1) + "^".repeat(Math.max(1, e.token.end() - e.token.start())));
-            fail(msg);
+            var mb = new StringBuilder();
+            mb.append("Error:\n");
+            for (var msg : e.messages) {
+                var lo = Token.getLineAndOffset(lex, msg.start().start());
+                int lineNo = lo[0];
+                int column = lo[1];
+                var line = Token.getLineFor(lex, msg.start().start());
+                String prefix = "  %03d:%03d | ".formatted(lineNo, column);
+                String info = " ".repeat(prefix.length() - 2) + "| ";
+                mb.append(info).append(msg.message()).append('\n');
+                mb.append(prefix).append(line).append('\n');
+                mb
+                        .repeat(' ', column - 1)
+                        .repeat('^', Math.max(1, msg.end().end() - msg.start().start()));
+                mb.append("\n\n");
+            }
+            fail(mb.toString());
             return null;
         }
     }

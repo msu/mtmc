@@ -1,5 +1,6 @@
 package mtmc.lang.sea;
 
+import mtmc.lang.Location;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ public record Token(
         String content,
         int start,
         int end
-) {
+) implements mtmc.lang.Token {
     public static final Token SOF = new Token(Token.Type.SOF, "", 0, 0);
     public static final Token EOF = new Token(Token.Type.EOF, "", Integer.MAX_VALUE, Integer.MAX_VALUE);
 
@@ -380,5 +381,20 @@ public record Token(
     @Override
     public int hashCode() {
         return Objects.hash(type, content, start, end);
+    }
+
+    @Override
+    public Location getStart() {
+        return new Location(start);
+    }
+
+    @Override
+    public Location getEnd() {
+        return new Location(end);
+    }
+
+    @Override
+    public String getContent() {
+        return content();
     }
 }

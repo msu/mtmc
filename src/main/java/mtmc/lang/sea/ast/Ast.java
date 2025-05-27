@@ -114,6 +114,7 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
             case TypeExprRef ignored -> Stream.empty();
             case TypePointer ignored -> Stream.empty();
             case Unit unit -> unit.declarations.stream().map(x -> x);
+            case ExpressionTypeError typeError -> Stream.of(typeError.inner);
         };
     }
 }

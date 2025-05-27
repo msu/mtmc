@@ -1,7 +1,5 @@
 package mtmc.lang;
 
-import mtmc.lang.sea.Span;
-
 public class CompilationException extends Exception {
     protected Span span;
 

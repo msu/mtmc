@@ -1,6 +1,8 @@
 package mtmc.lang.sea;
 
 import mtmc.lang.ParseException;
+import mtmc.lang.ParseException.Message;
+import mtmc.lang.Span;
 import mtmc.lang.sea.ast.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -80,7 +82,7 @@ public class SeaParser {
             } catch (ParseException ignored) {
             }
 
-            var msg = new Message(Span.of(peekToken()), "expected ')' after parameter list");
+            var msg = new Message(peekToken(), "expected ')' after parameter list");
             throw new ParseException(msg);
         }
 
@@ -141,7 +143,7 @@ public class SeaParser {
             var lparen = lastToken();
             var params = parseParamList();
             if (params.size() > 4) {
-                throw new ParseException(spanOf(lparen, lastToken()), "a function can have at most 4 parameters!");
+                throw new ParseException(new Message(Span.of(lparen, lastToken()), "a function can have at most 4 parameters!"));
             }
 
             StatementBlock body = null;
@@ -1016,7 +1018,7 @@ public class SeaParser {
                     return new ExpressionSyntaxError(lastToken(), "expected ']' after array index");
                 }
                 if (!index.getType().isArithmetic()) {
-                    expr = new ExpressionSyntaxError(index, "index must be an integral type");
+                    expr = new ExpressionTypeError(index, "index must be an integral type");
                 }
                 var exprType = expr.getType();
                 if (!exprType.isAPointer()) {

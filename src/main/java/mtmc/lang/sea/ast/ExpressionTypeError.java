@@ -1,6 +1,6 @@
 package mtmc.lang.sea.ast;
 
-import mtmc.lang.sea.ParseException;
+import mtmc.lang.ParseException;
 
 public final class ExpressionTypeError extends Expression implements Error {
     public final Expression inner;
@@ -9,7 +9,7 @@ public final class ExpressionTypeError extends Expression implements Error {
     public ExpressionTypeError(Expression inner, String message) {
         super(inner.start, inner.end);
         this.inner = inner;
-        this.exception = new ParseException(inner.span(), message);
+        this.exception = new ParseException(new ParseException.Message(inner.span(), message));
     }
 
 

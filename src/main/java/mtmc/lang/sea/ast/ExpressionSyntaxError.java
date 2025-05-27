@@ -9,6 +9,10 @@ public final class ExpressionSyntaxError extends Expression implements SyntaxErr
     public final Expression child;
     public final ParseException exception;
 
+    public ExpressionSyntaxError(Token token, String message) {
+        this(null, token, message);
+    }
+
     public ExpressionSyntaxError(@Nullable Expression child, Token token, String message) {
         super(child == null ? token : child.start, token);
         this.child = child;

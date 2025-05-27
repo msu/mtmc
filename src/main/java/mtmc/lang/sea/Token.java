@@ -144,14 +144,6 @@ public record Token(
         return new int[]{line, column};
     }
 
-    public Span span() {
-        return new Span(start, end);
-    }
-
-    public Span endSpan() {
-        return new Span(end - 1, end);
-    }
-
     public static String getLineFor(String src, int index) {
         int start = 0;
         for (int i = Math.min(index, src.length() - 1); i >= 0; i--) {

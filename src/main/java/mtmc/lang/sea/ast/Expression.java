@@ -8,12 +8,20 @@ public sealed abstract class Expression extends Ast permits ExpressionAccess, Ex
         super(start, end);
     }
 
+    private SeaType type;
     public SeaType getType() {
-        return switch (this) {
+        if (type != null) return type;
+        type = switch (this) {
             case ExpressionAccess expressionAccess -> null;
-            case ExpressionBin expressionBin -> switch (expressionBin.op()) {
-                case "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "|=" -> SeaType.Void;
-                case "||", "&&", "==", "!=", "&", "|", "^", ">>", "<<", "+", "-", "*", "/", "%" -> SeaType.Int;
+            case ExpressionBin bin -> switch (bin.op()) {
+                case "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "|=" -> SeaType.VOID;
+                case "||", "&&", "==", "!=", "&", "|", "^", ">>", "<<", "*", "/", "%" -> SeaType.INT;
+                case "+", "-" -> {
+                    if (bin.lhs.getType().isAPointer() && bin.rhs.getType().isAPointer()) {
+
+                    }
+                }
+                default -> throw new IllegalStateException("Unexpected value: " + bin.op());
             };
             case ExpressionCall expressionCall -> null;
             case ExpressionCast expressionCast -> null;
@@ -27,6 +35,8 @@ public sealed abstract class Expression extends Ast permits ExpressionAccess, Ex
             case ExpressionString expressionString -> null;
             case ExpressionSyntaxError expressionSyntaxError -> null;
             case ExpressionTernary expressionTernary -> null;
+            case ExpressionTypeError expressionTypeError -> null;
         };
+        return type;
     }
 }

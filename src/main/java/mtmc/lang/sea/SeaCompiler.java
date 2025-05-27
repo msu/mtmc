@@ -1,6 +1,7 @@
 package mtmc.lang.sea;
 
 import mtmc.lang.CompilationException;
+import mtmc.lang.Span;
 import mtmc.lang.sea.ast.*;
 import mtmc.os.exec.Executable;
 import mtmc.util.StringEscapeUtils;
@@ -8,22 +9,18 @@ import mtmc.util.StringEscapeUtils;
 import java.util.HashMap;
 import java.util.List;
 
-import static mtmc.lang.sea.Token.Type.*;
-
 public class SeaCompiler {
-    protected String source;
     protected Unit program;
 
     private StringBuilder data = new StringBuilder();
     private StringBuilder code = new StringBuilder();
     private HashMap<Object, String> dataLabels = new HashMap<>();
 
-    public SeaCompiler(String source, Unit program) {
-        this.source = source;
+    public SeaCompiler(Unit program) {
         this.program = program;
     }
 
-    public Executable compile() {
+    public Executable compile() throws CompilationException {
         // data-types: pointers, words, and bytes
         // globals end in the 'data' segment
         // locals end up on the stack
@@ -99,25 +96,25 @@ public class SeaCompiler {
                     case String op -> throw new UnsupportedOperationException("invalid constant operator: " + op);
                 };
             }
-            case ExpressionCall call -> throw new CompilationException("invalid constant expression: function call are not allowed in constant contexts", spanOf(call.functor));
-            case ExpressionCast cast -> throw new CompilationException("invalid constant expression: casting is not allowed in constant contexts", spanOf(cast.type));
+            case ExpressionCall call -> throw new CompilationException("invalid constant expression: function call are not allowed in constant contexts", call.functor.span());
+            case ExpressionCast cast -> throw new CompilationException("invalid constant expression: casting is not allowed in constant contexts", cast.type.span());
             case ExpressionChar chr -> (int) chr.content();
-            case ExpressionIdent ident -> throw new CompilationException("invalid constant expression: identifiers are not allowed in constant contexts", spanOf(ident));
-            case ExpressionIndex index -> throw new CompilationException("invalid constant expression: indexing is not allowed in constant contexts", spanOf(index.index));
+            case ExpressionIdent ident -> throw new CompilationException("invalid constant expression: identifiers are not allowed in constant contexts", (ident).span());
+            case ExpressionIndex index -> throw new CompilationException("invalid constant expression: indexing is not allowed in constant contexts", (index.index).span());
             case ExpressionInteger exprInt -> exprInt.value;
             case ExpressionParens group -> evalConstant(group.inner);
             case ExpressionPostfix postfix -> {
                 switch (postfix.op()) {
-                    case "++" -> throw new CompilationException("invalid constant expression: postfix increment is not allowed in constant contexts", spanOf(postfix.end));
-                    case "--" -> throw new CompilationException("invalid constant expression: postfix decrement is not allowed in constant contexts", spanOf(postfix.end));
+                    case "++" -> throw new CompilationException("invalid constant expression: postfix increment is not allowed in constant contexts", postfix.span());
+                    case "--" -> throw new CompilationException("invalid constant expression: postfix decrement is not allowed in constant contexts", postfix.span());
                     case String op -> throw new UnsupportedOperationException("unknown postfix operator " + op);
                 }
             }
             case ExpressionPrefix prefix -> switch (prefix.op()) {
-                case "++" -> throw new CompilationException("invalid constant expression: prefix increment is not allowed in constant contexts", spanOf(postfix.end));
-                case "--" -> throw new CompilationException("invalid constant expression: prefix decrement is not allowed in constant contexts", spanOf(postfix.end));
-                case "&" -> throw new CompilationException("invalid constant expression: addressing is not allowed in constant contexts", spanOf(postfix.end));
-                case "*" -> throw new CompilationException("invalid constant expression: dereference is not allowed in constant contexts", spanOf(postfix.end));
+                case "++" -> throw new CompilationException("invalid constant expression: prefix increment is not allowed in constant contexts", prefix.span());
+                case "--" -> throw new CompilationException("invalid constant expression: prefix decrement is not allowed in constant contexts", prefix.span());
+                case "&" -> throw new CompilationException("invalid constant expression: addressing is not allowed in constant contexts", prefix.span());
+                case "*" -> throw new CompilationException("invalid constant expression: dereference is not allowed in constant contexts", prefix.span());
                 case "~" -> {
                     var value = evalConstant(prefix.inner);
                     yield ~((Integer) value);
@@ -135,9 +132,10 @@ public class SeaCompiler {
                     yield switch (value) {
                         case String s -> s.length();
                         case Integer i -> 2;
-                        case Object v -> throw new CompilationException("cannot take sizeof " + v.getClass(), spanOf(prefix.start));
+                        case Object v -> throw new CompilationException("cannot take sizeof " + v.getClass(), prefix.span());
                     };
                 }
+                default -> throw new IllegalStateException("Unexpected value: " + prefix.op());
             };
             case ExpressionString str -> str.content();
             case ExpressionSyntaxError ignored -> throw new UnsupportedOperationException("errors should be checked before compilation");
@@ -206,13 +204,5 @@ public class SeaCompiler {
             case List<?> values -> addConstant(values);
             default -> throw new UnsupportedOperationException("unknown constant type: " + value.getClass().getName());
         };
-    }
-
-    protected Span spanOf(Token t) {
-        return new Span(t.start(), t.end());
-    }
-
-    protected Span spanOf(Ast e) {
-        return new Span(e.start.start(), e.end.end());
     }
 }

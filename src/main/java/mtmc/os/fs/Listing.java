@@ -4,18 +4,18 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
-public class FileSystem {
-    private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
-    private String cwd = "/home";
-    static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
-    static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
+public class Listing {
+   List<File> files = null;
+   Map<String, Listing> subdirectories = null;
+   // TODO: public Listing listFiles(){}
 
+   // FILESYSTEM BELOW:
+   private String cwd = "/home";
+   static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
 
-    public void setCWD(String cd) {
-        cwd = cd;
-    }
-
-
+   public void setCWD(String cd){
+       cwd = cd;
+   }
     public String resolve(String fileName) {
         String resolvedString = "";
         String[] cwdPath = cwd.split("/");
@@ -115,4 +115,5 @@ public class FileSystem {
             }
         }
     }
+
 }

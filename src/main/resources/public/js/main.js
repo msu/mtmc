@@ -261,4 +261,3 @@ function initConsole() {
 
     input.focus();
 }
-

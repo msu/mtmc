@@ -5,7 +5,12 @@ import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 public class MTMCWebView {
@@ -15,6 +20,9 @@ public class MTMCWebView {
     private final MonTanaMiniComputer computer;
 
     private DisplayFormat memoryDisplayFormat = DisplayFormat.DYN;
+
+    private Set<String> expandedPaths = new HashSet<>();
+    private String currentFileContent = null;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -94,6 +102,69 @@ public class MTMCWebView {
         return blinken.toString();
     }
 
+    public String getVisualShell(){
+        if(currentFileContent != null){
+            return renderEditor();
+        } else {
+            return renderFileTree();
+        }
+    }
+
+    private String renderEditor() {
+        return "<div><button fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button></div>" +
+                "<textarea id='editor'>" + currentFileContent + "</textarea>";
+    }
+
+    @NotNull
+    private String renderFileTree() {
+        File rootFile = computer.getOS().loadFile("/");
+        var sb = new StringBuilder();
+        sb.append("<ul><li><code>/</code><ul>");
+        for (File file : rootFile.listFiles()) {
+            appendContentForFile(file, sb);
+        }
+        sb.append("</ul></li></ul>");
+        return sb.toString();
+    }
+
+    private void appendContentForFile(File file, StringBuilder sb) {
+        if (file.getName().startsWith(".")) {
+            return;
+        }
+        if (file.isDirectory()) {
+            appendDirectoryContent(file, sb);
+        } else {
+            appendFileContent(file, sb);
+        }
+    }
+
+    private void appendFileContent(File file, StringBuilder sb) {
+        sb.append("<li class='file-entry'>");
+        sb.append("<a class='directory-entry' fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/open/")
+                .append(file.getPath())
+                .append("'>");
+        sb.append(file.getName());
+        sb.append("</a>");
+        sb.append("</li>");
+    }
+
+    private void appendDirectoryContent(File file, StringBuilder sb) {
+        String path = file.getPath();
+        sb.append("<li>");
+        sb.append("<a class='directory-entry' fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/toggle/")
+                .append(file.getPath())
+                .append("'>");
+        sb.append(file.getName());
+        sb.append("</a>");
+        if(expandedPaths.contains(path)) {
+            sb.append("<ul>");
+            for (File child : file.listFiles()) {
+                appendContentForFile(child, sb);
+            }
+            sb.append("</ul>");
+        }
+        sb.append("</li>");
+    }
 
     public String getMemoryTable(){
         StringBuilder builder = new StringBuilder("<table id='memory-table' style='width:100%; table-layout:fixed'>");
@@ -251,6 +322,32 @@ public class MTMCWebView {
         DisplayFormat[] vals = DisplayFormat.values();
         int nextIndex = (currentIndex + 1) % vals.length;
         memoryDisplayFormat = vals[nextIndex];
+    }
+
+    public void togglePath(String pathToToggle) {
+        if(expandedPaths.contains(pathToToggle)) {
+            expandedPaths.remove(pathToToggle);
+        } else {
+            expandedPaths.add(pathToToggle);
+        }
+    }
+
+    public boolean openFile(String fileToOpen) {
+        File file = computer.getOS().loadFile(fileToOpen);
+        if(file.exists() && file.isFile()) {
+            try {
+                currentFileContent = Files.readString(file.toPath());
+                return true;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return false;
+        }
+    }
+
+    public void closeFile() {
+        currentFileContent = null;
     }
 
     enum DisplayFormat {

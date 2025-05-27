@@ -1,6 +1,7 @@
 package mtmc.web;
 
 import com.google.gson.Gson;
+import io.javalin.http.HttpStatus;
 import mtmc.emulator.MTMCIO;
 import mtmc.emulator.MonTanaMiniComputer;
 import io.javalin.Javalin;
@@ -115,6 +116,27 @@ public class WebServer {
                 .post("/memFormat", ctx -> {
                     computerView.toggleMemoryFormat();
                     uiUpdater.updateMemoryImmediately();
+                })
+                .get("/fs/toggle/*", ctx -> {
+                    String path = ctx.path();
+                    String pathToToggle = path.substring("/fs/toggle/".length());
+                    computerView.togglePath(pathToToggle);
+                    ctx.html(computerView.getVisualShell());
+                })
+                .get("/fs/open/*", ctx -> {
+                    String path = ctx.path();
+                    String fileToOpen = path.substring("/fs/open/disk/".length());
+                    boolean successfullyOpened = computerView.openFile(fileToOpen);
+                    if(successfullyOpened) {
+                        ctx.html(computerView.getVisualShell());
+                    } else {
+                        ctx.status(HttpStatus.NOT_FOUND);
+                        ctx.html("");
+                    }
+                })
+                .get("/fs/close", ctx -> {
+                    computerView.closeFile();
+                    ctx.html(computerView.getVisualShell());
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();

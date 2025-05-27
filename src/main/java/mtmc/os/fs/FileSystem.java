@@ -6,10 +6,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.sql.Array;
 import java.sql.SQLOutput;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class FileSystem {
     private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
@@ -73,7 +70,7 @@ public class FileSystem {
                 fileString += ("/" + constructedPath.get(i));
             }
         }
-        if(fileString.equals("")){
+        if (fileString.equals("")) {
             fileString = "/";
         }
         return fileString;
@@ -89,51 +86,38 @@ public class FileSystem {
         }
         return joinedPath;
     }
+
     private File toRealPath(String path) { // Resolves given path and returns /disk/ + path
         String resolvedPath = resolve(path);
         String slashGone = resolvedPath.substring(1);
         return DISK_PATH.resolve(slashGone).toFile();
     }
+
     public void listFiles(String path) {
-        System.out.println("\n");
         File resolvedPath = toRealPath(path);
-        File[] files = resolvedPath.listFiles();
-        if(files == null){
-            System.out.println("File path does not exist or has no children.");
-            return;
-        }
-        for (File file : files) {
-            // If a subdirectory is found,
-            // print the name of the subdirectory
-
-            /*if (file.isDirectory()) {
-                Path directory = file.toPath();*/
-                // Recursive
-
-            // TODO: Make sure there is only an array if there are children
-                    if (file.isDirectory()){
-                        System.out.println("Directory: " +file.getName());
-                        file.listFiles();
-                    }
-                    else{
-                        String[] fileList = file.list();
-                        for(int i = 0; i< fileList.length; i++){
-                            System.out.println("\tFile: " + file.getName());
-                        }
-                    }
-                // TODO: if !fileList().length.equals(null) || fileList().equals("");
-
-              /*  System.out.println("Directory: " + file.getName());
-                String[] fileList = file.list();
-                for (int i = 0; i < fileList.length; i++) { // Print out files in current directory
-                    System.out.println("\tFile: " + fileList[i]);
-                }
-            }else{
-                // Print the file name
-                System.out.println("File: " + file.getName());
-            }*/
-        }
+        listFilesRecursive(resolvedPath, 0);
         return;
     }
+    private void listFilesRecursive(File filePath, int depth){
+        // TODO: Implement depth var
+        if(!filePath.isDirectory()){
+            return;
+        }
+        File[] files = filePath.listFiles();
+        for (int i = 0; i < files.length; i++) {
 
+            File f = files[i];
+            if(f.isDirectory()) { // Detects whether to print String Dir or File
+
+                System.out.println(("\t").repeat(depth) + f.getName());
+            }
+            else{
+                System.out.println(("\t").repeat(depth) + f.getName());
+            }
+            if(f.isDirectory()){
+                listFilesRecursive(f, depth+1);
+            }
+
+        }
+    }
 }

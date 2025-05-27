@@ -49,7 +49,8 @@ public class FSTests {
     @Test
     public void testListFiles() {
         var fs = new FileSystem();
-        fs.listFiles("../bin");
-        //fs.listFiles("..");
+        //fs.listFiles("../bin");
+        fs.listFiles("..");
+        //fs.listFiles("../home");
     }
 }

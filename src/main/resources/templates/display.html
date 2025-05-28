@@ -1,11 +1,29 @@
-<div class="panel" id="display-panel">
-    <div>
-        <div id="display" class="display">
-            {% for row in computer.displayRows %}
-            {% for col in computer.displayCols %}
-            <div id="display_{{row}}_{{col}}" style="background:{{computer.colorForPixel(row, col)}}"></div>
-            {% endfor %}
-            {% endfor %}
+
+<div class="panel" id="display" tabindex="0">
+    <div id="display-wrapper">
+        <img id="display-img" src="/display" alt="the display" width="340">
+    </div>
+    <div id="display-control-wrapper">
+        <div>
+            <div id="direction-cross">
+                <div></div>
+                <div class="cross-button up"></div>
+                <div></div>
+                <div class="cross-button left"></div>
+                <div class="cross-button"></div>
+                <div class="cross-button right"></div>
+                <div></div>
+                <div class="cross-button down"></div>
+                <div></div>
+            </div>
+        </div>
+        <div>
+            <button class="small-button select">select</button>
+            <button class="small-button start">start</button>
+        </div>
+        <div>
+            <button class="big-button b">B</button>
+            <button class="big-button a">A</button>
         </div>
     </div>
 </div>

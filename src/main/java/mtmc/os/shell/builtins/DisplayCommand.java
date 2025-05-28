@@ -1,13 +1,12 @@
 package mtmc.os.shell.builtins;
 
+import mtmc.emulator.MTMCDisplay;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.os.shell.ShellCommand;
-import mtmc.os.utils.ImageUtils;
 import mtmc.tokenizer.MTMCTokenizer;
 import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Random;
@@ -25,30 +24,20 @@ public class DisplayCommand extends ShellCommand {
             String option = tokens.consumeAsString();
             switch (option) {
                 case "fuzz" -> {
-                    Iterable<Integer> rows = computer.getDisplay().getRows();
-                    Iterable<Integer> cols = computer.getDisplay().getColumns();
-                    for (Integer row : rows) {
-                        for (Integer col : cols) {
-                            computer.getDisplay().setValueFor(row.shortValue(), col.shortValue(), (short) random.nextInt(0, 4));
+                    for (int row = 0; row < MTMCDisplay.ROWS; row++) {
+                        for (int col = 0; col < MTMCDisplay.COLS; col++) {
+                            computer.getDisplay().setPixel(col, row, (short) random.nextInt(0, 4));
                         }
                     }
                 }
                 case "reset" -> {
-                    Iterable<Integer> rows = computer.getDisplay().getRows();
-                    Iterable<Integer> cols = computer.getDisplay().getColumns();
-                    for (Integer row : rows) {
-                        for (Integer col : cols) {
-                            computer.getDisplay().setValueFor(row.shortValue(), col.shortValue(), (short) 0);
-                        }
-                    }
+                    computer.getDisplay().reset();
                 }
                 case "invert" -> {
-                    Iterable<Integer> rows = computer.getDisplay().getRows();
-                    Iterable<Integer> cols = computer.getDisplay().getColumns();
-                    for (Integer row : rows) {
-                        for (Integer col : cols) {
-                            short inverted = (short) (3 - computer.getDisplay().getValueFor(row.shortValue(), col.shortValue()));
-                            computer.getDisplay().setValueFor(row.shortValue(), col.shortValue(), inverted);
+                    for (int row = 0; row < MTMCDisplay.ROWS; row++) {
+                        for (int col = 0; col < MTMCDisplay.COLS; col++) {
+                            short color = computer.getDisplay().getPixel(col, row);
+                            computer.getDisplay().setPixel(col, row, (short) 3 - color);
                         }
                     }
                 }
@@ -57,20 +46,7 @@ public class DisplayCommand extends ShellCommand {
                         String imagePath = tokens.collapseTokensAsString();
                         File file = computer.getOS().loadFile(imagePath);
                         BufferedImage img = ImageIO.read(file);
-                        Dimension scaleDimensions = ImageUtils.getScaledDimension(img, 64, 64);
-                        BufferedImage scaledImage = ImageUtils.scaleImage(img, scaleDimensions);
-                        int xpad = (64 - scaledImage.getWidth()) / 2;
-                        int ypad = (64 - scaledImage.getHeight()) / 2;
-                        for (int x = 0; x < scaledImage.getWidth(); x++) {
-                            for (int y = 0; y < scaledImage.getHeight(); y++) {
-                                int rgb = scaledImage.getRGB(x, y);
-                                int alpha = (rgb >> 24) & 0xff;
-                                if (alpha > 128) {
-                                    int twoBitValue = ImageUtils.findClosestDisplayColor(rgb);
-                                    computer.getDisplay().setValueFor((short) (x + xpad), (short) (y + ypad), (short) twoBitValue);
-                                }
-                            }
-                        }
+                        computer.getDisplay().loadScaledImage(img);
                     } else {
                         usageException();
                     }
@@ -81,10 +57,11 @@ public class DisplayCommand extends ShellCommand {
             Integer row = tokens.consumeAsInteger();
             Integer col = tokens.require(INTEGER, this::usageException).intValue();
             Integer color = tokens.require(INTEGER, this::usageException).intValue();
-            computer.getDisplay().setValueFor(row.shortValue(), col.shortValue(), color.shortValue());
+            computer.getDisplay().setPixel(row.shortValue(), col.shortValue(), color.shortValue());
         } else {
             usageException();
         }
+        computer.getDisplay().sync();
     }
 
     @NotNull

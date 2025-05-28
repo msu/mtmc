@@ -1,13 +1,12 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
+import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
 import static mtmc.util.BinaryUtils.getBits;
 
 public class JumpInstruction extends Instruction {
-
-    public static final int MAX = (1 << 12) - 1;
 
     private MTMCToken addressToken;
 
@@ -52,23 +51,21 @@ public class JumpInstruction extends Instruction {
 
     public static String disassemble(short instruction) {
         if (getBits(16, 2, instruction) == 0b11) {
-            StringBuilder builder = new StringBuilder();
             short jumpType = getBits(14, 2, instruction);
+            StringBuilder sb = new StringBuilder();
             if (jumpType == 0b00) {
-                builder.append("j ");
+                sb.append("j");
             } else if (jumpType == 0b01) {
-                builder.append("jz ");
+                sb.append("jz");
             } else if (jumpType == 0b10) {
-                builder.append("jnz ");
-            } else {
-                builder.append("jal ");
+                sb.append("jnz");
+            } else if (jumpType == 0b11) {
+                sb.append("jal");
             }
-            short val = getBits(12, 12, instruction);
-            builder.append(val);
-            return builder.toString();
+            short target = getBits(12, 12, instruction);
+            sb.append(" ").append(target);
+            return sb.toString();
         }
         return null;
     }
-
-
 }

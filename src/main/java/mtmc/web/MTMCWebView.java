@@ -1,12 +1,16 @@
 package mtmc.web;
 
 import mtmc.asm.instructions.Instruction;
-import mtmc.emulator.MTMCDisplay;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 public class MTMCWebView {
@@ -15,8 +19,10 @@ public class MTMCWebView {
 
     private final MonTanaMiniComputer computer;
 
-    private DisplayFormat registerFormat = DisplayFormat.DYN;
-    private DisplayFormat memoryFormat = DisplayFormat.DYN;
+    private DisplayFormat memoryDisplayFormat = DisplayFormat.DYN;
+
+    private Set<String> expandedPaths = new HashSet<>();
+    private String currentFileContent = null;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -46,8 +52,8 @@ public class MTMCWebView {
             Register register = Register.valueOf(reg.toUpperCase());
             int regIndex = register.ordinal();
             short val = computer.getRegisterValue(regIndex);
-            DisplayFormat format = computeFormat(register);
-            String str = displayValue(format, val);
+            DisplayFormat format = computeRegisterFormat(register);
+            String str = displayValue(format, val, (short) 0);
             return str;
         } catch (Exception e) {
             return "No such register: " + reg;
@@ -61,6 +67,24 @@ public class MTMCWebView {
         String str = Integer.toHexString(value & 0xffff);
         String padded = "%1$4s".formatted(str).replace(" ", "0");
         return "0x" + padded;
+    }
+
+    public String flagsBlinken() {
+        StringBuilder blinken = new StringBuilder();
+        blinken.append("t: <div class='blinken ");
+        if (computer.isFlagTestBitSet()) {
+            blinken.append("on");
+        } else {
+            blinken.append("off");
+        }
+        blinken.append("'></div>");
+        blinken.append(" o: <div class='blinken ");
+        blinken.append("off");
+        blinken.append("'></div>");
+        blinken.append(" e: <div class='blinken ");
+        blinken.append("off");
+        blinken.append("'></div>");
+        return blinken.toString();
     }
 
     public String regBlinken(String reg) {
@@ -78,10 +102,74 @@ public class MTMCWebView {
         return blinken.toString();
     }
 
+    public String getVisualShell(){
+        if(currentFileContent != null){
+            return renderEditor();
+        } else {
+            return renderFileTree();
+        }
+    }
+
+    private String renderEditor() {
+        return "<div><button fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button></div>" +
+                "<textarea id='editor'>" + currentFileContent + "</textarea>";
+    }
+
+    @NotNull
+    private String renderFileTree() {
+        File rootFile = computer.getOS().loadFile("/");
+        var sb = new StringBuilder();
+        sb.append("<ul><li><code>/</code><ul>");
+        for (File file : rootFile.listFiles()) {
+            appendContentForFile(file, sb);
+        }
+        sb.append("</ul></li></ul>");
+        return sb.toString();
+    }
+
+    private void appendContentForFile(File file, StringBuilder sb) {
+        if (file.getName().startsWith(".")) {
+            return;
+        }
+        if (file.isDirectory()) {
+            appendDirectoryContent(file, sb);
+        } else {
+            appendFileContent(file, sb);
+        }
+    }
+
+    private void appendFileContent(File file, StringBuilder sb) {
+        sb.append("<li class='file-entry'>");
+        sb.append("<a class='directory-entry' fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/open/")
+                .append(file.getPath())
+                .append("'>");
+        sb.append(file.getName());
+        sb.append("</a>");
+        sb.append("</li>");
+    }
+
+    private void appendDirectoryContent(File file, StringBuilder sb) {
+        String path = file.getPath();
+        sb.append("<li>");
+        sb.append("<a class='directory-entry' fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/toggle/")
+                .append(file.getPath())
+                .append("'>");
+        sb.append(file.getName());
+        sb.append("</a>");
+        if(expandedPaths.contains(path)) {
+            sb.append("<ul>");
+            for (File child : file.listFiles()) {
+                appendContentForFile(child, sb);
+            }
+            sb.append("</ul>");
+        }
+        sb.append("</li>");
+    }
 
     public String getMemoryTable(){
         StringBuilder builder = new StringBuilder("<table id='memory-table' style='width:100%; table-layout:fixed'>");
         byte[] memory = computer.getMemory();
+        short previousValue = 0;
         for (int i = 0; i < memory.length; i++) {
             if (i % 16 == 0) {
                 builder.append("<tr>");
@@ -89,7 +177,7 @@ public class MTMCWebView {
 
             // figure out how we are displaying this location
             String memoryClass = classFor(i);
-            DisplayFormat format = computeFormat(memoryClass);
+            DisplayFormat format = computeMemoryFormat(memoryClass);
             int cols = computeCols(format);
 
             short val = (short) (memory[i] & 0xFF);
@@ -99,7 +187,7 @@ public class MTMCWebView {
                 val = (short) (val << 8);
                 val = (short) (val | (memory[i] & 0xFF));
             }
-            String displayStr = displayValue(format, val);
+            String displayStr = displayValue(format, val, previousValue);
 
             // build table cell
             builder.append("<td title='");
@@ -122,6 +210,7 @@ public class MTMCWebView {
             if (i % COLS_FOR_MEM == 15) {
                 builder.append("</tr>");
             }
+            previousValue = val;
         }
         builder.append("</table>");
         return builder.toString();
@@ -134,34 +223,28 @@ public class MTMCWebView {
         };
     }
 
-    private DisplayFormat computeFormat(String memoryClass) {
-        if(memoryFormat == DisplayFormat.DYN) {
+    private DisplayFormat computeMemoryFormat(String memoryClass) {
+        if(memoryDisplayFormat == DisplayFormat.DYN) {
             return switch (memoryClass) {
                 case "sta" -> DisplayFormat.DEC;
-                case "curr", "code" -> DisplayFormat.INS;
+                case "code" -> DisplayFormat.INS;
                 case "data", "heap" -> DisplayFormat.STR;
                 default -> DisplayFormat.HEX;
             };
         } else {
-            return memoryFormat;
+            return memoryDisplayFormat;
         }
     }
 
-    private DisplayFormat computeFormat(Register register) {
-        if(registerFormat == DisplayFormat.DYN) {
-            return switch (register) {
-                case IR -> DisplayFormat.INS;
-                default -> DisplayFormat.DEC;
-            };
-        } else {
-            return registerFormat;
-        }
+    private DisplayFormat computeRegisterFormat(Register register) {
+        return switch (register) {
+            case IR -> DisplayFormat.INS;
+            default -> DisplayFormat.DEC;
+        };
     }
 
     public String classFor(int address) {
-        if (address >= MonTanaMiniComputer.FRAME_BUFF_START) {
-            return "buff";
-        } else if (address >= computer.getRegisterValue(Register.SP)) {
+        if (address >= computer.getRegisterValue(Register.SP)) {
             return "sta";
         } else if (address == computer.getRegisterValue(Register.PC)) {
             return "curr";
@@ -176,11 +259,11 @@ public class MTMCWebView {
         }
     }
 
-    public String displayValue(DisplayFormat format, short val) {
+    public String displayValue(DisplayFormat format, short val, short previousValue) {
         return switch (format) {
             case HEX -> String.format("%02X ", val);
             case DEC -> String.valueOf(val);
-            case INS -> Instruction.disassembleInstruction(val);
+            case INS -> Instruction.disassembleInstruction(val, previousValue);
             case STR -> get1252String(val);
             default -> throw new IllegalArgumentException("Can't render displayValue " + format);
         };
@@ -212,44 +295,59 @@ public class MTMCWebView {
             "SUB", "ESC", "FS", "GS", "RS", "US",
     };
 
-    public Iterable getDisplayRows() {
-        return computer.getDisplay().getRows();
-    }
 
-    public Iterable getDisplayCols() {
-        return computer.getDisplay().getRows();
-    }
-
-    public String colorForPixel(int row, int column) {
+    public String classForPixel(int row, int column) {
         short x = (short) column;
         short y = (short) row;
-        short valueFor = computer.getDisplay().getValueFor(x, y);
+        short valueFor = computer.getDisplay().getPixel(x, y);
         if (valueFor == 0) {
-            return "#" + MTMCDisplay.DARK;
+            return "d";
         } else if (valueFor == 1) {
-            return "#" + MTMCDisplay.MEDIUM;
+            return "m";
         } else if (valueFor == 2) {
-            return "#" + MTMCDisplay.LIGHT;
+            return "l";
         } else if (valueFor == 3) {
-            return "#" + MTMCDisplay.WHITE;
+            return "w";
         }
         throw new IllegalStateException("Bad display value: "  + valueFor);
     }
 
-    public String getRegisterFormat() {
-        return registerFormat.toString().toLowerCase();
-    }
-
-    public void toggleRegisterFormat() {
-        registerFormat = DisplayFormat.values()[(registerFormat.ordinal() + 1) % memoryFormat.values().length];
-    }
 
     public String getMemoryFormat() {
-        return memoryFormat.toString().toLowerCase();
+        return memoryDisplayFormat.name().toLowerCase();
     }
 
     public void toggleMemoryFormat() {
-        memoryFormat = DisplayFormat.values()[(memoryFormat.ordinal() + 1) % memoryFormat.values().length];
+        int currentIndex = memoryDisplayFormat.ordinal() + 1;
+        DisplayFormat[] vals = DisplayFormat.values();
+        int nextIndex = (currentIndex + 1) % vals.length;
+        memoryDisplayFormat = vals[nextIndex];
+    }
+
+    public void togglePath(String pathToToggle) {
+        if(expandedPaths.contains(pathToToggle)) {
+            expandedPaths.remove(pathToToggle);
+        } else {
+            expandedPaths.add(pathToToggle);
+        }
+    }
+
+    public boolean openFile(String fileToOpen) {
+        File file = computer.getOS().loadFile(fileToOpen);
+        if(file.exists() && file.isFile()) {
+            try {
+                currentFileContent = Files.readString(file.toPath());
+                return true;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return false;
+        }
+    }
+
+    public void closeFile() {
+        currentFileContent = null;
     }
 
     enum DisplayFormat {

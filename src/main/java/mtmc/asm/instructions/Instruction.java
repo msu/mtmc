@@ -2,6 +2,7 @@ package mtmc.asm.instructions;
 
 import mtmc.asm.ASMElement;
 import mtmc.asm.Assembler;
+import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.tokenizer.MTMCToken;
 
 public abstract class Instruction extends ASMElement {
@@ -39,10 +40,13 @@ public abstract class Instruction extends ASMElement {
 
     @Override
     public int getSizeInBytes() {
-        return 2;
+        return type == null ? 0 : type.getSizeInBytes();
     }
 
-    public static String disassembleInstruction(short instruction) {
+    public static String disassembleInstruction(short instruction, short previousInstruction) {
+        if (MonTanaMiniComputer.isDoubleWordInstruction(previousInstruction)) {
+            return String.valueOf(instruction);
+        }
         String misc = MiscInstruction.disassemble(instruction);
         if (misc != null) {
             return misc;
@@ -55,17 +59,21 @@ public abstract class Instruction extends ASMElement {
         if (stack != null) {
             return stack;
         }
-        String stackImmediate = StackImmediateInstruction.disassemble(instruction);
-        if (stackImmediate != null) {
-            return stackImmediate;
+        String test = TestInstruction.disassemble(instruction);
+        if (test != null) {
+            return test;
         }
-        String li = LoadInstruction.disassemble(instruction);
-        if (li != null) {
-            return li;
+        String lsr = LoadStoreRegisterInstruction.disassemble(instruction);
+        if (lsr != null) {
+            return lsr;
         }
-        String ldi = LoadImmediateInstruction.disassemble(instruction);
-        if (ldi != null) {
-            return ldi;
+        String ls = LoadStoreInstruction.disassemble(instruction);
+        if (ls != null) {
+            return ls;
+        }
+        String jumpReg = JumpInstruction.disassemble(instruction);
+        if (jumpReg != null) {
+            return jumpReg;
         }
         String jump = JumpInstruction.disassemble(instruction);
         if (jump != null) {

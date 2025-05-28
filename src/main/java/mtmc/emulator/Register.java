@@ -7,6 +7,8 @@ public enum Register {
     T1,
     T2,
     T3,
+    T4,
+    T5,
     A0,  // arg registers
     A1,
     A2,
@@ -16,15 +18,15 @@ public enum Register {
     FP, // frame pointer
     SP, // stack pointer
     BP, // break pointer
-    PC, // program counter
-    ZERO, // always zero
-    ONE,  // always one
+    PC,
 
     //=== non-user-facing registers
-    IR, // instruction register
-    CB, // code boundary
-    DB, // data boundary
-    IO; // I/O register
+    IR,    // instruction register
+    DR,    // data register
+    CB,    // code boundary
+    DB,    // data boundary
+    IO,    // I/O register
+    FLAGS; // flags register
 
     public static int toInteger(String reg) {
         return Register.valueOf(reg.toUpperCase()).ordinal();
@@ -35,7 +37,7 @@ public enum Register {
     }
 
     public static boolean isWriteable(int reg) {
-        return 0 <= reg && reg < 14;
+        return 0 <= reg && reg < 16;
     }
 
     public static boolean isReadable(int reg) {
@@ -43,7 +45,7 @@ public enum Register {
     }
 
     private static boolean isTempRegister(int reg) {
-        return 0 <= reg && reg < 4;}
+        return 0 <= reg && reg < 6;}
 
     public static boolean isWriteable(String register) {
         try {

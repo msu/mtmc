@@ -8,6 +8,23 @@ public record MTMCToken(
         String stringValue,
         TokenType type
 ) {
+    public static MTMCToken join(MTMCToken a, MTMCToken b, TokenType type) {
+        if (a.end != b.start) throw new IllegalArgumentException("tokens must be joint!");
+        return new MTMCToken(
+                a.start,
+                b.end,
+                a.line,
+                a.lineOffset,
+                a.stringValue + b.stringValue,
+                type
+        );
+    }
+
+    @Override
+    public String toString() {
+        return stringValue;
+    }
+
     public String stringValue() {
         return stringValue;
     }
@@ -30,6 +47,10 @@ public record MTMCToken(
 
     public String labelValue() {
         return stringValue.substring(0, stringValue.length() - 1);
+    }
+
+    public MTMCToken cloneWithVal(String val) {
+        return new MTMCToken(start, end, line, lineOffset, val, type);
     }
 
     public enum TokenType {

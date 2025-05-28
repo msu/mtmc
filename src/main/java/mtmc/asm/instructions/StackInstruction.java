@@ -11,6 +11,7 @@ public class StackInstruction extends Instruction {
     private MTMCToken targetToken;
     private MTMCToken stackRegisterToken;
     private MTMCToken aluOpToken;
+    private MTMCToken value;
 
     public StackInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
@@ -26,6 +27,10 @@ public class StackInstruction extends Instruction {
 
     public void setALUOp(MTMCToken aluOp) {
         this.aluOpToken = aluOp;
+    }
+
+    public void setValue(MTMCToken value) {
+        this.value = value;
     }
 
     @Override
@@ -44,56 +49,57 @@ public class StackInstruction extends Instruction {
             output[getLocation() + 1] = (byte) (target << 4 | stackReg);
         } else if (getType() == InstructionType.SOP) {
             int aluOp = ALUOp.toInteger(aluOpToken.stringValue());
-            output[getLocation()] = 0b0010_0011;
+            output[getLocation()] = 0b0010_0111;
             output[getLocation() + 1] = (byte) (aluOp << 4 | stackReg);
+        } else if (getType() == InstructionType.PUSHI) {
+            int immediateValue = value.intValue();
+            output[getLocation()] = 0b0010_1111;
+            output[getLocation() + 1] = (byte) stackReg;
+            output[getLocation() + 2] = (byte) (immediateValue >>> 8);
+            output[getLocation() + 3] = (byte) immediateValue;
         } else {
             int stackOp;
-            switch (getType()) {
-                case DUP -> stackOp = 0b0000;
-                case SWAP -> stackOp = 0b0001;
-                case DROP -> stackOp = 0b0010;
-                case OVER -> stackOp = 0b0011;
-                case ROT -> stackOp = 0b0100;
-                case null, default -> stackOp = 0b0000;
-            }
-            output[getLocation()] = 0b0010_0010;
-            output[getLocation()] = (byte) (stackOp << 4 | stackReg);
+            stackOp = switch (getType()) {
+                case DUP -> 0b0010_0010;
+                case SWAP -> 0b0010_0011;
+                case DROP -> 0b0010_0100;
+                case OVER -> 0b0010_0101;
+                case ROT -> 0b0010_0110;
+                default -> 0b0000;
+            };
+            output[getLocation()] = (byte) stackOp;
+            output[getLocation() + 1] = (byte) stackReg;
         }
     }
 
     public static String disassemble(short instruction) {
         if(getBits(16, 4, instruction) == 2) {
-            short type = getBits(12, 4, instruction);
-            if (type == 0) {
+            short opCode = getBits(12, 4, instruction);
+            short stackReg = getBits(4, 4, instruction);
+            if (opCode == 0b0000) {
                 short sourceReg = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
                 return "push " + Register.fromInteger(sourceReg) + " " + Register.fromInteger(stackReg);
             }
-            if (type == 1) {
+            if (opCode == 0b0001) {
                 short destReg = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
                 return "pop " + Register.fromInteger(destReg) + " " + Register.fromInteger(stackReg);
             }
-            if (type == 2) {
-                short opcode = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
-                if (opcode == 0) {
-                    return "dup " + Register.fromInteger(stackReg);
-                } else if(opcode == 1) {
-                    return "swap " + Register.fromInteger(stackReg);
-                } else if(opcode == 2) {
-                    return "drop " + Register.fromInteger(stackReg);
-                } else if(opcode == 3) {
-                    return "over " + Register.fromInteger(stackReg);
-                } else if(opcode == 4) {
-                    return "rot " + Register.fromInteger(stackReg);
-                }
-            }
-            if (type == 3) {
-                short opcode = getBits(8, 4, instruction);
-                short stackReg = getBits(4, 4, instruction);
-                String op = ALUOp.fromInt(opcode);
+            if (opCode == 0b010) {
+                return "dup " + Register.fromInteger(stackReg);
+            } else if(opCode == 0b011) {
+                return "swap " + Register.fromInteger(stackReg);
+            } else if(opCode == 0b0100) {
+                return "drop " + Register.fromInteger(stackReg);
+            } else if(opCode == 0b0101) {
+                return "over " + Register.fromInteger(stackReg);
+            } else if(opCode == 0b0110) {
+                return "rot " + Register.fromInteger(stackReg);
+            } else if (opCode == 0b0111) {
+                short aluOp = getBits(8, 4, instruction);
+                String op = ALUOp.fromInt(aluOp);
                 return "sop " + op + " " + Register.fromInteger(stackReg);
+            } else if (opCode == 0b1111) {
+                return "pushi " + Register.fromInteger(stackReg);
             }
         }
         return null;

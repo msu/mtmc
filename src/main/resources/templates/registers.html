@@ -2,21 +2,10 @@
     <div>
         <table id="register-table" style="table-layout: fixed;">
             <colgroup>
-                <col span="1" style="width: 10px;">
-                <col span="1" style="width: 325px;">
+                <col span="1" style="width: 20px;">
+                <col span="1" style="width: 200px;">
                 <col span="1" style="width: 80px;">
             </colgroup>
-            <tr>
-                <th>reg</th>
-                <th></th>
-                <th>
-                    <button fx-action="/registerFormat"
-                            fx-method="post"
-                            fx-swap="none">
-                        {{computer.getRegisterFormat()}}
-                    </button>
-                </th>
-            </tr>
             <tr>
                 <td>t0</td>
                 <td>{{computer.regBlinken('T0') | raw}}</td>
@@ -36,6 +25,16 @@
                 <td>t3</td>
                 <td>{{computer.regBlinken('T3') | raw}}</td>
                 <td class="reg-value">{{computer.regDisplay('T3')}}</td>
+            </tr>
+            <tr>
+                <td>t4</td>
+                <td>{{computer.regBlinken('T4') | raw}}</td>
+                <td class="reg-value">{{computer.regDisplay('T4')}}</td>
+            </tr>
+            <tr>
+                <td>t5</td>
+                <td>{{computer.regBlinken('T5') | raw}}</td>
+                <td class="reg-value">{{computer.regDisplay('T5')}}</td>
             </tr>
             <tr>
                 <td>a0</td>
@@ -88,14 +87,24 @@
                 <td class="reg-value">{{computer.regDisplay('PC')}}</td>
             </tr>
             <tr>
+                <td colspan="3">
+                    <hr/>
+                </td>
+            </tr>
+            <tr>
                 <td>ir</td>
                 <td>{{computer.regBlinken('IR') | raw}}</td>
                 <td>{{computer.regDisplay('IR')}}</td>
             </tr>
             <tr>
-                <td>io</td>
-                <td>{{computer.regBlinken('IO') | raw}}</td>
-                <td>{{computer.regDisplay('IO')}}</td>
+                <td>dr</td>
+                <td>{{computer.regBlinken('DR') | raw}}</td>
+                <td>{{computer.regDisplay('DR')}}</td>
+            </tr>
+            <tr>
+                <td colspan="3" style="text-align: center">
+                    flags {{computer.flagsBlinken() | raw}}
+                </td>
             </tr>
         </table>
     </div>

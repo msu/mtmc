@@ -1,8 +1,10 @@
 package mtmc.asm;
 
+import mtmc.emulator.DebugInfo;
+
 import java.util.List;
 
-public record AssemblyResult(byte[] code, byte[] data, List<ASMError> errors, String source) {
+public record AssemblyResult(byte[] code, byte[] data, DebugInfo debugInfo, List<ASMError> errors, String source) {
     public String printErrors() {
         StringBuilder builder = new StringBuilder("Errors:");
         for (ASMError error : errors) {

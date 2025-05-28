@@ -4,13 +4,16 @@ import mtmc.asm.ASMElement;
 import mtmc.asm.Assembler;
 import mtmc.tokenizer.MTMCToken;
 
-public class Data extends ASMElement {
+import java.util.Arrays;
 
+public class Data extends ASMElement {
+    public MTMCToken valueToken;
     private byte[] value;
 
     public Data(MTMCToken label) {
         super(label);
     }
+
 
     @Override
     public int getSizeInBytes() {
@@ -29,7 +32,21 @@ public class Data extends ASMElement {
         }
     }
 
-    public void setValue(byte[] value) {
+    public void setValue(MTMCToken src, byte[] value) {
+        this.valueToken = src;
         this.value = value;
     }
+
+    @Override
+    public String toString() {
+        return "Data{" +
+                "value=" + Arrays.toString(value) +
+                '}';
+    }
+
+    @Override
+    public void addError(String err) {
+        addError(getLabel(), err);
+    }
+
 }

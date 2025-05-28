@@ -2,6 +2,8 @@ package mtmc.asm;
 
 import mtmc.asm.data.Data;
 import mtmc.asm.instructions.*;
+import mtmc.emulator.DebugInfo;
+import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import mtmc.os.SysCall;
 import mtmc.os.exec.Executable;
@@ -24,11 +26,16 @@ public class Assembler {
     int instructionsSize = 0;
     List<Data> data = new ArrayList<>();
     int dataSize = 0;
-    HashMap<String, HasLocation> labels = new HashMap<>();
+    HashMap<String, HasLocation> labels;
+    DebugInfo debugInfo = new DebugInfo(new ArrayList<>());
 
     ASMMode mode = ASMMode.TEXT;
     MTMCTokenizer tokenizer;
     private MTMCToken lastLabel;
+
+    public Assembler() {
+        labels = new HashMap<>();
+    }
 
     public AssemblyResult assemble(String asm) {
         tokenizer = new MTMCTokenizer(asm, "#");
@@ -40,7 +47,7 @@ public class Assembler {
             code = codeGen();
             data = dataGen();
         }
-        return new AssemblyResult(code, data, errors, asm);
+        return new AssemblyResult(code, data, debugInfo, errors, asm);
     }
 
     public Executable assembleExecutable(String srcName, String asm) {
@@ -48,7 +55,7 @@ public class Assembler {
         if (!result.errors().isEmpty()) {
             throw new RuntimeException("Errors:\n" + result.errors()
                     .stream()
-                    .map(e -> " - " + e)
+                    .map(e -> " - " + e.formattedErrorMessage())
                     .collect(Collectors.joining("\n")));
         }
 
@@ -56,7 +63,8 @@ public class Assembler {
                 Executable.Format.Orc1,
                 result.code(),
                 result.data(),
-                srcName
+                srcName,
+                result.debugInfo()
         );
     }
 
@@ -158,13 +166,31 @@ public class Assembler {
                 byte[] nullTerminated = new byte[stringBytes.length + 1];
                 System.arraycopy(stringBytes, 0, nullTerminated, 0, stringBytes.length);
                 nullTerminated[stringBytes.length] = '\0';
-                dataElt.setValue(nullTerminated);
+                dataElt.setValue(dataToken, nullTerminated);
             } else if (isInteger(dataToken)) {
                 int integerValue = dataToken.intValue();
                 if (integerValue > Short.MAX_VALUE) {
                     dataElt.addError(dataToken, "Number is too large");
                 }
-                dataElt.setValue(new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+                dataElt.setValue(dataToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+            } else if (dataToken.type() == IDENTIFIER) {
+                if (dataToken.stringValue().equals("int")) {
+                    requireToken(tokens, LEFT_BRACE, dataElt);
+                    MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
+                    if (intToken != null) {
+                        dataElt.setValue(intToken, new byte[intToken.intValue() * 2]);
+                    }
+                    requireToken(tokens, RIGHT_BRACE, dataElt);
+                } else if (dataToken.stringValue().equals("byte")) {
+                    requireToken(tokens, LEFT_BRACE, dataElt);
+                    MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
+                    if (intToken != null) {
+                        dataElt.setValue(intToken, new byte[intToken.intValue()]);
+                    }
+                    requireToken(tokens, RIGHT_BRACE, dataElt);
+                } else {
+                    dataElt.addError(dataToken, "only data types are int & byte");
+                }
             } else if (dataToken.type() == MINUS) {
                 MTMCToken nextToken = tokens.poll(); // get next
                 if (nextToken == null || (nextToken.type() != INTEGER && nextToken.type() != HEX && nextToken.type() != BINARY)) {
@@ -174,7 +200,8 @@ public class Assembler {
                     if (integerValue < Short.MIN_VALUE) {
                         dataElt.addError(dataToken, "Number is too negative");
                     }
-                    dataElt.setValue(new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+                    var joinToken = MTMCToken.join(dataToken, nextToken, INTEGER);
+                    dataElt.setValue(joinToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
                 }
             } else {
                 dataElt.addError(dataToken, "Unknown token type");
@@ -192,13 +219,17 @@ public class Assembler {
     }
 
     private void parseInstruction(LinkedList<MTMCToken> tokens, MTMCToken labelToken) {
-        MTMCToken instructionToken = tokens.poll();
+        MTMCToken instructionToken = tokens.peekFirst();
         if (instructionToken == null) return;
 
         if (instructionToken.type() != IDENTIFIER) {
             instructions.add(new ErrorInstruction(labelToken, instructionToken, "Invalid Token"));
             return;
         }
+
+        tokens = transformSyntheticInstructions(tokens);
+
+        instructionToken = tokens.poll();
         InstructionType type = InstructionType.fromString(instructionToken.stringValue());
 
         if (type == null) {
@@ -209,23 +240,32 @@ public class Assembler {
         Instruction instruction;
         if (type.getInstructionClass() == MISC) {
             MiscInstruction miscInst = new MiscInstruction(type, labelToken, instructionToken);
-            if (type == InstructionType.MV) {
+            if (type == InstructionType.SYS) {
+                MTMCToken sysCallType = requireSysCall(tokens, miscInst);
+                miscInst.setSyscallType(sysCallType);
+            } else if (type == InstructionType.MOV) {
                 MTMCToken toRegister = requireWriteableRegister(tokens, miscInst);
                 miscInst.setTo(toRegister);
                 MTMCToken fromRegister = requireReadableRegister(tokens, miscInst);
                 miscInst.setFrom(fromRegister);
-                if (isInteger(tokens.peek())) {
-                    MTMCToken shift = requireIntegerToken(tokens, miscInst, 15);
-                    miscInst.setShiftOrMask(shift);
+            } else if (type == InstructionType.INC || type == InstructionType.DEC) {
+                MTMCToken toRegister = requireWriteableRegister(tokens, miscInst);
+                miscInst.setTo(toRegister);
+                if (!tokens.isEmpty()) {
+                    MTMCToken value = requireIntegerToken(tokens, miscInst, 15);
+                    miscInst.setValue(value);
                 }
-            } else if (type == InstructionType.MASK){
-                MTMCToken shift = requireIntegerToken(tokens, miscInst, 255);
-                miscInst.setShiftOrMask(shift);
-            } else if (type == InstructionType.SYS) {
-                MTMCToken sysCallType = requireSysCall(tokens, miscInst);
-                miscInst.setSyscallType(sysCallType);
-            } else if (type == InstructionType.SYS) {
-                // set nothing
+            } else if (type == InstructionType.SETI) {
+                MTMCToken toRegister = requireWriteableRegister(tokens, miscInst);
+                miscInst.setTo(toRegister);
+                MTMCToken value = requireIntegerToken(tokens, miscInst, 15);
+                miscInst.setValue(value);
+            } else if (type == InstructionType.DEBUG) {
+                MTMCToken debugString = requireString(tokens, miscInst);
+                // create a dummy int token representing the offset of the debug string
+                int debugStringIndex = debugInfo.addDebugString(debugString.stringValue());
+                MTMCToken value = new MTMCToken(0, 0, 0, 0, String.valueOf(debugStringIndex), INTEGER);
+                miscInst.setValue(value);
             }
             instruction = miscInst;
         } else if (type.getInstructionClass() == ALU) {
@@ -235,6 +275,16 @@ public class Assembler {
                 aluInst.setTo(toRegister);
                 MTMCToken fromRegister = requireReadableRegister(tokens, aluInst);
                 aluInst.setFrom(fromRegister);
+            } else if (aluInst.isImmediatOp()) {
+                MTMCToken immediateOp = requireALUOp(tokens, aluInst);
+                // TODO - validate is max or lower op
+                aluInst.setImmediateOp(immediateOp);
+
+                MTMCToken toRegister = requireWriteableRegister(tokens, aluInst);
+                aluInst.setTo(toRegister);
+
+                MTMCToken value = requireIntegerToken(tokens, aluInst, Short.MAX_VALUE);
+                aluInst.setImmediateValue(value);
             } else {
                 MTMCToken toRegister = requireWriteableRegister(tokens, aluInst);
                 aluInst.setTo(toRegister);
@@ -251,35 +301,49 @@ public class Assembler {
             } else if (type == InstructionType.SOP) {
                 MTMCToken aluOp = requireAluOp(tokens, stackInst);
                 stackInst.setALUOp(aluOp);
+            } else if (type == InstructionType.PUSHI) {
+                MTMCToken value = requireIntegerToken(tokens, stackInst, Short.MAX_VALUE);
+                stackInst.setValue(value);
             }
+
             // if there is a stack register specified, consume it
             if (!tokens.isEmpty() && tokens.peekFirst().type() == IDENTIFIER) {
                 MTMCToken stackReg = requireReadableRegister(tokens, stackInst);
                 stackInst.setStackRegister(stackReg);
             }
-            instruction = stackInst;
-        } else if (type.getInstructionClass() == STACK_IMMEDIATE) {
-            StackImmediateInstruction stackImmediateInst = new StackImmediateInstruction(type, labelToken, instructionToken);
-            MTMCToken valueToken = requireIntegerToken(tokens, stackImmediateInst, StackImmediateInstruction.MAX);
-            stackImmediateInst.setValue(valueToken);
-            // if there is a stack register specified, consume it
-            if (!tokens.isEmpty() && tokens.peekFirst().type() == IDENTIFIER) {
-                MTMCToken stackReg = requireReadableRegister(tokens, stackImmediateInst);
-                stackImmediateInst.setStackRegister(stackReg);
-            }
-            instruction = stackImmediateInst;
-        } else if (type.getInstructionClass() == LOAD) {
-            LoadInstruction loadInst = new LoadInstruction(type, labelToken, instructionToken);
 
-            // target register must b
-            MTMCToken targetReg;
-            if (type == InstructionType.LW || type == InstructionType.LB) {
-                targetReg = requireWriteableRegister(tokens, loadInst);
+            instruction = stackInst;
+        } else if (type.getInstructionClass() == TEST) {
+            TestInstruction testInst = new TestInstruction(type, labelToken, instructionToken);
+            testInst.setFirst(requireReadableRegister(tokens, testInst));
+            if(testInst.isImmediate()) {
+                testInst.setImmediateValue(requireIntegerToken(tokens, testInst, 15));
             } else {
-                targetReg = requireReadableRegister(tokens, loadInst);
+                testInst.setSecond(requireReadableRegister(tokens, testInst));
             }
+            instruction = testInst;
+        } else if (type.getInstructionClass() == LOAD_STORE) {
+            LoadStoreInstruction loadInst = new LoadStoreInstruction(type, labelToken, instructionToken);
+
+            MTMCToken targetReg = requireReadableRegister(tokens, loadInst);
             loadInst.setTargetToken(targetReg);
-            MTMCToken pointerReg = requireReadableRegister(tokens, loadInst);
+
+            if (loadInst.isOffset()) {
+                MTMCToken offsetReg = requireReadableRegister(tokens, loadInst);
+                loadInst.setOffsetToken(offsetReg);
+            }
+
+            MTMCToken value = requireIntegerOrLabelReferenceToken(tokens, loadInst);
+            loadInst.setValue(value);
+
+            instruction = loadInst;
+        } else if (type.getInstructionClass() == LOAD_STORE_REGISTER) {
+            LoadStoreRegisterInstruction loadInst = new LoadStoreRegisterInstruction(type, labelToken, instructionToken);
+
+            MTMCToken targetReg = requireWriteableRegister(tokens, loadInst);
+            loadInst.setTargetToken(targetReg);
+
+            MTMCToken pointerReg = requireWriteableRegister(tokens, loadInst);
             loadInst.setPointerToken(pointerReg);
 
             // if there is an offset register specified, consume it
@@ -288,19 +352,11 @@ public class Assembler {
                 loadInst.setOffsetToken(offsetReg);
             }
             instruction = loadInst;
-        } else if (type.getInstructionClass() == LOAD_IMMEDIATE) {
-            LoadImmediateInstruction loadImmediateInst = new LoadImmediateInstruction(type, labelToken, instructionToken);
-            MTMCToken tempRegister = requireTempRegister(tokens, loadImmediateInst);
-            loadImmediateInst.setTempRegister(tempRegister);
-            MTMCToken labelValue = maybeGetLabelReference(tokens);
-            MTMCToken valueToken;
-            if (labelValue != null) {
-                valueToken = labelValue;
-            } else {
-                valueToken = requireIntegerToken(tokens, loadImmediateInst, LoadImmediateInstruction.MAX);
-            }
-            loadImmediateInst.setValue(valueToken);
-            instruction = loadImmediateInst;
+        } else if (type.getInstructionClass() == JUMP_REGISTER) {
+            JumpRegisterInstruction jumpInst = new JumpRegisterInstruction(type, labelToken, instructionToken);
+            MTMCToken register = requireReadableRegister(tokens, jumpInst);
+            jumpInst.setRegister(register);
+            instruction = jumpInst;
         } else if (type.getInstructionClass() == JUMP) {
             JumpInstruction jumpInst = new JumpInstruction(type, labelToken, instructionToken);
             MTMCToken labelValue = maybeGetLabelReference(tokens);
@@ -308,7 +364,7 @@ public class Assembler {
             if (labelValue != null) {
                 valueToken = labelValue;
             } else {
-                valueToken = requireIntegerToken(tokens, jumpInst, LoadImmediateInstruction.MAX);
+                valueToken = requireIntegerToken(tokens, jumpInst, MonTanaMiniComputer.MEMORY_SIZE);
             }
             jumpInst.setAddressToken(valueToken);
             instruction = jumpInst;
@@ -330,6 +386,38 @@ public class Assembler {
         }
 
         instructions.add(instruction);
+    }
+
+    public static LinkedList<MTMCToken> transformSyntheticInstructions(LinkedList<MTMCToken> tokens) {
+        if (!tokens.isEmpty()) {
+            MTMCToken first = tokens.peekFirst();
+            if (first.type() == IDENTIFIER) {
+                String stringVal = first.stringValue();
+                if (stringVal.endsWith("i")) {
+                    String op = stringVal.substring(0, stringVal.length() - 1);
+                    if (ALUOp.isALUOp(op)) {
+                        MTMCToken syntheticImmediate = tokens.removeFirst();
+                        tokens.addFirst(syntheticImmediate.cloneWithVal(op));
+                        tokens.addFirst(syntheticImmediate.cloneWithVal("imm"));
+                    }
+                } else if (stringVal.startsWith("s")) {
+                    String op = stringVal.substring(1, stringVal.length());
+                    if (ALUOp.isALUOp(op)) {
+                        MTMCToken syntheticImmediate = tokens.removeFirst();
+                        tokens.addFirst(syntheticImmediate.cloneWithVal(op));
+                        tokens.addFirst(syntheticImmediate.cloneWithVal("sop"));
+                    }
+                } else if (stringVal.equals("la")) {
+                    MTMCToken syntheticImmediate = tokens.removeFirst();
+                    tokens.addFirst(syntheticImmediate.cloneWithVal("li"));
+                } else if (stringVal.equals("ret")) {
+                    MTMCToken syntheticImmediate = tokens.removeFirst();
+                    tokens.addFirst(syntheticImmediate.cloneWithVal("ra"));
+                    tokens.addFirst(syntheticImmediate.cloneWithVal("jr"));
+                }
+            }
+        }
+        return tokens;
     }
 
     //===================================================
@@ -387,18 +475,6 @@ public class Assembler {
         return nextToken;
     }
 
-    private MTMCToken requireTempRegister(LinkedList<MTMCToken> tokens, Instruction instruction) {
-        MTMCToken nextToken = tokens.poll();
-        if (nextToken == null) {
-            instruction.addError("Register required");
-        } else if (nextToken.type() != IDENTIFIER) {
-            instruction.addError(nextToken, "Invalid Register : " + nextToken.stringValue());
-        } else if (!Register.isTempRegister(nextToken.stringValue())) {
-            instruction.addError(nextToken, "Register not writeable : " + nextToken.stringValue());
-        }
-        return nextToken;
-    }
-
     private MTMCToken requireReadableRegister(LinkedList<MTMCToken> tokens, Instruction instruction) {
         MTMCToken nextToken = tokens.poll();
         if (nextToken == null) {
@@ -411,12 +487,28 @@ public class Assembler {
         return nextToken;
     }
 
+    private MTMCToken requireALUOp(LinkedList<MTMCToken> tokens, Instruction instruction) {
+        MTMCToken nextToken = tokens.poll();
+        if (nextToken == null || nextToken.type() != IDENTIFIER || !ALUOp.isALUOp(nextToken.stringValue())) {
+            instruction.addError("ALU operation required");
+        }
+        return nextToken;
+    }
+
+    private MTMCToken requireString(LinkedList<MTMCToken> tokens, Instruction instruction) {
+        MTMCToken nextToken = tokens.poll();
+        if (nextToken == null || nextToken.type() != STRING) {
+            instruction.addError("String required");
+        }
+        return nextToken;
+    }
+
     private MTMCToken requireIntegerToken(LinkedList<MTMCToken> tokens,
-                                          Instruction inst,
+                                          ASMElement inst,
                                           int max) {
         MTMCToken token = tokens.poll();
         if (token == null) {
-            inst.addError("Integer value required");
+            inst.addError( "Integer value required");
         } else if (isInteger(token)) {
             Integer integerValue = token.intValue();
             if (integerValue < 0 || max < integerValue) {
@@ -427,6 +519,26 @@ public class Assembler {
         }
         return token;
     }
+
+    private MTMCToken requireToken(LinkedList<MTMCToken> tokens, MTMCToken.TokenType type, ASMElement inst) {
+        MTMCToken token = tokens.poll();
+        if (token == null || token.type() != type) {
+            inst.addError(token, "Token "  + type.name() + " required");
+        }
+        return token;
+    }
+
+    private MTMCToken requireIntegerOrLabelReferenceToken(LinkedList<MTMCToken> tokens, LoadStoreInstruction inst) {
+        MTMCToken token = tokens.poll();
+        if (token == null) {
+            inst.addError("Integer or label value required");
+        } else if (!isInteger(token) && token.type() != IDENTIFIER) {
+            inst.addError(token, "Integer or label value expected");
+        }
+        return token;
+    }
+
+
 
     private static boolean isInteger(MTMCToken token) {
         return token != null && (token.type() == INTEGER || token.type() == HEX || token.type() == BINARY);
@@ -461,4 +573,5 @@ public class Assembler {
         DATA,
         TEXT,
     }
+
 }

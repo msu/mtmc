@@ -12,7 +12,7 @@ public class MiscInstruction extends Instruction {
     private MTMCToken syscallType;
     private MTMCToken fromRegister;
     private MTMCToken toRegister;
-    private MTMCToken shiftOrMask;
+    private MTMCToken value;
 
     public MiscInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
@@ -30,61 +30,99 @@ public class MiscInstruction extends Instruction {
         this.toRegister = toRegister;
     }
 
-    public void setShiftOrMask(MTMCToken shiftOrMask) {
-        this.shiftOrMask = shiftOrMask;
+    public void setValue(MTMCToken value) {
+        this.value = value;
     }
 
     @Override
     public void genCode(byte[] output, Assembler assembler) {
-        if (getType() == InstructionType.NOOP) {
-            output[getLocation()] = 0;
-            output[getLocation() + 1] = 0;
-        } else if (getType() == InstructionType.SYS) {
-            output[getLocation()] = 0b0000_1111;
+        if (getType() == InstructionType.SYS) {
+            output[getLocation()] = 0b0000_0000;
             output[getLocation() + 1] = SysCall.getValue(this.syscallType.stringValue());
-        } else if (getType() == InstructionType.MV) {
+        } else if (getType() == InstructionType.MOV) {
             int to = Register.toInteger(toRegister.stringValue());
             int from = Register.toInteger(fromRegister.stringValue());
-            int shiftVal = 0;
-            if(shiftOrMask != null) {
-                shiftVal = shiftOrMask.intValue();
+            output[getLocation()] = 0b0000_0001;
+            output[getLocation() + 1] = (byte) (to << 4 | from);
+        } else if (getType() == InstructionType.INC) {
+            output[getLocation()] = 0b0000_0010;
+            int to = Register.toInteger(toRegister.stringValue());
+            int immediateVal = 1;
+            if (value != null) {
+                immediateVal = value.intValue();
             }
-            output[getLocation()] = (byte) to;
-            output[getLocation() + 1] = (byte) (from << 4 | shiftVal);
-        } else if (getType() == InstructionType.MASK) {
-            output[getLocation()] = 0b0000_1110;
-            output[getLocation() + 1] = shiftOrMask.intValue().byteValue();
+            output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
+        } else if (getType() == InstructionType.DEC) {
+            output[getLocation()] = 0b0000_0011;
+            int to = Register.toInteger(toRegister.stringValue());
+            int immediateVal = 1;
+            if (value != null) {
+                immediateVal = value.intValue();
+            }
+            output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
+        } else if (getType() == InstructionType.SETI) {
+            output[getLocation()] = 0b0000_0100;
+            int to = Register.toInteger(toRegister.stringValue());
+            int immediateVal = value.intValue();
+            output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
+        } else if (getType() == InstructionType.DEBUG) {
+            output[getLocation()] = 0b0000_1000;
+            output[getLocation() + 1] = value.intValue().byteValue();
+        } else if (getType() == InstructionType.NOP) {
+            output[getLocation()] = 0b0000_1111;
+            output[getLocation() + 1] = (byte) 0b1111_1111;
         }
     }
 
     public static String disassemble(short instruction) {
         if (getBits(16, 4, instruction) == 0) {
             short topNibble = getBits(12, 4, instruction);
-            if (topNibble == 0b1111) {
+            if (topNibble == 0b0000) {
                 StringBuilder builder = new StringBuilder("sys ");
                 short bits = getBits(8, 8, instruction);
                 String name = SysCall.getString((byte) bits);
                 builder.append(name);
                 return builder.toString();
-            } else if (topNibble == 0b1110) {
-                StringBuilder builder = new StringBuilder("mask ");
-                short bits = getBits(8, 8, instruction);
-                builder.append(bits);
+            } else if (topNibble == 0b0001) {
+                StringBuilder builder = new StringBuilder("mov ");
+                short to = getBits(8, 4, instruction);
+                short from = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                builder.append(toName).append(" ");
+                String fromName = Register.fromInteger(from);
+                builder.append(fromName);
                 return builder.toString();
-            } else {
-                short to = topNibble;
-                short from = getBits(8, 4, instruction);
-                short shift = getBits(4, 4, instruction);
-                if(to == 0 && from == 0 && shift == 0) {
-                    return "noop";
-                }
-
-                StringBuilder builder = new StringBuilder("mv ");
-                builder.append(Register.fromInteger(to)).append(" ");
-                builder.append(Register.fromInteger(from)).append(" ");
-                if(shift != 0) {
-                    builder.append(shift);
-                }
+            } else if (topNibble == 0b0010) {
+                StringBuilder builder = new StringBuilder("inc ");
+                short to = getBits(8, 4, instruction);
+                short amount = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                builder.append(toName).append(" ");
+                builder.append(amount);
+                return builder.toString();
+            } else if (topNibble == 0b0011) {
+                StringBuilder builder = new StringBuilder("dec ");
+                short to = getBits(8, 4, instruction);
+                short amount = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                builder.append(toName).append(" ");
+                builder.append(amount);
+                return builder.toString();
+            } else if (topNibble == 0b0100) {
+                StringBuilder builder = new StringBuilder("seti ");
+                short to = getBits(8, 4, instruction);
+                short amount = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                builder.append(toName).append(" ");
+                builder.append(amount);
+                return builder.toString();
+            } else if (topNibble == 0b1000) {
+                StringBuilder builder = new StringBuilder("debug ");
+                short stringIndex = getBits(8, 8, instruction);
+                builder.append(stringIndex);
+                return builder.toString();
+            } else if (topNibble == 0b1111) {
+                StringBuilder builder = new StringBuilder("noop");
                 return builder.toString();
             }
         }

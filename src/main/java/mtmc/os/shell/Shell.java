@@ -3,7 +3,10 @@ package mtmc.os.shell;
 import mtmc.asm.Assembler;
 import mtmc.asm.AssemblyResult;
 import mtmc.asm.instructions.Instruction;
+import mtmc.emulator.DebugInfo;
 import mtmc.emulator.MonTanaMiniComputer;
+import mtmc.emulator.Register;
+import mtmc.os.exec.Executable;
 import mtmc.os.shell.builtins.*;
 import mtmc.tokenizer.MTMCToken;
 
@@ -11,7 +14,10 @@ import static mtmc.tokenizer.MTMCToken.TokenType.*;
 
 import mtmc.tokenizer.MTMCTokenizer;
 
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class Shell {
@@ -21,6 +27,7 @@ public class Shell {
         COMMANDS.put("help", new HelpCommand());
         COMMANDS.put("exit", new ExitCommand());
         COMMANDS.put("set", new SetCommand());
+        COMMANDS.put("get", new GetCommand());
         COMMANDS.put("web", new WebCommand());
         COMMANDS.put("disp", new DisplayCommand());
         COMMANDS.put("asm", new AssembleCommand());
@@ -54,22 +61,40 @@ public class Shell {
             if (isCommand(cmd)) {
                 COMMANDS.get(cmd).exec(tokens, computer);
             } else {
-                if (Instruction.isInstruction(cmd)) {
+                tokens.reset();
+                LinkedList<MTMCToken> asm = new LinkedList<>(tokens.stream().toList());
+                LinkedList<MTMCToken> updatedAsm = Assembler.transformSyntheticInstructions(asm);
+                MTMCToken firstToken = updatedAsm.peekFirst();
+                String firstTokenStr = firstToken.stringValue();
+                if (!updatedAsm.isEmpty() && Instruction.isInstruction(firstTokenStr)) {
                     Assembler assembler = new Assembler();
                     AssemblyResult result = assembler.assemble(command);
                     if (result.errors().isEmpty()) {
                         byte[] code = result.code();
-                        for (int i = 0; i < code.length; i = i + 2) {
-                            int instCodeUpper = code[i] << 8;
-                            int instCodeLower = code[i + 1] & 0xFF;
-                            short inst = (short) (instCodeUpper | instCodeLower);
-                            computer.execInstruction(inst);
+                        if (code.length == 4) {
+                            int data = (code[2] << 8) | code[3];
+                            computer.setRegisterValue(Register.DR, data);
                         }
+                        int inst = (code[0] << 8) | code[1];
+                        DebugInfo originalDebugInfo = computer.getDebugInfo();
+                        computer.setDebugInfo(result.debugInfo());
+                        computer.execInstruction((short) inst);
+                        computer.setDebugInfo(originalDebugInfo);
                     } else {
                         computer.getConsole().println(result.printErrors());
                     }
                 } else {
-                    printShellHelp(computer);
+                    Path srcPath = Path.of("disk/bin/" + firstTokenStr);
+                    if (srcPath.toFile().exists()) {
+                        Executable exec = Executable.load(srcPath);
+                        computer.load(exec.code(), exec.data(), exec.debugInfo());
+                        tokens.consume();
+                        String arg = command.substring(firstToken.end()).strip();
+                        computer.setArg(arg);
+                        computer.run();
+                    } else {
+                        printShellHelp(computer);
+                    }
                 }
             }
         } catch (Exception e) {

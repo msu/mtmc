@@ -1,16 +1,17 @@
 package mtmc.web;
 
 import com.google.gson.Gson;
+import io.javalin.http.HttpStatus;
+import mtmc.emulator.MTMCIO;
 import mtmc.emulator.MonTanaMiniComputer;
 import io.javalin.Javalin;
 import io.javalin.http.sse.SseClient;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
@@ -21,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class WebServer {
 
-    public static final int PORT = 8080;
+    public static final int PORT = 8082;
     public static final String SERVER_URL = "http://localhost:" + PORT;
     private static WebServer instance;
 
@@ -70,6 +71,10 @@ public class WebServer {
                 .get("/", ctx -> {
                     ctx.html(render("templates/index.html"));
                 })
+                .get("/display", ctx -> {
+                    ctx.header("Content-Type", "image/png");
+                    ctx.result(computer.getDisplay().toPng());
+                })
                 .post("/cmd", ctx -> {
                     Map vals = json.fromJson(ctx.body(), Map.class);
                     String cmd = (String) vals.get("cmd");
@@ -99,20 +104,45 @@ public class WebServer {
                         computer.fetchCurrentInstruction(); // fetch next instruction for display
                     }
                 })
-                .post("/registerFormat", ctx -> {
-                    computerView.toggleRegisterFormat();
-                    uiUpdater.updateRegistersImmediately();
+                .post("/io/{button}/{action}", ctx -> {
+                    MTMCIO io = computer.getIO();
+                    if(ctx.pathParam("action").equals("pressed")) {
+                        io.keyPressed(ctx.pathParam("button"));
+                    }
+                    if(ctx.pathParam("action").equals("released")) {
+                        io.keyReleased(ctx.pathParam("button"));
+                    }
                 })
                 .post("/memFormat", ctx -> {
                     computerView.toggleMemoryFormat();
                     uiUpdater.updateMemoryImmediately();
+                })
+                .get("/fs/toggle/*", ctx -> {
+                    String path = ctx.path();
+                    String pathToToggle = path.substring("/fs/toggle/".length());
+                    computerView.togglePath(pathToToggle);
+                    ctx.html(computerView.getVisualShell());
+                })
+                .get("/fs/open/*", ctx -> {
+                    String path = ctx.path();
+                    String fileToOpen = path.substring("/fs/open/disk/".length());
+                    boolean successfullyOpened = computerView.openFile(fileToOpen);
+                    if(successfullyOpened) {
+                        ctx.html(computerView.getVisualShell());
+                    } else {
+                        ctx.status(HttpStatus.NOT_FOUND);
+                        ctx.html("");
+                    }
+                })
+                .get("/fs/close", ctx -> {
+                    computerView.closeFile();
+                    ctx.html(computerView.getVisualShell());
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();
                     client.onClose(() -> sseClients.remove(client));
                     sseClients.add(client);
                 });
-        ;
 
         // start server
         javalinApp.start(PORT);
@@ -152,7 +182,8 @@ public class WebServer {
     }
 
     public static void main(String[] args) {
-        maybeInit(new MonTanaMiniComputer());
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        maybeInit(computer);
     }
 
 

@@ -3,6 +3,7 @@ package mtmc.web;
 import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
+import mtmc.os.fs.Listing;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -120,9 +121,19 @@ public class MTMCWebView {
         File rootFile = computer.getOS().loadFile("/");
         var sb = new StringBuilder();
         sb.append("<ul><li><code>/</code><ul>");
-        for (File file : rootFile.listFiles()) {
-            appendContentForFile(file, sb);
-        }
+        var fs = computer.getFileSystem();
+        // TODO: Nav through listing{listOfFiles = [], subdirectories = [] }
+
+        // TODO: Implement appendListingContent(Listing listing){
+        //  for (File file: listing.listOfFiles){
+        //      appendContentForFile(file, sb);
+        //  }
+        //  }
+
+
+//        for (File file : rootFile.listFiles()) {
+//            appendContentForFile(file, sb);
+//        }
         sb.append("</ul></li></ul>");
         return sb.toString();
     }
@@ -146,6 +157,11 @@ public class MTMCWebView {
         sb.append(file.getName());
         sb.append("</a>");
         sb.append("</li>");
+    }
+
+    private void appendListingContent(Listing listing) {
+
+        return;
     }
 
     private void appendDirectoryContent(File file, StringBuilder sb) {

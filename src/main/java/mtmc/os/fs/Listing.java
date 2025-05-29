@@ -5,115 +5,14 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class Listing {
-   List<File> files = null;
-   Map<String, Listing> subdirectories = null;
-   // TODO: public Listing listFiles(){}
+    public final File path;
+    public final ArrayList<File> listOfFiles;
+    public final LinkedHashMap<String, Listing> subdirectories;
 
-   // FILESYSTEM BELOW:
-   private String cwd = "/home";
-   static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
 
-   public void setCWD(String cd){
-       cwd = cd;
-   }
-    public String resolve(String fileName) {
-        String resolvedString = "";
-        String[] cwdPath = cwd.split("/");
-        ArrayList<String> cwdArrayList = new ArrayList<>(Arrays.asList(cwdPath)); // Convert to ArrayList
-        if (cwdPath[0].equals("")) { // Remove empty string (First slash)
-            cwdArrayList.removeFirst();
-        }
-        String[] path = fileName.split("/");
-        ArrayList<String> fileArrayList = new ArrayList<>(Arrays.asList(path)); // Convert to ArrayList
-        resolvedString = pathConstructor(cwdArrayList, fileArrayList); // Handles absolute and relative construction
-
-        return resolvedString;
+    public Listing(File path, ArrayList<File> listOfFiles, LinkedHashMap<String, Listing> subdirectories) {
+        this.path = path;
+        this.listOfFiles = listOfFiles;
+        this.subdirectories = subdirectories;
     }
-
-    public String pathConstructor(ArrayList<String> cwd, ArrayList<String> path) {
-        String fileString = "";
-        ArrayList<String> constructedPath = new ArrayList<>();
-        if (path.isEmpty()) { // This fulfills (cd " ")
-            for (int cwdDir = 0; cwdDir < cwd.size(); cwdDir++) {
-                fileString += ("/" + cwd.get(cwdDir));
-            }
-        } else if (path.get(0).equals("") || path.get(0).equals("..") || path.get(0).equals(".")) { // Else-If given path is absolute
-            if (path.get(0).equals("")) { // Delete slash
-                path.removeFirst();
-            }
-            if (path.get(0).equals("..") || path.get(0).equals(".")) { // Add the cwd only if it starts with "." or ".."
-                constructedPath.addAll(cwd); // Only added when ".." or "." are at the beginning
-            }
-            for (int i = 0; i < path.size(); i++) {
-                if (path.get(i).equals("..") && !constructedPath.isEmpty()) { // Check if there is a directory to move up
-                    constructedPath.removeLast();
-                } else if (path.get(i).equals("..") && constructedPath.isEmpty()) { // Do nothing if no upper directory
-                    continue;
-                } else if (path.get(i).equals(".")) { // Don't add "." to path string
-                    continue;
-                } else {
-                    constructedPath.add(path.get(i));
-                }
-            }
-            for (int i = 0; i < constructedPath.size(); i++) { // Construct file string for absolute path
-                fileString += ("/" + constructedPath.get(i));
-            }
-
-        } else { // Relative handling
-            constructedPath.addAll(cwd); // Add cwd to empty path
-            constructedPath.addAll(path); // Add path to cwd because relative
-            for (int i = 0; i < constructedPath.size(); i++) { // Construct file string with "/"
-                fileString += ("/" + constructedPath.get(i));
-            }
-        }
-        if (fileString.equals("")) {
-            fileString = "/";
-        }
-        return fileString;
-    }
-
-    public String join(String front, String back) {
-        String joinedPath = "";
-        String[] parts = back.split("/");
-        if (!parts[0].equals("/")) {
-            joinedPath = front + "/" + back;
-        } else if (parts[0].equals("/")) {
-            joinedPath = front + back;
-        }
-        return joinedPath;
-    }
-
-    private File toRealPath(String path) { // Resolves given path and returns /disk/ + path
-        String resolvedPath = resolve(path);
-        String slashGone = resolvedPath.substring(1);
-        return DISK_PATH.resolve(slashGone).toFile();
-    }
-
-    public void listFiles(String path) {
-        File resolvedPath = toRealPath(path);
-        listFilesRecursive(resolvedPath, 0);
-        return;
-    }
-    private void listFilesRecursive(File filePath, int depth){
-        // TODO: Implement depth var
-        if(!filePath.isDirectory()){
-            return;
-        }
-        File[] files = filePath.listFiles();
-        for (int i = 0; i < files.length; i++) {
-
-            File f = files[i];
-            if(f.isDirectory()) { // Detects whether to print String Dir or File
-
-                System.out.println(("\t").repeat(depth) + f.getName());
-            }
-            else{
-                System.out.println(("\t").repeat(depth) + f.getName());
-            }
-            if(f.isDirectory()){
-                listFilesRecursive(f, depth+1);
-            }
-        }
-    }
-
 }

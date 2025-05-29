@@ -1,6 +1,7 @@
 package mtmc.emulator;
 
 import mtmc.os.MTOS;
+import mtmc.os.fs.FileSystem;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ public class MonTanaMiniComputer {
     MTOS os = new MTOS(this);
     MTMCConsole console = new MTMCConsole(this);
     MTMCDisplay display = new MTMCDisplay(this);
+    FileSystem fileSystem = new FileSystem();
 
     // listeners
     private List<MTMCObserver> observers = new ArrayList<>();
@@ -766,6 +768,10 @@ public class MonTanaMiniComputer {
         }
         // null terminate
         writeByteToMemory(start + bytes.length, (byte) 0);
+    }
+
+    public FileSystem getFileSystem() {
+        return fileSystem;
     }
 
     public enum ComputerStatus {

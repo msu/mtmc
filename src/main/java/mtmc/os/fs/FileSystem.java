@@ -10,11 +10,9 @@ public class FileSystem {
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
     static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
 
-
     public void setCWD(String cd) {
         cwd = cd;
     }
-
 
     public String resolve(String fileName) {
         String resolvedString = "";
@@ -89,30 +87,35 @@ public class FileSystem {
         return DISK_PATH.resolve(slashGone).toFile();
     }
 
-    public void listFiles(String path) {
+    public Listing listFiles(String path) {
+
         File resolvedPath = toRealPath(path);
-        listFilesRecursive(resolvedPath, 0);
-        return;
+        Listing listing = listFilesRecursive(resolvedPath, 0);
+        return listing;
     }
-    private void listFilesRecursive(File filePath, int depth){
-        // TODO: Implement depth var
-        if(!filePath.isDirectory()){
-            return;
+
+    private Listing listFilesRecursive(File filePath, int depth) {
+        Listing listing = new Listing(filePath, new ArrayList<>(), new LinkedHashMap<>()); // Set Listing() path to current level
+        if (!filePath.isDirectory()) {
+            // This is never entered
+            return null;
         }
         File[] files = filePath.listFiles();
         for (int i = 0; i < files.length; i++) {
 
             File f = files[i];
-            if(f.isDirectory()) { // Detects whether to print String Dir or File
+            if (f.isDirectory()) { // Detects whether to print String Dir or File
+                listing.subdirectories.put(f.getName(), new Listing(f, new ArrayList<>(), new LinkedHashMap<>()));
+                // Maybe works. (Testing object scope)
+                System.out.println(("\t").repeat(depth) + f.getName());
+                listFilesRecursive(f, depth + 1);
 
+
+            } else {
+                listing.listOfFiles.add(f);
                 System.out.println(("\t").repeat(depth) + f.getName());
-            }
-            else{
-                System.out.println(("\t").repeat(depth) + f.getName());
-            }
-            if(f.isDirectory()){
-                listFilesRecursive(f, depth+1);
             }
         }
+        return listing;
     }
 }

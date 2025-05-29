@@ -29,7 +29,7 @@ public class MTMCWebView {
         this.computer = computer;
     }
 
-    public Iterable getMemoryAddresses(){
+    public Iterable getMemoryAddresses() {
         return computer.getMemoryAddresses();
     }
 
@@ -60,7 +60,6 @@ public class MTMCWebView {
             return "No such register: " + reg;
         }
     }
-
 
 
     @NotNull
@@ -182,7 +181,7 @@ public class MTMCWebView {
         sb.append("</li>");
     }
 
-    public String getMemoryTable(){
+    public String getMemoryTable() {
         StringBuilder builder = new StringBuilder("<table id='memory-table' style='width:100%; table-layout:fixed'>");
         byte[] memory = computer.getMemory();
         short previousValue = 0;
@@ -325,7 +324,7 @@ public class MTMCWebView {
         } else if (valueFor == 3) {
             return "w";
         }
-        throw new IllegalStateException("Bad display value: "  + valueFor);
+        throw new IllegalStateException("Bad display value: " + valueFor);
     }
 
 

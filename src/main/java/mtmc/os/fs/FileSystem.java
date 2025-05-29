@@ -104,11 +104,10 @@ public class FileSystem {
         for (int i = 0; i < files.length; i++) {
 
             File f = files[i];
-            if (f.isDirectory()) { // Detects whether to print String Dir or File
-                listing.subdirectories.put(f.getName(), new Listing(f, new ArrayList<>(), new LinkedHashMap<>()));
-                // Maybe works. (Testing object scope)
+            if (f.isDirectory()) {
+                //listing.subdirectories.put(f.getName(), new Listing(f, new ArrayList<>(), new LinkedHashMap<>()));
                 System.out.println(("\t").repeat(depth) + f.getName());
-                listFilesRecursive(f, depth + 1);
+                listing.subdirectories.put(f.getName(), listFilesRecursive(f, depth + 1));
 
 
             } else {

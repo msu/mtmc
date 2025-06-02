@@ -119,20 +119,24 @@ public class MTMCWebView {
     private String renderFileTree() {
         File rootFile = computer.getOS().loadFile("/");
         var sb = new StringBuilder();
+        // pre, code: monospace font
         sb.append("<ul><li><code>/</code><ul>");
         var fs = computer.getFileSystem();
         // TODO: Nav through listing{listOfFiles = [], subdirectories = [] }
+        // If it's a directory add folder icon
+        // If it's a file, add file icon
 
         // TODO: Implement appendListingContent(Listing listing){
         //  for (File file: listing.listOfFiles){
+
         //      appendContentForFile(file, sb);
         //  }
         //  }
 
 
-//        for (File file : rootFile.listFiles()) {
-//            appendContentForFile(file, sb);
-//        }
+        for (File file : rootFile.listFiles()) {
+            appendContentForFile(file, sb);
+        }
         sb.append("</ul></li></ul>");
         return sb.toString();
     }

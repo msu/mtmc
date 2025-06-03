@@ -7,7 +7,7 @@ public final class ExpressionTypeError extends Expression implements Error {
     public final ParseException exception;
 
     public ExpressionTypeError(Expression inner, String message) {
-        super(inner.start, inner.end);
+        super(inner.start, inner.end, inner.type());
         this.inner = inner;
         this.exception = new ParseException(new ParseException.Message(inner.span(), message));
     }
@@ -15,6 +15,6 @@ public final class ExpressionTypeError extends Expression implements Error {
 
     @Override
     public ParseException exception() {
-        return null;
+        return exception;
     }
 }

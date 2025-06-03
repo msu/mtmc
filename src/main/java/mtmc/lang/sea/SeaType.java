@@ -4,19 +4,20 @@ import java.util.List;
 import java.util.Map;
 
 public sealed interface SeaType {
+    default int size() {
+        if (this == CHAR) return 1;
+        if (this == INT) return 2;
+        if (this == VOID) return 0;
+        if (this instanceof Pointer) return 2;
+        throw new IllegalStateException("sizeof " + getClass().getName() + " is undefined");
+    }
+
     default boolean isArithmetic() {
-        return this == CHAR
-                || this == UNSIGNED_CHAR
-                || this == SIGNED_CHAR
-                || this == UNSIGNED_INT
-                || this == INT;
+        return this == CHAR || this == INT;
     }
 
     default boolean isIntegral() {
         return this == CHAR
-                || this == UNSIGNED_CHAR
-                || this == SIGNED_CHAR
-                || this == UNSIGNED_INT
                 || this == INT
                 || this instanceof Pointer;
     }
@@ -25,8 +26,12 @@ public sealed interface SeaType {
         return this instanceof Struct;
     }
 
-    default boolean isAnInt() {
-        return this == UNSIGNED_INT || this == INT;
+    default boolean isInt() {
+        return this == INT;
+    }
+
+    default boolean isChar() {
+        return this == CHAR;
     }
 
     default boolean isVoid() {
@@ -38,7 +43,7 @@ public sealed interface SeaType {
     }
 
     default boolean isAPointerToAnInt() {
-        return this instanceof Pointer(SeaType component) && component.isAnInt();
+        return this instanceof Pointer(SeaType component) && component.isInt();
     }
 
     default boolean isAPointer() {
@@ -84,9 +89,6 @@ public sealed interface SeaType {
             }
         }
         if (this == CHAR) return "char";
-        if (this == UNSIGNED_CHAR) return "unsigned char";
-        if (this == SIGNED_CHAR) return "signed char";
-        if (this == UNSIGNED_INT) return "unsigned int";
         if (this == INT) return "int";
         if (this == VOID) return "void";
         if (this instanceof Func(List<SeaType> params, SeaType result)) {
@@ -106,9 +108,6 @@ public sealed interface SeaType {
     }
 
     SeaType CHAR = new Primitive();
-    SeaType UNSIGNED_CHAR = new Primitive();
-    SeaType SIGNED_CHAR = new Primitive();
-    SeaType UNSIGNED_INT = new Primitive();
     SeaType INT = new Primitive();
     SeaType VOID = new Primitive();
 

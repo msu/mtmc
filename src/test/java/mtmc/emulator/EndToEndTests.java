@@ -54,4 +54,26 @@ public class EndToEndTests {
         computer.run();
         assertEquals("hello world", computer.getConsole().getOutput());
     }
+
+    @Test
+    public void negativeImmediates() {
+        Assembler assembler = new Assembler();
+        AssemblyResult result = assembler.assemble("""
+                .data
+                  value: -1
+                .text
+                  lw a0 value
+                  sys wint
+                  sys exit
+                """);
+        if (!result.errors().isEmpty()) {
+            fail(result.printErrors());
+        }
+
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.load(result.code(), result.data());
+        computer.run();
+        var output = computer.getConsole().getOutput();
+        System.out.println(output);
+    }
 }

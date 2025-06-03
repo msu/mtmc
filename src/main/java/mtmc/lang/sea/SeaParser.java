@@ -15,8 +15,9 @@ public class SeaParser {
     private final List<Token> tokens;
     private int index = 0;
 
-    private final LinkedHashMap<String, Object> symbols;
-    private Vector<LinkedHashMap<String, Token>> scope = new Vector<>();
+    private final LinkedHashMap<String, Symbol> symbols;
+    private Vector<LinkedHashMap<String, Symbol>> scope = new Vector<>();
+
     {
         scope.add(new LinkedHashMap<>());
     }
@@ -112,7 +113,7 @@ public class SeaParser {
         }
 
         var typedef = new DeclarationTypedef(start, type, name, type.end.end() < name.end() ? name : type.end);
-        symbols.put(name.content(), typedef);
+        symbols.put(name.content(), new Symbol(name, typedef));
         return typedef;
     }
 
@@ -154,13 +155,21 @@ public class SeaParser {
             } else {
                 bodyBrace = peekToken();
                 scope = new Vector<>();
+                var paramScope = new LinkedHashMap<String, Symbol>();
+                scope.add(paramScope);
+                for (DeclarationFunc.Param param : params) {
+                    if (!defineLocal(param.name, param.type.type())) {
+                        throw new ParseException(new Message(name, "the parameter name '" + name.content() + "' was used twice!"));
+                    }
+                }
                 body = parseStatementBlock();
+                scope.removeLast();
                 scope = null;
                 bodyBrace = null;
             }
 
             var func = new DeclarationFunc(type, name, params, body, body == null ? lastToken() : body.end);
-            symbols.put(name.content(), func);
+            symbols.put(name.content(), new Symbol(name, func.type()));
             return func;
         } else {
             type = parseCompoundType(type, name);
@@ -175,7 +184,7 @@ public class SeaParser {
             }
 
             var decl = new DeclarationVar(type, name, init);
-            symbols.put(name.content(), decl);
+            symbols.put(name.content(), new Symbol(name, type.type()));
             return decl;
         }
     }
@@ -205,21 +214,24 @@ public class SeaParser {
         if (match(KW_INT, KW_CHAR)) return true;
         if (!match(LIT_IDENT)) return false;
         var ident = peekToken();
-        return symbols.get(ident.content()) instanceof TypeDeclaration;
+        if (!symbols.containsKey(ident.content())) return false;
+        return symbols.get(ident.content()).typedef() != null;
     }
 
     @NotNull
     public TypeExpr parseTypeName() throws ParseException {
         if (take(KW_INT)) return new TypeExprInt(lastToken());
         if (take(KW_CHAR)) return new TypeExprChar(lastToken());
+        if (take(KW_VOID)) return new TypeExprVoid(lastToken());
 
         if (!take(LIT_IDENT)) {
             throw new ParseException(new Message(peekToken(), "expected a simple type name"));
         }
         var tok = lastToken();
         if (symbols.containsKey(tok.content())) {
-            if (symbols.get(tok.content()) instanceof TypeDeclaration decl) {
-                return new TypeExprRef(tok, decl);
+            var sym = symbols.get(tok.content());
+            if (sym.typedef() != null) {
+                return new TypeExprRef(tok, sym.typedef());
             } else {
                 throw new ParseException(new Message(tok, tok.content() + " is not a type"));
             }
@@ -264,42 +276,48 @@ public class SeaParser {
 
         var doWhileStmt = parseStatementDoWhile();
         if (doWhileStmt != null) {
-            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after do-while statement"));
+            if (!take(SEMICOLON))
+                throw new ParseException(new Message(lastToken(), "expected ';' after do-while statement"));
             doWhileStmt.setLabelAnchor(label);
             return doWhileStmt;
         }
 
         var varStmt = parseStatementVar();
         if (varStmt != null) {
-            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after variable statement"));
+            if (!take(SEMICOLON))
+                throw new ParseException(new Message(lastToken(), "expected ';' after variable statement"));
             varStmt.setLabelAnchor(label);
             return varStmt;
         }
 
         var gotoStmt = parseGotoStatement();
         if (gotoStmt != null) {
-            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after goto statement"));
+            if (!take(SEMICOLON))
+                throw new ParseException(new Message(lastToken(), "expected ';' after goto statement"));
             gotoStmt.setLabelAnchor(label);
             return gotoStmt;
         }
 
         var continueStmt = parseStatementContinue();
         if (continueStmt != null) {
-            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after continue statement"));
+            if (!take(SEMICOLON))
+                throw new ParseException(new Message(lastToken(), "expected ';' after continue statement"));
             continueStmt.setLabelAnchor(label);
             return continueStmt;
         }
 
         var breakStmt = parseStatementBreak();
         if (breakStmt != null) {
-            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after break statement"));
+            if (!take(SEMICOLON))
+                throw new ParseException(new Message(lastToken(), "expected ';' after break statement"));
             breakStmt.setLabelAnchor(label);
             return breakStmt;
         }
 
         var returnStmt = parseStatementReturn();
         if (returnStmt != null) {
-            if (!take(SEMICOLON)) throw new ParseException(new Message(lastToken(), "expected ';' after return statement"));
+            if (!take(SEMICOLON))
+                throw new ParseException(new Message(lastToken(), "expected ';' after return statement"));
             returnStmt.setLabelAnchor(label);
             return returnStmt;
         }
@@ -359,7 +377,8 @@ public class SeaParser {
         if (!take(SEMICOLON)) throw new ParseException(new Message(peekToken(), "expected ';' after for condition"));
         Expression incr = parseExpression();
 
-        if (!take(RIGHT_PAREN)) throw new ParseException(new Message(peekToken(), "expected ')' after for-loop condition"));
+        if (!take(RIGHT_PAREN))
+            throw new ParseException(new Message(peekToken(), "expected ')' after for-loop condition"));
 
         var body = parseStatement();
 
@@ -367,15 +386,27 @@ public class SeaParser {
         return new StatementFor(start, initExpr, initStmt, condition, incr, body);
     }
 
-    boolean defineLocal(Token token) {
+    boolean defineLocal(Token token, SeaType type) {
         for (var frame : scope) {
             if (frame.containsKey(token.content())) {
                 return false;
             }
         }
 
-        scope.getLast().put(token.content(), token);
+        scope.getLast().put(token.content(), new Symbol(token, type));
         return true;
+    }
+
+    Symbol resolveSymbol(String name) {
+        for (var frame : scope) {
+            if (frame.containsKey(name)) {
+                return frame.get(name);
+            }
+        }
+        if (symbols.containsKey(name)) {
+            return symbols.get(name);
+        }
+        return null;
     }
 
     StatementVar parseStatementVar() throws ParseException {
@@ -385,17 +416,20 @@ public class SeaParser {
 
         if (!take(LIT_IDENT)) throw new ParseException(new Message(peekToken(), "expected variable name"));
         Token name = lastToken();
-        if (!defineLocal(name)) {
+        type = parseCompoundType(type, name);
+
+        if (!defineLocal(name, type.type())) {
             throw new ParseException(new Message(name, "the symbol '" + name.content() + "' shadows a previously defined symbol"));
         }
 
-        type = parseCompoundType(type, name);
-
         Expression value = null;
         if (take(EQUAL)) {
-            value = parseExpression();
+           value = parseExpression();
             if (value == null) {
                 throw new ParseException(new Message(lastToken(), "expected initializer value after '='"));
+            }
+            if (!value.type().isConvertibleTo(type.type())) {
+                value = new ExpressionTypeError(value, "cannot assign " + value.type().repr() + " to " + type.type().repr());
             }
         }
 
@@ -424,7 +458,8 @@ public class SeaParser {
         if (!take(LEFT_PAREN)) throw new ParseException(new Message(lastToken(), "expected '(' after do body"));
         Expression condition = parseExpression();
         if (condition == null) throw new ParseException(new Message(lastToken(), "expected do-while-condition"));
-        if (!take(RIGHT_PAREN)) throw new ParseException(new Message(lastToken(), "expected ')' after do-while condition"));
+        if (!take(RIGHT_PAREN))
+            throw new ParseException(new Message(lastToken(), "expected ')' after do-while condition"));
 
         return new StatementDoWhile(start, body, condition, lastToken());
     }
@@ -530,9 +565,14 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(peekToken(), "expected right hand side of assignment expression");
             }
 
-            // TODO: symbol checking & lvalue analysis
+            if (expr.valueKind() != Expression.ValueKind.LValue) {
+                expr = new ExpressionTypeError(expr, "cannot assign to rvalue");
+            }
+            if (!rhs.type().isConvertibleTo(expr.type())) {
+                rhs = new ExpressionTypeError(rhs, "cannot assign " + rhs.type().repr() + " to " + expr.type().repr());
+            }
 
-            expr = new ExpressionBin(expr, op, rhs);
+            expr = new ExpressionBin(expr, op, rhs, SeaType.VOID);
         }
 
         return expr;
@@ -558,19 +598,18 @@ public class SeaParser {
                 otherwise = new ExpressionSyntaxError(lastToken(), "expected else-expression after ternary ':'");
             }
 
-            var condType = expr.getType();
+            var condType = expr.type();
             if (!condType.isIntegral()) {
                 expr = new ExpressionTypeError(expr, "cannot interpret " + condType.repr() + " as a boolean");
             }
 
-            var thenType = then.getType();
-            var otherType = otherwise.getType();
-            // TODO: maybe equality here?
+            var thenType = then.type();
+            var otherType = otherwise.type();
             if (!otherType.isConvertibleTo(thenType)) {
-                otherwise = new ExpressionTypeError(otherwise, "the ternary branches disagree, " + otherType.repr() + " is not assignable to " + then.getType());
+                otherwise = new ExpressionTypeError(otherwise, "the ternary branches disagree, " + otherType.repr() + " is not assignable to " + then.type());
             }
 
-            expr = new ExpressionTernary(expr, then, otherwise);
+            expr = new ExpressionTernary(expr, then, otherwise, thenType);
         }
 
         return expr;
@@ -587,16 +626,16 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(lastToken(), "expected right hand side of logical-or expression");
             }
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
             if (!lhsType.isIntegral()) {
                 expr = new ExpressionTypeError(expr, "cannot logical or the type " + lhsType.repr());
             }
 
-            var rhsType = rhs.getType();
+            var rhsType = rhs.type();
             if (!rhsType.isIntegral()) {
                 rhs = new ExpressionTypeError(rhs, "cannot logical or the type " + rhsType.repr());
             }
-            expr = new ExpressionBin(expr, op, rhs);
+            expr = new ExpressionBin(expr, op, rhs, SeaType.INT);
         }
 
         return expr;
@@ -613,17 +652,15 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(lastToken(), "expected right hand side of logical-and expression");
             }
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
+            var rhsType = rhs.type();
             if (!lhsType.isIntegral()) {
                 expr = new ExpressionTypeError(expr, "cannot logical and the type " + lhsType.repr());
-            }
-
-            var rhsType = rhs.getType();
-            if (!rhsType.isIntegral()) {
+            } else if (!rhsType.isIntegral()) {
                 rhs = new ExpressionTypeError(rhs, "cannot logical and the type " + rhsType.repr());
             }
 
-            expr = new ExpressionBin(expr, op, rhs);
+            expr = new ExpressionBin(expr, op, rhs, SeaType.INT);
         }
 
         return expr;
@@ -640,17 +677,15 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(lastToken(), "expected right hand side of bitwise-or expression");
             }
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
+            var rhsType = rhs.type();
             if (!lhsType.isArithmetic()) {
                 expr = new ExpressionTypeError(expr, "cannot bitwise-or the type " + lhsType.repr());
-            }
-
-            var rhsType = rhs.getType();
-            if (!rhsType.isArithmetic()) {
+            } else if (!rhsType.isArithmetic()) {
                 rhs = new ExpressionTypeError(rhs, "cannot bitwise-or the type " + rhsType.repr());
             }
 
-            expr = new ExpressionBin(expr, op, rhs);
+            expr = new ExpressionBin(expr, op, rhs, SeaType.INT);
         }
 
         return expr;
@@ -667,16 +702,16 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(lastToken(), "expected right hand side of bitwise-xor expression");
             }
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
+            var rhsType = rhs.type();
             if (!lhsType.isArithmetic()) {
                 expr = new ExpressionTypeError(expr, "cannot bitwise-xor the type " + lhsType.repr());
-            }
-
-            var rhsType = rhs.getType();
-            if (!rhsType.isArithmetic()) {
+            } else if (!rhsType.isArithmetic()) {
                 rhs = new ExpressionTypeError(rhs, "cannot bitwise-xor the type " + rhsType.repr());
             }
-            expr = new ExpressionBin(expr, op, rhs);
+
+            SeaType type = SeaType.INT;
+            expr = new ExpressionBin(expr, op, rhs, type);
         }
 
         return expr;
@@ -693,17 +728,15 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(lastToken(), "expected right hand side of bitwise-and expression");
             }
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
+            var rhsType = rhs.type();
             if (!lhsType.isArithmetic()) {
                 expr = new ExpressionTypeError(expr, "cannot bitwise-and the type " + lhsType.repr());
-            }
-
-            var rhsType = rhs.getType();
-            if (!rhsType.isArithmetic()) {
+            } else if (!rhsType.isArithmetic()) {
                 rhs = new ExpressionTypeError(rhs, "cannot bitwise-and the type " + rhsType.repr());
             }
 
-            expr = new ExpressionBin(expr, op, rhs);
+            expr = new ExpressionBin(expr, op, rhs, SeaType.INT);
         }
 
         return expr;
@@ -720,16 +753,15 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(lastToken(), "expected right hand side of equality expression");
             }
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
+            var rhsType = rhs.type();
             if (!lhsType.isIntegral()) {
                 expr = new ExpressionTypeError(expr, "cannot compare the type " + lhsType.repr());
-            }
-
-            var rhsType = rhs.getType();
-            if (!rhsType.isIntegral()) {
+            } else if (!rhsType.isIntegral()) {
                 rhs = new ExpressionTypeError(rhs, "cannot compare the type " + rhsType.repr());
             }
-            expr = new ExpressionBin(expr, op, rhs);
+
+            expr = new ExpressionBin(expr, op, rhs, SeaType.INT);
         }
 
         return expr;
@@ -746,16 +778,15 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(lastToken(), "expected right hand side of comparison expression");
             }
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
+            var rhsType = rhs.type();
             if (!lhsType.isIntegral()) {
                 expr = new ExpressionTypeError(expr, "cannot compare the type " + lhsType.repr());
-            }
-
-            var rhsType = rhs.getType();
-            if (!rhsType.isIntegral()) {
+            } else if (!rhsType.isIntegral()) {
                 rhs = new ExpressionTypeError(rhs, "cannot compare the type " + rhsType.repr());
             }
-            expr = new ExpressionBin(expr, op, rhs);
+
+            expr = new ExpressionBin(expr, op, rhs, SeaType.INT);
         }
 
         return expr;
@@ -778,19 +809,25 @@ public class SeaParser {
                 default -> throw new UnsupportedOperationException();
             };
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
             if (!lhsType.isArithmetic()) {
                 expr = new ExpressionTypeError(expr, "cannot " + term + " the type " + lhsType.repr());
             }
 
-            var rhsType = rhs.getType();
+            var rhsType = rhs.type();
             if (!rhsType.isArithmetic()) {
                 rhs = new ExpressionTypeError(rhs, "cannot " + term + " the type " + rhsType.repr());
             }
-            expr = new ExpressionBin(expr, op, rhs);
+            expr = new ExpressionBin(expr, op, rhs, arithmetic(lhsType, rhsType));
         }
 
         return expr;
+    }
+
+    SeaType arithmetic(SeaType lhs, SeaType rhs) {
+        if (lhs.equals(rhs)) return lhs;
+        if (lhs.isInt() || rhs.isInt()) return SeaType.INT;
+        return lhs;
     }
 
     public Expression parseAdditiveExpression() {
@@ -807,20 +844,35 @@ public class SeaParser {
             String term = switch (op.content()) {
                 case "+" -> "add";
                 case "-" -> "subtract";
-                default -> throw new UnsupportedOperationException();
+                default -> throw new IllegalStateException("impossible");
             };
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
+            var rhsType = rhs.type();
+
+            SeaType type;
             if (!lhsType.isIntegral()) {
-                expr = new ExpressionTypeError(expr, "cannot " + term + " the type " + lhsType.repr());
+                expr = new ExpressionTypeError(expr, "cannot " + term + " " + lhsType.repr() + " with " + rhsType.repr());
+                type = SeaType.INT;
+            } else if (!rhsType.isIntegral()) {
+                rhs = new ExpressionTypeError(rhs, "cannot " + term + " " + lhsType.repr() + " with " + rhsType.repr());
+                type = SeaType.INT;
+            } else if (lhsType.isAPointer() && rhsType.isAPointer()) {
+                if (!op.content().equals("-")) {
+                    expr = new ExpressionTypeError(expr, "cannot " + term + " " + lhsType.repr() + " with " + rhsType.repr());
+                }
+                type = SeaType.INT;
+            } else if (lhsType.isArithmetic() && rhsType.isArithmetic()) {
+                type = arithmetic(lhsType, rhsType);
+            } else if (lhsType.isAPointer() && rhsType.isArithmetic()) {
+                type = lhsType;
+            } else if (rhsType.isAPointer() && lhsType.isArithmetic()) {
+                type = rhsType;
+            } else {
+                throw new IllegalStateException("unreachable?");
             }
 
-            var rhsType = rhs.getType();
-            if (!rhsType.isIntegral()) {
-                rhs = new ExpressionTypeError(rhs, "cannot " + term + " the type " + rhsType.repr());
-            }
-
-            expr = new ExpressionBin(expr, op, rhs);
+            expr = new ExpressionBin(expr, op, rhs, type);
         }
 
         return expr;
@@ -838,23 +890,26 @@ public class SeaParser {
             }
 
             String term = switch (op.content()) {
-                case "*" -> "multiply";
-                case "/" -> "divide";
-                case "%" -> "take the remainder of";
+                case "*" -> "product";
+                case "/" -> "division";
+                case "%" -> "remainder";
                 default -> throw new UnsupportedOperationException();
             };
 
-            var lhsType = expr.getType();
+            var lhsType = expr.type();
+            var rhsType = rhs.type();
+            SeaType type;
             if (!lhsType.isArithmetic()) {
-                expr = new ExpressionTypeError(expr, "cannot " + term + " the type " + lhsType.repr());
+                expr = new ExpressionTypeError(expr, "cannot take the " + term + " of " + lhsType.repr() + " and " + rhsType.repr());
+                type = SeaType.INT;
+            } else if (!rhsType.isArithmetic()) {
+                expr = new ExpressionTypeError(expr, "cannot take the " + term + " of " + lhsType.repr() + " and " + rhsType.repr());
+                type = SeaType.INT;
+            } else {
+                type = arithmetic(lhsType, rhsType);
             }
 
-            var rhsType = rhs.getType();
-            if (!rhsType.isArithmetic()) {
-                rhs = new ExpressionTypeError(rhs, "cannot " + term + " the type " + rhsType.repr());
-            }
-
-            expr = new ExpressionBin(expr, op, rhs);
+            expr = new ExpressionBin(expr, op, rhs, type);
         }
 
         return expr;
@@ -896,31 +951,48 @@ public class SeaParser {
         }
         while (!stack.isEmpty()) {
             var op = stack.removeLast();
-            var exprTy = expr.getType();
-            switch (op.content()) {
+            var exprTy = expr.type();
+            var type = switch (op.content()) {
                 case "++", "--" -> {
                     if (!exprTy.isIntegral()) {
                         expr = new ExpressionTypeError(expr, "prefix operator '" + op.content() +
                                 "' is undefined on the type " + exprTy.repr());
+                        yield SeaType.INT;
                     }
-                    // TODO: lvalue analysis
+                    if (expr.valueKind() != Expression.ValueKind.LValue) {
+                        expr = new ExpressionTypeError(expr, "cannot modify rvalue");
+                    }
+                    yield exprTy;
                 }
-                case "+", "-", "~", "!" -> {
+                case "-", "~", "!" -> {
                     if (!exprTy.isArithmetic()) {
                         expr = new ExpressionTypeError(expr, "prefix operator '" + op.content() +
                                 "' is undefined on the type " + exprTy.repr());
+                        yield SeaType.INT;
+                    }
+
+                    if (op.content().equals("!")) {
+                        yield SeaType.INT;
+                    } else {
+                        yield exprTy;
                     }
                 }
                 case "*" -> {
                     if (!exprTy.isAPointer()) {
                         expr = new ExpressionTypeError(expr, "cannot deference the type " + exprTy.repr());
+                        yield SeaType.INT;
                     }
+                    yield exprTy.componentType();
                 }
                 case "&" -> {
-                    // TODO: lvalue analysis
+                    if (expr.valueKind() != Expression.ValueKind.LValue) {
+                        expr = new ExpressionTypeError(expr, "cannot reference non-lvalue");
+                    }
+                    yield new SeaType.Pointer(expr.type());
                 }
-            }
-            expr = new ExpressionPrefix(op, expr);
+                default -> throw new IllegalStateException("Unexpected value: " + op.content());
+            };
+            expr = new ExpressionPrefix(op, expr, type);
         }
 
         return expr;
@@ -933,28 +1005,33 @@ public class SeaParser {
         while (hasMoreTokens()) {
             if (take(PLUS2, DASH2)) {
                 var op = lastToken();
-                var exprType = expr.getType();
+                var exprType = expr.type();
                 if (!exprType.isIntegral()) {
                     expr = new ExpressionTypeError(expr, "cannot increment non-integer type " + exprType.repr());
                 }
-                // TODO: lvalue analysis
+                if (expr.valueKind() != Expression.ValueKind.LValue) {
+                    expr = new ExpressionTypeError(expr, "cannot modify rvalue");
+                }
 
-                expr = new ExpressionPostfix(expr, op);
+                expr = new ExpressionPostfix(expr, op, exprType);
             } else if (take(DOT, ARROW)) {
                 var access = lastToken();
                 if (!take(LIT_IDENT)) {
                     return new ExpressionSyntaxError(lastToken(), "expected property name after accessor");
                 }
-                var prop = new ExpressionIdent(lastToken());
+                // TODO: access
+                var prop = new ExpressionIdent(lastToken(), SeaType.INT);
 
-                var parentTy = expr.getType();
+                var parentTy = expr.type();
                 if (!(parentTy instanceof SeaType.Struct(String ignored, Map<String, SeaType> fields))) {
                     expr = new ExpressionTypeError(expr, "cannot access non-structure types");
                 } else if (!fields.containsKey(prop.name())) {
                     expr = new ExpressionTypeError(prop, "the struct " + parentTy.repr() + " has no field '" + prop.name() + "'");
                 }
+                // TODO: fields
+                var type = SeaType.INT;
 
-                expr = new ExpressionAccess(expr, access, prop);
+                expr = new ExpressionAccess(expr, access, prop, type);
             } else if (take(LEFT_PAREN)) {
                 var args = new ArrayList<Expression>();
                 while (hasMoreTokens() && !match(RIGHT_PAREN)) {
@@ -978,9 +1055,11 @@ public class SeaParser {
                     }
                 }
 
-                var functorTy = expr.getType();
-                if (!(functorTy instanceof SeaType.Func(List<SeaType> params, SeaType ignored))) {
+                SeaType type;
+                var functorTy = expr.type();
+                if (!(functorTy instanceof SeaType.Func(List<SeaType> params, SeaType result))) {
                     expr = new ExpressionTypeError(expr, "cannot invoke " + functorTy.repr());
+                    type = SeaType.INT;
                 } else if (args.size() != params.size()) {
                     var s = new StringBuilder();
                     s.append("argument mismatch, expected (");
@@ -991,14 +1070,15 @@ public class SeaParser {
                     s.append("), instead found (");
                     for (int i = 0; i < args.size(); i++) {
                         if (i > 0) s.append(", ");
-                        s.append(args.get(i).getType().repr());
+                        s.append(args.get(i).type().repr());
                     }
                     s.append(")");
                     expr = new ExpressionTypeError(expr, s.toString());
+                    type = result;
                 } else {
                     for (int i = 0; i < params.size(); i++) {
                         var paramTy = params.get(i);
-                        var argTy = args.get(i).getType();
+                        var argTy = args.get(i).type();
                         if (argTy.isConvertibleTo(paramTy)) {
                             continue;
                         }
@@ -1006,9 +1086,10 @@ public class SeaParser {
                         String s = "argument of type " + argTy.repr() + " is not convertible to " + paramTy.repr();
                         args.set(i, new ExpressionTypeError(args.get(i), s));
                     }
+                    type = result;
                 }
 
-                expr = new ExpressionCall(expr, args, lastToken());
+                expr = new ExpressionCall(expr, args, lastToken(), type);
             } else if (take(LEFT_BRACKET)) {
                 var index = parseExpression();
                 if (index == null) {
@@ -1017,16 +1098,22 @@ public class SeaParser {
                 if (!take(RIGHT_BRACKET)) {
                     return new ExpressionSyntaxError(lastToken(), "expected ']' after array index");
                 }
-                if (!index.getType().isArithmetic()) {
+                if (!index.type().isArithmetic()) {
                     expr = new ExpressionTypeError(index, "index must be an integral type");
                 }
-                var exprType = expr.getType();
-                if (!exprType.isAPointer()) {
-                    expr = new ExpressionTypeError(expr, "cannot index " + exprType.repr());
-                } else if (exprType.componentType().isVoid()) {
+
+                SeaType resultType;
+                var arrayType = expr.type();
+                if (!arrayType.isAPointer()) {
+                    expr = new ExpressionTypeError(expr, "cannot index " + arrayType.repr());
+                    resultType = SeaType.INT;
+                } else if (arrayType.componentType().isVoid()) {
                     expr = new ExpressionTypeError(expr, "cannot index void*, it has no size");
+                    resultType = arrayType.componentType();
+                } else {
+                    resultType = arrayType.componentType();
                 }
-                expr = new ExpressionIndex(expr, index, lastToken());
+                expr = new ExpressionIndex(expr, index, lastToken(), resultType);
             } else {
                 break;
             }
@@ -1043,7 +1130,15 @@ public class SeaParser {
         } else if (match(LIT_CHAR)) {
             return new ExpressionChar(consume());
         } else if (match(LIT_IDENT)) {
-            return new ExpressionIdent(consume());
+            var ident = consume();
+            var sym = resolveSymbol(ident.content());
+
+            if (sym == null || sym.type() == null) {
+                var expr = new ExpressionIdent(ident, SeaType.INT);
+                return new ExpressionTypeError(expr, "undefined symbol '" + ident.content() + "'");
+            } else {
+                return new ExpressionIdent(ident, sym.type());
+            }
         } else if (take(LEFT_PAREN)) {
             var start = lastToken();
             var inner = parseExpression();
@@ -1093,31 +1188,25 @@ public class SeaParser {
         return token;
     }
 
-    protected List<Token> consumeThrough(@NotNull Token.Type... types) {
-        var tokens = new ArrayList<Token>();
+    protected void consumeThrough(@NotNull Token.Type... types) {
         while (hasMoreTokens()) {
             var token = consume();
-            tokens.add(token);
             if (Arrays.stream(types).anyMatch(t -> t.equals(token.type()))) {
-                return tokens;
+                return;
             }
             index += 1;
         }
-        return null;
     }
 
 
-    protected List<Token> consumeTo(@NotNull Token.Type... types) {
-        var tokens = new ArrayList<Token>();
+    protected void consumeTo(@NotNull Token.Type... types) {
         while (hasMoreTokens()) {
             var token = peekToken();
             if (Arrays.stream(types).anyMatch(t -> t.equals(token.type()))) {
-                return tokens;
+                return;
             }
-            tokens.add(token);
             index += 1;
         }
-        return null;
     }
 
     protected Token lastToken() {

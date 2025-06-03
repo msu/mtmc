@@ -85,7 +85,7 @@ public class Assembler {
     private byte[] codeGen() {
         byte[] code = new byte[instructionsSize];
         for (Instruction instruction : instructions) {
-            instruction.genCode(code, this);
+           instruction.genCode(code, this);
         }
         return code;
     }
@@ -169,7 +169,7 @@ public class Assembler {
                 dataElt.setValue(dataToken, nullTerminated);
             } else if (isInteger(dataToken)) {
                 int integerValue = dataToken.intValue();
-                if (integerValue > Short.MAX_VALUE) {
+                if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
                     dataElt.addError(dataToken, "Number is too large");
                 }
                 dataElt.setValue(dataToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});

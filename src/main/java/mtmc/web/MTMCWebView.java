@@ -3,6 +3,7 @@ package mtmc.web;
 import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
+import mtmc.os.fs.FileSystem;
 import mtmc.os.fs.Listing;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,6 +36,10 @@ public class MTMCWebView {
 
     public Iterable blinkenIndexes() {
         return () -> IntStream.range(0, 16).iterator();
+    }
+
+    public FileSystem getFileSystem() {
+        return computer.getFileSystem();
     }
 
     public String blinken(int bit, int register) {
@@ -102,6 +107,10 @@ public class MTMCWebView {
         return blinken.toString();
     }
 
+    public String getCurrentFileContent() {
+        return currentFileContent;
+    }
+
     public String getVisualShell(){
         if(currentFileContent != null){
             return renderEditor();
@@ -111,7 +120,7 @@ public class MTMCWebView {
     }
 
     private String renderEditor() {
-        return "<div><button fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button></div>" +
+        return "<div><button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button></div>" +
                 "<textarea id='editor'>" + currentFileContent + "</textarea>";
     }
 
@@ -125,18 +134,18 @@ public class MTMCWebView {
         // TODO: Nav through listing{listOfFiles = [], subdirectories = [] }
         // If it's a directory add folder icon
         // If it's a file, add file icon
-
+        Listing listing = fs.listFiles("/");
         // TODO: Implement appendListingContent(Listing listing){
-        //  for (File file: listing.listOfFiles){
-
-        //      appendContentForFile(file, sb);
-        //  }
-        //  }
-
-
-        for (File file : rootFile.listFiles()) {
-            appendContentForFile(file, sb);
+        for (File file: listing.listOfFiles){
+             appendContentForFile(file, sb);
+             System.out.println("File: " + file);
         }
+        //  }
+
+
+       /* for (File file : rootFile.listFiles()) {
+            appendContentForFile(file, sb);
+        }*/
         sb.append("</ul></li></ul>");
         return sb.toString();
     }

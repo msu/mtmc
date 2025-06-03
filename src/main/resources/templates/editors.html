@@ -1,3 +1,36 @@
+{% macro render_listing(listing) %}
+<li>
+    <a
+        class="directory-entry"
+        fx-swap="innerHTML"
+        fx-target="#visual-shell"
+        fx-action="/fs/toggle/{{ listing.path }}"
+    >{{ listing.name }}</a>
+    <ul>
+        {% for subdir in listing.subdirectories %}
+            {{ render_listing(subdir.value) }}
+        {% endfor %}
+        {% for file in listing.listOfFiles %}
+            <li>
+                <a
+                    class="file-entry"
+                    fx-swap="innerHTML"
+                    fx-target="#visual-shell"
+                    fx-action="/fs/open/{{ listing.path + "/" + file.getName() }}"
+                >{{ file.getName() }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</li>
+{% endmacro %}
+
 <div id="visual-shell" class="panel">
-    {{computer.getVisualShell() | raw }}
+    {% if computer.currentFileContent != null %}
+    <div>
+        <button fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button>
+        <textarea id='editor'> {{ computer.currentFileContent }} </textarea>
+    </div>
+    {% else %}
+    {{ render_listing(computer.getFileSystem().getRoot()) }}
+    {% endif %}
 </div>

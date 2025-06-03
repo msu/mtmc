@@ -118,25 +118,21 @@ public class WebServer {
                     uiUpdater.updateMemoryImmediately();
                 })
                 .get("/fs/toggle/*", ctx -> {
-                    String path = ctx.path();
-                    String pathToToggle = path.substring("/fs/toggle/".length());
-                    computerView.togglePath(pathToToggle);
+                    String path = ctx.path().substring("/fs/toggle/".length());
+                    computerView.togglePath(path);
                     ctx.html(computerView.getVisualShell());
                 })
                 .get("/fs/open/*", ctx -> {
-                    String path = ctx.path();
-                    String fileToOpen = path.substring("/fs/open/disk/".length());
-                    boolean successfullyOpened = computerView.openFile(fileToOpen);
-                    if(successfullyOpened) {
-                        ctx.html(computerView.getVisualShell());
-                    } else {
+                    String path = ctx.path().substring("/fs/open/".length());
+                    boolean successfullyOpened = computerView.openFile(path);
+                    if(!successfullyOpened) {
                         ctx.status(HttpStatus.NOT_FOUND);
-                        ctx.html("");
                     }
+                    ctx.html(render("templates/editors.html"));
                 })
                 .get("/fs/close", ctx -> {
                     computerView.closeFile();
-                    ctx.html(computerView.getVisualShell());
+                    ctx.html(render("templates/editors.html"));
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();

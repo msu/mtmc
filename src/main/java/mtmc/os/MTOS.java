@@ -183,7 +183,8 @@ public class MTOS {
     }
 
     public File loadFile(String path) {
-        File file = new File("disk/" + path);
+        var fs = computer.getFileSystem();
+        File file = fs.getRealPath(path);
         return file;
     }
 }

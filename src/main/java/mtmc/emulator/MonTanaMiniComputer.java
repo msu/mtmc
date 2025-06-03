@@ -117,7 +117,7 @@ public class MonTanaMiniComputer {
         short instructionType = getBits(16, 4, instruction);
         if (instructionType == 0x0000) { // MISC
             short topNibble = getBits(12, 4, instruction);
-            switch (topNibble) {
+           switch (topNibble) {
                 case 0b0000 -> {
                     // sys call
                     short sysCall = getBits(8, 8, instruction);
@@ -497,7 +497,7 @@ public class MonTanaMiniComputer {
             int reg = getBits(8, 4, instruction);
             int offsetReg = getBits(4, 4, instruction);
             int address = getRegisterValue(DR);
-            switch(opCode) {
+           switch(opCode) {
                 case 0b0000 -> {
                     short value = fetchWordFromMemory(address);
                     setRegisterValue(reg, value);

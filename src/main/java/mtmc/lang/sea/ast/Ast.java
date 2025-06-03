@@ -3,6 +3,8 @@ package mtmc.lang.sea.ast;
 import mtmc.lang.Span;
 import mtmc.lang.sea.Token;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Expression, Statement, TypeExpr, Unit {
@@ -112,9 +114,25 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
             case TypeExprChar ignored -> Stream.empty();
             case TypeExprInt ignored -> Stream.empty();
             case TypeExprRef ignored -> Stream.empty();
+            case TypeExprVoid ignored -> Stream.empty();
             case TypePointer ignored -> Stream.empty();
             case Unit unit -> unit.declarations.stream().map(x -> x);
             case ExpressionTypeError typeError -> Stream.of(typeError.inner);
         };
+    }
+
+    public List<Error> collectErrors() {
+        var errors = new ArrayList<Error>();
+        collectErrors(errors);
+        return errors;
+    }
+
+    public void collectErrors(List<Error> errors) {
+        getChildren().forEach(child -> {
+            child.collectErrors(errors);
+            if (child instanceof Error e) {
+                errors.add(e);
+            }
+        });
     }
 }

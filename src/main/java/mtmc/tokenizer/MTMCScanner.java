@@ -120,22 +120,27 @@ public class MTMCScanner {
     }
 
     private boolean scanNumber() {
-        if(isDigit(peek())) {
+        if(isDigit(peek()) || (peek() == '-' && isDigit(peek(1)))) {
+            boolean negative = peek() == '-';
             int start = position;
-            if (peek(1) == 'x') {
-                return scanHex(start);
-            } else if (peek(1) == 'b') {
-                return scanBinary(start);
-            } else {
-                return scanDecimal();
+            if (negative) {
+                takeChar();
+            } else if (peek() == '0') {
+                if (peek(1) == 'x') {
+                    return scanHex(start);
+                }
+                if (peek(1) == 'b') {
+                    return scanBinary(start);
+                }
             }
+
+            return scanDecimal(start);
         } else {
             return false;
         }
     }
 
-    private boolean scanDecimal() {
-        int start = position;
+    private boolean scanDecimal(int start) {
         while (isDigit(peek())) {
             takeChar();
         }

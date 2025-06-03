@@ -13,4 +13,8 @@ public final class StatementVar extends Statement {
         this.name = name;
         this.initValue = initValue;
     }
+
+    public String name() {
+        return name.content();
+    }
 }

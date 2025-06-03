@@ -240,6 +240,28 @@ public class SeaExpressionTests {
         var expr = parser.parseExpression();
         if (expr == null) fail("parsed null!");
         if (parser.hasMoreTokens()) fail("more tokens in parser: " + parser.remainingTokens());
+        var errors = expr.collectErrors();
+        if (!errors.isEmpty()) {
+            var mb = new StringBuilder();
+            for (var error : errors) {
+                mb.append("An error occurred\n");
+                for (var msg : error.exception().messages) {
+                    var lo = Token.getLineAndOffset(lex, msg.start().start());
+                    int lineNo = lo[0];
+                    int column = lo[1];
+                    var line = Token.getLineFor(lex, msg.start().start());
+                    String prefix = "  %03d:%03d | ".formatted(lineNo, column);
+                    String info = " ".repeat(prefix.length());
+                    mb.append(info).append("error: ").append(msg.message()).append('\n');
+                    mb.append(prefix).append(line).append('\n');
+                    mb
+                            .repeat(' ', prefix.length() + column - 1)
+                            .repeat('^', Math.max(1, msg.end().end() - msg.start().start()));
+                    mb.append("\n\n");
+                }
+            }
+            throw new ValidationException(errors, mb.toString());
+        }
         return (T) expr;
     }
 
@@ -256,9 +278,14 @@ public class SeaExpressionTests {
     }
 
     @Test
-    public void testTypeChecking() {
-        Expression expr = parseExpr("""
+    public void testStringMultiplicationFails() {
+        var except = assertThrows(ValidationException.class, () -> {
+            parseExpr("""
                 "hello, world" * 8
                 """);
+        });
+
+        assertEquals(1, except.errors.size());
+        assertInstanceOf(ExpressionTypeError.class, except.errors.getFirst());
     }
 }

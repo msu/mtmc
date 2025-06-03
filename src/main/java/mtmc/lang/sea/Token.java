@@ -36,6 +36,7 @@ public record Token(
         KW_SIZEOF("sizeof"),
         KW_INT("int"),
         KW_CHAR("char"),
+        KW_VOID("void"),
         SOF(null),
         EOF(null),
 
@@ -156,8 +157,9 @@ public record Token(
         int end = src.length();
         for (int i = index; i < src.length(); i++) {
             if (src.charAt(i) == '\n') {
-                end = i + 1;
+                break;
             }
+            end = i + 1;
         }
         return src.substring(start, end);
     }

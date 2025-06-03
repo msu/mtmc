@@ -1,7 +1,9 @@
 package mtmc.lang.sea.ast;
 
+import mtmc.lang.sea.SeaType;
 import mtmc.lang.sea.Token;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class DeclarationFunc extends Declaration {
@@ -27,5 +29,20 @@ public final class DeclarationFunc extends Declaration {
             this.type = type;
             this.name = name;
         }
+    }
+
+    private SeaType.Func type;
+    public SeaType.Func type() {
+        if (type == null) {
+            var paramTypes = new ArrayList<SeaType>(params.size());
+            for (Param param : params) {
+                paramTypes.add(param.type.type());
+            }
+            type = new SeaType.Func(
+                    paramTypes,
+                    returnType.type()
+            );
+        }
+        return type;
     }
 }

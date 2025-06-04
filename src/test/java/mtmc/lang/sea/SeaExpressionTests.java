@@ -327,4 +327,9 @@ public class SeaExpressionTests {
                 a()[3] = 4
                 """, "a", new SeaType.Func(List.of(), new SeaType.Pointer(SeaType.INT)));
     }
+
+    @Test
+    public void invalidCasts() {
+        // TODO: there are non yet, wait for structs
+    }
 }

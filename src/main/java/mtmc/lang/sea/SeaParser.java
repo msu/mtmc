@@ -424,7 +424,7 @@ public class SeaParser {
 
         Expression value = null;
         if (take(EQUAL)) {
-           value = parseExpression();
+            value = parseExpression();
             if (value == null) {
                 throw new ParseException(new Message(lastToken(), "expected initializer value after '='"));
             }
@@ -932,12 +932,16 @@ public class SeaParser {
                 return new ExpressionSyntaxError(lastToken(), "expected type name after cast parens");
             }
 
-            var expr = parsePrefixExpression();
-            if (expr == null) {
+            var exprValue = parsePrefixExpression();
+            if (exprValue == null) {
                 return new ExpressionSyntaxError(lastToken(), "expected expression after cast");
             }
 
-            return new ExpressionCast(startToken, type, expr);
+            if (!exprValue.type().isCastableTo(type.type())) {
+                exprValue = new ExpressionTypeError(exprValue, "cannot cast " + exprValue.type().repr() + " to " + type.type().repr());
+            }
+
+            return new ExpressionCast(startToken, type, exprValue);
         } catch (ParseException e) {
             index = start;
             return parsePrefixExpression();

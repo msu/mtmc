@@ -557,8 +557,10 @@ public class SeaParser {
         var expr = parseTernaryExpression();
         if (expr == null) return null;
 
-        if (take(EQUAL, STAR_EQ, SLASH_EQ, PERCENT_EQ, PLUS_EQ, DASH_EQ, LEFT_ARROW2_EQ, RIGHT_ARROW2_EQ,
-                AMPERSAND_EQ, BAR_EQ)) {
+        Token.Type[] types = { EQUAL, STAR_EQ, SLASH_EQ, PERCENT_EQ, PLUS_EQ, DASH_EQ, LEFT_ARROW2_EQ, RIGHT_ARROW2_EQ,
+                AMPERSAND_EQ, BAR_EQ };
+
+        if (take(types)) {
             var op = lastToken();
             var rhs = parseTernaryExpression();
             if (rhs == null) {
@@ -573,6 +575,10 @@ public class SeaParser {
             }
 
             expr = new ExpressionBin(expr, op, rhs, SeaType.VOID);
+        }
+
+        if (match(types)) {
+            expr = new ExpressionSyntaxError(expr, peekToken(), "chained assignments are not allowed");
         }
 
         return expr;

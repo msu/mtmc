@@ -97,4 +97,8 @@ public class SeaStatementTests {
         ));
     }
 
+    @Test
+    public void incorrectTypeAssignmentFails() {
+
+    }
 }

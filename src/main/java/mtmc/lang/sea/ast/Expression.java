@@ -20,7 +20,7 @@ public sealed abstract class Expression extends Ast permits ExpressionAccess, Ex
 
     public enum ValueKind {
         LValue,
-        RValue;
+        RValue
     }
 
     public ValueKind valueKind() {
@@ -33,7 +33,7 @@ public sealed abstract class Expression extends Ast permits ExpressionAccess, Ex
             case ExpressionIdent ignored -> ValueKind.LValue;
             case ExpressionIndex ignored -> ValueKind.LValue;
             case ExpressionInteger ignored -> ValueKind.LValue;
-            case ExpressionParens expressionParens -> expressionParens.valueKind();
+            case ExpressionParens expressionParens -> expressionParens.inner.valueKind();
             case ExpressionPostfix ignored -> ValueKind.RValue;
             case ExpressionPrefix prefix -> {
                 if (prefix.op().equals("*")) {
@@ -45,7 +45,7 @@ public sealed abstract class Expression extends Ast permits ExpressionAccess, Ex
             case ExpressionString ignored -> ValueKind.LValue;
             case ExpressionSyntaxError ignored -> ValueKind.RValue;
             case ExpressionTernary ignored -> ValueKind.RValue;
-            case ExpressionTypeError ignored -> ignored.valueKind();
+            case ExpressionTypeError ignored -> ignored.inner.valueKind();
         };
     }
 }

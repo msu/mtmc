@@ -649,7 +649,7 @@ public class MonTanaMiniComputer {
     }
 
     public byte fetchByteFromMemory(int address) {
-        return memory[address];
+        return memory[+address % memory.length];
     }
 
     public void writeWordToMemory(int address, int value) {

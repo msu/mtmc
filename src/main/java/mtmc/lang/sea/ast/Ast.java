@@ -55,6 +55,7 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
             case ExpressionPostfix expressionPostfix -> Stream.of(expressionPostfix.inner);
             case ExpressionPrefix expressionPrefix -> Stream.of(expressionPrefix.inner);
             case ExpressionString ignored -> Stream.empty();
+            case ExpressionTypeError typeError -> Stream.of(typeError.inner);
             case ExpressionSyntaxError expressionSyntaxError -> {
                 if (expressionSyntaxError.child != null) {
                     yield Stream.of(expressionSyntaxError.child);
@@ -117,7 +118,6 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
             case TypeExprVoid ignored -> Stream.empty();
             case TypePointer ignored -> Stream.empty();
             case Unit unit -> unit.declarations.stream().map(x -> x);
-            case ExpressionTypeError typeError -> Stream.of(typeError.inner);
         };
     }
 
@@ -128,11 +128,9 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
     }
 
     public void collectErrors(List<Error> errors) {
-        getChildren().forEach(child -> {
-            child.collectErrors(errors);
-            if (child instanceof Error e) {
-                errors.add(e);
-            }
-        });
+        if (this instanceof Error e) {
+            errors.add(e);
+        }
+        getChildren().forEach(child -> child.collectErrors(errors));
     }
 }

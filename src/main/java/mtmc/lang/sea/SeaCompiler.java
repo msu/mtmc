@@ -60,6 +60,11 @@ public class SeaCompiler {
 
         asm += '\n';
         asm += ".text\n";
+        asm += """
+                li a0 0
+                push a0
+                jal main
+                """;
         asm += code;
 
         System.out.println("generate the following assembly:");
@@ -241,7 +246,7 @@ public class SeaCompiler {
             // TODO: sizeof thingy
             var offset = frameOffsets.get(stmt.name());
             code.append("  pop t0\n");
-            code.append("  ldi t5 ").append(offset).append("\n");
+            code.append("  li t5 ").append(offset).append("\n");
             code.append("  swr t0 fp t5\n");
         }
     }
@@ -329,7 +334,7 @@ public class SeaCompiler {
         }
 
         if (expr.functor instanceof ExpressionIdent ident) {
-            code.append("  call ").append(ident.name()).append("\n");
+            code.append("  jal ").append(ident.name()).append("\n");
         } else {
             throw new RuntimeException("unimplemented");
         }
@@ -360,7 +365,7 @@ public class SeaCompiler {
             code.append("  push t0\n");
         } else {
             var offset = frameOffsets.get(ident.name());
-            code.append("  ldi t5 ").append(-offset).append("\n");
+            code.append("  li t5 ").append(offset).append("\n");
             code.append("  lwr t0 bp t5\n");
             code.append("  push t0\n");
 

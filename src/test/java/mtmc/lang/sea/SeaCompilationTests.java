@@ -6,6 +6,7 @@ import mtmc.lang.CompilationException;
 import mtmc.lang.ParseException;
 import mtmc.lang.sea.ast.Unit;
 import mtmc.os.exec.Executable;
+import mtmc.web.WebServer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.fail;
@@ -43,7 +44,7 @@ public class SeaCompilationTests {
     String compileAndRun(String src) {
         var exe = compile(src);
         var machine = new MonTanaMiniComputer();
-        machine.load(exe.code(), exe.data());
+        machine.load(exe.code(), exe.data(), exe.debugInfo());
         machine.run();
         return machine.getConsole().getOutput();
     }

@@ -71,7 +71,7 @@ public class EndToEndTests {
         }
 
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        computer.load(result.code(), result.data());
+        computer.load(result.code(), result.data(), result.debugInfo());
         computer.run();
         var output = computer.getConsole().getOutput();
         System.out.println(output);

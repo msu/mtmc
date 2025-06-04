@@ -2,6 +2,7 @@ package mtmc.lang.sea;
 
 import mtmc.lang.ParseException;
 import mtmc.lang.sea.ast.*;
+import mtmc.lang.sea.ast.Error;
 import org.junit.jupiter.api.Test;
 
 
@@ -17,24 +18,20 @@ public class SeaStatementTests {
             var stmt = parser.parseStatement();
             if (stmt == null) fail("parsed null!");
             if (parser.hasMoreTokens()) fail("more tokens in parser: " + parser.remainingTokens());
+
+            var errors = stmt.collectErrors();
+            if (!errors.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (Error error : errors) {
+                    Util.reportError(lex, sb, error.exception());
+                }
+                throw new ValidationException(errors, sb.toString());
+            }
+
             return (T) stmt;
         } catch (ParseException e) {
             var mb = new StringBuilder();
-            mb.append("Error:\n");
-            for (var msg : e.messages) {
-                var lo = Token.getLineAndOffset(lex, msg.start().start());
-                int lineNo = lo[0];
-                int column = lo[1];
-                var line = Token.getLineFor(lex, msg.start().start());
-                String prefix = "  %03d:%03d | ".formatted(lineNo, column);
-                String info = " ".repeat(prefix.length() - 2) + "| ";
-                mb.append(info).append(msg.message()).append('\n');
-                mb.append(prefix).append(line).append('\n');
-                mb
-                        .repeat(' ', column - 1)
-                        .repeat('^', Math.max(1, msg.end().end() - msg.start().start()));
-                mb.append("\n\n");
-            }
+            Util.reportError(lex, mb, e);
             fail(mb.toString());
             return null;
         }
@@ -99,6 +96,28 @@ public class SeaStatementTests {
 
     @Test
     public void incorrectTypeAssignmentFails() {
+        var except = assertThrows(ValidationException.class, () -> {
+            parseStatement("""
+                int x = "hello, world";
+                """);
+        });
 
+        assertEquals(1, except.errors.size());
+        assertInstanceOf(ExpressionTypeError.class, except.errors.getFirst());
+    }
+
+    @Test
+    public void scopedForStatements() {
+        var except = assertThrows(ValidationException.class, () -> {
+            parseStatements("""
+                    for (int x = 0; x < 2034; x++) {
+                        x = x * 2;
+                    }
+                    int y = x;
+                    """);
+        });
+
+        assertEquals(1, except.errors.size());
+        assertInstanceOf(ExpressionTypeError.class, except.errors.getFirst());
     }
 }

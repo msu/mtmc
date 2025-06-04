@@ -60,9 +60,16 @@ public sealed interface SeaType {
 
     default boolean isConvertibleTo(SeaType other) {
         if (this.isVoid() || other.isVoid()) return false;
-        if (this.isIntegral() && other.isIntegral()) return true;
+        if (this.isArithmetic() && other.isArithmetic()) return true;
         if (this.isAPointer() && other.isAPointer()) return true;
         return this.equals(other);
+    }
+
+    default boolean isCastableTo(SeaType target) {
+        if (target.isVoid()) return true;
+        if (this.isAPointer() && target.isInt()) return true;
+        if (this.isArithmetic() && target.isArithmetic()) return true;
+        return this.equals(target);
     }
 
     default String repr() {

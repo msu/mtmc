@@ -207,8 +207,8 @@ public record Token(
         do {
             Token token = tokenizeOne(src, offset);
             if (token == null) break;
-            offset = token.end();
             tokens.add(token);
+            offset = token.end();
         } while (true);
         return tokens;
     }
@@ -289,7 +289,7 @@ public record Token(
                 content = String.valueOf(d);
             }
 
-            if (offset >= src.length() || src.charAt(offset) == '\'') {
+            if (offset >= src.length() || src.charAt(offset) != '\'') {
                 throw new TokenizeException("unterminated character literal", start, offset);
             }
             offset += Character.charCount('\'');
@@ -323,6 +323,8 @@ public record Token(
                             throw new TokenizeException("invalid string escape " + d, start, offset);
                     };
                     sb.append(s);
+                } else if (d == '\n') {
+                    break;
                 } else {
                     sb.append(d);
                 }
@@ -347,7 +349,7 @@ public record Token(
             }
 
             if (type == null) {
-                return null;
+                throw new TokenizeException("unexpected character '" + src.charAt(start) + "'", start, offset);
             }
         }
 
@@ -358,10 +360,15 @@ public record Token(
     public static class TokenizeException extends IllegalArgumentException {
         public final int start, end;
 
-        public TokenizeException(String s, int start, int end) {
-            super(s);
+        public TokenizeException(String msg, int start, int end) {
+            super(msg);
             this.start = start;
             this.end = end;
+        }
+
+        @Override
+        public String toString() {
+            return "TokenizeException at " + start + ":" + end + ", " + getLocalizedMessage();
         }
     }
 

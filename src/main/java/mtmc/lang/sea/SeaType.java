@@ -46,6 +46,10 @@ public sealed interface SeaType {
         return this instanceof Pointer(SeaType component) && component.isInt();
     }
 
+    default boolean isAPointerTo(SeaType inner) {
+        return this instanceof Pointer(SeaType it) && it.equals(inner);
+    }
+
     default boolean isAPointer() {
         return this instanceof Pointer;
     }
@@ -56,6 +60,10 @@ public sealed interface SeaType {
 
     default SeaType componentType() {
         return ((Pointer) this).component;
+    }
+
+    default SeaType resultType() {
+        return ((Func) this).result();
     }
 
     default boolean isConvertibleTo(SeaType other) {
@@ -114,9 +122,9 @@ public sealed interface SeaType {
         throw new UnsupportedOperationException("unknown type " + this);
     }
 
-    SeaType CHAR = new Primitive();
-    SeaType INT = new Primitive();
-    SeaType VOID = new Primitive();
+    SeaType CHAR = new Primitive("char");
+    SeaType INT = new Primitive("int");
+    SeaType VOID = new Primitive("void");
 
     record Pointer(SeaType component) implements SeaType {
         SeaType baseType() {
@@ -128,7 +136,12 @@ public sealed interface SeaType {
         }
     }
     final class Primitive implements SeaType {
-        private Primitive() {}
+        // this is purely for debug info lmfao
+        public final String name;
+
+        private Primitive(String name) {
+            this.name = name;
+        }
     }
 
     record Func(List<SeaType> params, SeaType result) implements SeaType {}

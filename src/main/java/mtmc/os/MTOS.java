@@ -34,6 +34,12 @@ public class MTOS {
             // wint
             short value = computer.getRegisterValue(A0);
             computer.getConsole().writeInt(value);
+        } else if (syscallNumber == SysCall.getValue("rchr")) {
+            char val = computer.getConsole().readChar();
+            computer.setRegisterValue(RV, val);
+        } else if (syscallNumber == SysCall.getValue("wchr")) {
+            short value = computer.getRegisterValue(A0);
+            computer.getConsole().print("" + (char) value);
         } else if (syscallNumber == SysCall.getValue("rstr")) {
             // rstr
             short pointer = computer.getRegisterValue(A0);
@@ -172,8 +178,13 @@ public class MTOS {
         while (computer.fetchByteFromMemory(pointer + length) != 0) {
             length++;
         }
-        String outputString = new String(computer.getMemory(), pointer, length, Charsets.US_ASCII);
-        return outputString;
+        try {
+            String outputString = new String(computer.getMemory(), pointer, length, Charsets.US_ASCII);
+            return outputString;
+        } catch (StringIndexOutOfBoundsException ignored) {
+            computer.setStatus(MonTanaMiniComputer.ComputerStatus.PERMANENT_ERROR);
+            return "";
+        }
     }
 
     public void processCommand(String command) {

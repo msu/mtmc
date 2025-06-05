@@ -1,5 +1,6 @@
 package mtmc.emulator;
 
+import mtmc.asm.instructions.Instruction;
 import mtmc.os.MTOS;
 import mtmc.os.fs.FileSystem;
 
@@ -499,7 +500,7 @@ public class MonTanaMiniComputer {
             int reg = getBits(8, 4, instruction);
             int offsetReg = getBits(4, 4, instruction);
             int address = getRegisterValue(DR);
-           switch(opCode) {
+            switch(opCode) {
                 case 0b0000 -> {
                     short value = fetchWordFromMemory(address);
                     setRegisterValue(reg, value);
@@ -649,7 +650,12 @@ public class MonTanaMiniComputer {
     }
 
     public byte fetchByteFromMemory(int address) {
-        return memory[+address % memory.length];
+        if (address < 0 || address >= memory.length) {
+            setStatus(PERMANENT_ERROR);
+            return 0;
+        } else {
+            return memory[address];
+        }
     }
 
     public void writeWordToMemory(int address, int value) {
@@ -786,5 +792,24 @@ public class MonTanaMiniComputer {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setSpeed(1); // default to 1hz
         computer.start();
+    }
+
+    @Override
+    public String toString() {
+        var s = new StringBuilder();
+        s.append("CI: ").append(Instruction.disassemble(getRegisterValue(IR), getRegisterValue(DR)));
+        s.append(", Status: ").append(getStatus().name());
+        var fp = getRegisterValue(FP);
+        var sp = getRegisterValue(SP);
+        s.append(", FP:SP=").append(fp).append(':').append(sp);
+        s.append(", STACK: ");
+
+        for (var i = fp; i > sp; i--) {
+            byte[] value = getBytesFromMemory(i - 2, 2);
+            int v = value[1] >>> 8 | value[0];
+            s.append(v).append(' ');
+        }
+
+        return s.toString();
     }
 }

@@ -2,13 +2,14 @@ package mtmc.lang.sea;
 
 
 import mtmc.emulator.MonTanaMiniComputer;
+import mtmc.emulator.Register;
 import mtmc.lang.CompilationException;
 import mtmc.lang.ParseException;
 import mtmc.lang.sea.ast.Unit;
 import mtmc.os.exec.Executable;
-import mtmc.web.WebServer;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class SeaCompilationTests {
@@ -19,6 +20,9 @@ public class SeaCompilationTests {
         try {
             program = parser.parseUnit();
         } catch (ParseException e) {
+            StringBuilder sb = new StringBuilder();
+            Util.reportError(src, sb, e);
+            fail(sb.toString());
             throw new RuntimeException(e);
         }
         var errors = program.collectErrors();
@@ -41,11 +45,20 @@ public class SeaCompilationTests {
         }
     }
 
+    MonTanaMiniComputer compileAndRunM(String src) {
+        var exe = compile(src);
+        var machine = new MonTanaMiniComputer();
+        machine.load(exe.code(), exe.data(), exe.debugInfo());
+        machine.run();
+        return machine;
+    }
+
     String compileAndRun(String src) {
         var exe = compile(src);
         var machine = new MonTanaMiniComputer();
         machine.load(exe.code(), exe.data(), exe.debugInfo());
         machine.run();
+        assertEquals(MonTanaMiniComputer.ComputerStatus.FINISHED, machine.getStatus());
         return machine.getConsole().getOutput();
     }
 
@@ -53,15 +66,16 @@ public class SeaCompilationTests {
     public void testR0() {
         var pgm = """
                 int main(char *arg) {
-                    return 0;
+                    return 42;
                 }
                 """;
 
-        var exec = compile(pgm);
+        var mach = compileAndRunM(pgm);
+        assertEquals(42, mach.getRegisterValue(Register.RV));
     }
 
     @Test
-    public void testSimpleVars() {
+    public void helloWorld() {
         var pgm = """
                 void puts(char *s);
                 char *s = "hello, world";
@@ -71,22 +85,66 @@ public class SeaCompilationTests {
                     return 0;
                 }
                 """;
+
+        String output = compileAndRun(pgm);
+        assertEquals("hello, world", output);
+    }
+
+    @Test
+    public void charLiteralWorks() {
+        var pgm = """
+                void putc(char c);
+                
+                int main() {
+                    putc('W');
+                    return 0;
+                }
+                """;
+
+        String output = compileAndRun(pgm);
+        assertEquals("W", output);
     }
 
     @Test
     public void testLiteralInt() {
         var pgm = """
                 void putn(int v);
+                void putc(char c);
                 
                 int main() {
                     int x = 3;
                     putn(x);
-                    int y = 134;
+                    putc('\\n');
+                    int y = x * 23;
                     putn(y);
                     return 0;
                 }
                 """;
 
         var output = compileAndRun(pgm);
+        assertEquals("3\n69", output);
+    }
+
+    @Test
+    public void ternaryExpression() {
+        var pgm = """
+                void puts(char *s);
+                
+                int main() {
+                    int x = 12;
+                    char *a = x >= 12 ? "BIG\\n" : "little\\n";
+                    char *b = x > 11 ? "BIG\\n" : "little\\n";
+                    char *c = x < 13 ? "little\\n" : "BIG\\n";
+                    char *d = x <= 12 ? "little\\n" : "BIG\\n";
+                    puts(a);
+                    puts(b);
+                    puts(c);
+                    puts(d);
+                    return 0;
+                }
+                """;
+
+        var output = compileAndRun(pgm);
+        assertEquals("BIG\nBIG\nlittle\nlittle\n", output);
     }
 }

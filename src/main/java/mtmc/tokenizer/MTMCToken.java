@@ -29,6 +29,10 @@ public record MTMCToken(
         return stringValue;
     }
 
+    public char charValue() {
+        return stringValue.charAt(0);
+    }
+
     public Integer intValue() {
         if (type == TokenType.INTEGER) {
             return Integer.parseInt(stringValue);
@@ -78,6 +82,7 @@ public record MTMCToken(
         IDENTIFIER,
         LABEL,
         STRING,
+        CHAR,
         INTEGER,
         DECIMAL,
         HEX,

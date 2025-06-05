@@ -14,7 +14,7 @@
             <li>
                 <a
                     class="file-entry"
-                    fx-swap="innerHTML"
+                    fx-swap="outerHTML"
                     fx-target="#visual-shell"
                     fx-action="/fs/open/{{ listing.path + "/" + file.getName() }}"
                 >{{ file.getName() }}</a>
@@ -26,10 +26,10 @@
 
 <div id="visual-shell" class="panel">
     {% if computer.currentFileContent != null %}
-    <div>
-        <button fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button>
-        <textarea id='editor'> {{ computer.currentFileContent }} </textarea>
-    </div>
+        <div>
+            <button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button>
+            <textarea id='editor'> {{ computer.currentFileContent }} </textarea>
+        </div>
     {% else %}
     {{ render_listing(computer.getFileSystem().getRoot()) }}
     {% endif %}

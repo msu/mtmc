@@ -111,8 +111,8 @@ public class MTMCWebView {
         return currentFileContent;
     }
 
-    public String getVisualShell(){
-        if(currentFileContent != null){
+    public String getVisualShell() {
+        if (currentFileContent != null) {
             return renderEditor();
         } else {
             return renderFileTree();
@@ -128,24 +128,18 @@ public class MTMCWebView {
     private String renderFileTree() {
         File rootFile = computer.getOS().loadFile("/");
         var sb = new StringBuilder();
-        // pre, code: monospace font
         sb.append("<ul><li><code>/</code><ul>");
-        var fs = computer.getFileSystem();
-        // TODO: Nav through listing{listOfFiles = [], subdirectories = [] }
-        // If it's a directory add folder icon
-        // If it's a file, add file icon
+
+        // Justice code lol:
+        /*var fs = computer.getFileSystem();
         Listing listing = fs.listFiles("/");
-        // TODO: Implement appendListingContent(Listing listing){
         for (File file: listing.listOfFiles){
              appendContentForFile(file, sb);
-             System.out.println("File: " + file);
-        }
-        //  }
-
-
-       /* for (File file : rootFile.listFiles()) {
-            appendContentForFile(file, sb);
+             System.out.println("File: " + feile);
         }*/
+        for (File file : rootFile.listFiles()) {
+            appendContentForFile(file, sb);
+        }
         sb.append("</ul></li></ul>");
         return sb.toString();
     }
@@ -184,7 +178,7 @@ public class MTMCWebView {
                 .append("'>");
         sb.append(file.getName());
         sb.append("</a>");
-        if(expandedPaths.contains(path)) {
+        if (expandedPaths.contains(path)) {
             sb.append("<ul>");
             for (File child : file.listFiles()) {
                 appendContentForFile(child, sb);
@@ -252,7 +246,7 @@ public class MTMCWebView {
     }
 
     private DisplayFormat computeMemoryFormat(String memoryClass) {
-        if(memoryDisplayFormat == DisplayFormat.DYN) {
+        if (memoryDisplayFormat == DisplayFormat.DYN) {
             return switch (memoryClass) {
                 case "sta" -> DisplayFormat.DEC;
                 case "code" -> DisplayFormat.INS;
@@ -353,7 +347,7 @@ public class MTMCWebView {
     }
 
     public void togglePath(String pathToToggle) {
-        if(expandedPaths.contains(pathToToggle)) {
+        if (expandedPaths.contains(pathToToggle)) {
             expandedPaths.remove(pathToToggle);
         } else {
             expandedPaths.add(pathToToggle);
@@ -362,7 +356,7 @@ public class MTMCWebView {
 
     public boolean openFile(String fileToOpen) {
         File file = computer.getOS().loadFile(fileToOpen);
-        if(file.exists() && file.isFile()) {
+        if (file.exists() && file.isFile()) {
             try {
                 currentFileContent = Files.readString(file.toPath());
                 return true;

@@ -1,3 +1,4 @@
+<link rel=""
 {% macro render_listing(listing) %}
 <li>
     <a
@@ -12,6 +13,9 @@
         {% endfor %}
         {% for file in listing.listOfFiles %}
             <li>
+                <i class="ui-icon">
+                    <img src="../public/img/3919.ico.url">
+                </i>
                 <a
                     class="file-entry"
                     fx-swap="outerHTML"

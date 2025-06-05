@@ -130,13 +130,6 @@ public class MTMCWebView {
         var sb = new StringBuilder();
         sb.append("<ul><li><code>/</code><ul>");
 
-        // Justice code lol:
-        /*var fs = computer.getFileSystem();
-        Listing listing = fs.listFiles("/");
-        for (File file: listing.listOfFiles){
-             appendContentForFile(file, sb);
-             System.out.println("File: " + feile);
-        }*/
         for (File file : rootFile.listFiles()) {
             appendContentForFile(file, sb);
         }

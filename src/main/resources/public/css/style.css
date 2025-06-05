@@ -349,17 +349,39 @@ main {
 ul{
     list-style: none;
 }
+.li{
+    list-style: none;
+    padding-bottom: 2px;
+}
+.file-explorer{
+    border: 1px solid darkgrey;
+    list-style:none;
+    padding-bottom: 2px;
+}
+.directory-entry{
+    padding: 2px;
+}
 .folder-icon{
     position: relative;
     height: 20px;
     width: 20px;
     margin-right: 0.5em;
 }
+
 .file-entry{
-    margin-top:2px;
+    margin-top:1px;
     position: absolute;
 }
-
+.file-listing{
+    margin-top: 1px;
+    position: relative;
+}
+.blank-sheet-icon{
+    position:relative;
+    height: 18px;
+    width: 18px;
+    margin-right: 0.35em;
+}
 
 #visual-shell {
     position: relative;

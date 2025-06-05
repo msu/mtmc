@@ -1,30 +1,32 @@
 {% macro render_listing(listing) %}
 
-<li>
-    <a
-        class="directory-entry"
-        fx-swap="innerHTML"
-        fx-target="#visual-shell"
-        fx-action="/fs/toggle/{{ listing.path }}"
-    >{{ listing.name }}</a>
-    <ul>
-        {% for subdir in listing.subdirectories %}
-            <img class="folder-icon" src=/img/blank-sheet.ico">
-            {{ render_listing(subdir.value) }}
-        {% endfor %}
-        {% for file in listing.listOfFiles %}
-            <li>
-                <img class="folder-icon" src="/img/single-folder-icon.ico">
-                <a
-                    class="file-entry"
-                    fx-swap="outerHTML"
-                    fx-target="#visual-shell"
-                    fx-action="/fs/open/{{ listing.path + "/" + file.getName() }}"
-                >{{ file.getName() }}</a>
-            </li>
-        {% endfor %}
-    </ul>
-</li>
+    <li class="file-explorer">
+        <a
+                class="directory-entry"
+                fx-swap="innerHTML"
+                fx-target="#visual-shell"
+                fx-action="/fs/toggle/{{ listing.path }}"
+        > <img class="folder-icon" src="/img/single-folder-icon.ico">
+            {{ listing.name }}</a>
+        <ul>
+            {% for subdir in listing.subdirectories %}
+                <li>
+                    {{ render_listing(subdir.value) }}
+                </li>
+            {% endfor %}
+            {% for file in listing.listOfFiles %}
+                <li class="file-listing">
+                    <img class="blank-sheet-icon" src="/img/blank-sheet.ico">
+                    <a
+                            class="file-entry"
+                            fx-swap="outerHTML"
+                            fx-target="#visual-shell"
+                            fx-action="/fs/open/{{ listing.path + "/" + file.getName() }}"
+                    >{{ file.getName() }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </li>
 {% endmacro %}
 
 <div id="visual-shell" class="panel">
@@ -34,6 +36,6 @@
             <textarea id='editor'> {{ computer.currentFileContent }} </textarea>
         </div>
     {% else %}
-    {{ render_listing(computer.getFileSystem().getRoot()) }}
+        {{ render_listing(computer.getFileSystem().getRoot()) }}
     {% endif %}
 </div>

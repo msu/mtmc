@@ -342,10 +342,24 @@ main {
     color: var(--console-primary);
     border: none;
 }
-
 #console-history div {
     white-space: pre;
 }
+
+ul{
+    list-style: none;
+}
+.folder-icon{
+    position: relative;
+    height: 20px;
+    width: 20px;
+    margin-right: 0.5em;
+}
+.file-entry{
+    margin-top:2px;
+    position: absolute;
+}
+
 
 #visual-shell {
     position: relative;

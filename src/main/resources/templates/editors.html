@@ -1,5 +1,5 @@
-<link rel=""
 {% macro render_listing(listing) %}
+
 <li>
     <a
         class="directory-entry"
@@ -9,13 +9,12 @@
     >{{ listing.name }}</a>
     <ul>
         {% for subdir in listing.subdirectories %}
+            <img class="folder-icon" src=/img/blank-sheet.ico">
             {{ render_listing(subdir.value) }}
         {% endfor %}
         {% for file in listing.listOfFiles %}
             <li>
-                <i class="ui-icon">
-                    <img src="../public/img/3919.ico.url">
-                </i>
+                <img class="folder-icon" src="/img/single-folder-icon.ico">
                 <a
                     class="file-entry"
                     fx-swap="outerHTML"

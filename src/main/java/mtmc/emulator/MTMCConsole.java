@@ -4,6 +4,9 @@ import java.io.Console;
 
 import static mtmc.emulator.MTMCConsole.Mode.*;
 import mtmc.os.shell.Shell;
+import mtmc.tokenizer.MTMCScanner;
+import mtmc.tokenizer.MTMCToken;
+import mtmc.tokenizer.MTMCTokenizer;
 
 public class MTMCConsole {
 
@@ -43,6 +46,17 @@ public class MTMCConsole {
         }
     }
 
+    public char readChar() {
+        if (mode == INTERACTIVE) {
+            var tokens = new MTMCScanner(sysConsole.readLine(), null).tokenize();
+            var token = tokens.getFirst();
+            assert token.type() == MTMCToken.TokenType.CHAR;
+            return token.charValue();
+        } else {
+            return (char) this.shortValue;
+        }
+    }
+
     public short readInt() {
         if (mode == INTERACTIVE) {
             return Short.parseShort(sysConsole.readLine());
@@ -53,6 +67,10 @@ public class MTMCConsole {
 
     public void setShortValue(short shortValue) {
         this.shortValue = shortValue;
+    }
+
+    public void setCharValue(char charValue) {
+        this.shortValue = (short) charValue;
     }
 
     public String getOutput() {

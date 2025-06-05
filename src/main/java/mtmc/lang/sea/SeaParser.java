@@ -52,8 +52,15 @@ public class SeaParser {
         }
 
         if (!symbols.containsKey("main")) {
-            var msg = new Message(Token.SOF, "no entrypoint, 'int main(int, char**)' was defined");
+            var msg = new Message(Token.SOF, "no entrypoint, 'int main(char*)' or 'int main()' was defined");
             declarations.add(new DeclarationSyntaxError(Token.SOF, new ParseException(msg)));
+        } else {
+            var main = symbols.get("main");
+            var type = (SeaType.Func) main.type();
+            if (!type.params().isEmpty() && (type.params().size() != 1 || !type.params().getFirst().isAPointerTo(SeaType.CHAR))) {
+                var msg = new Message(Token.SOF, "no entrypoint, 'int main(char*)' or 'int main()' was defined");
+                declarations.add(new DeclarationSyntaxError(Token.SOF, new ParseException(msg)));
+            }
         }
 
         return new Unit(declarations, this.symbols);
@@ -611,6 +618,14 @@ public class SeaParser {
 
             var thenType = then.type();
             var otherType = otherwise.type();
+
+            if (thenType.isVoid()) {
+                then = new ExpressionTypeError(then, "ternary branch cannot yield void");
+            }
+            if (otherType.isVoid()) {
+                otherwise = new ExpressionTypeError(otherwise, "ternary branch cannot yield void");
+            }
+
             if (!otherType.isConvertibleTo(thenType)) {
                 otherwise = new ExpressionTypeError(otherwise, "the ternary branches disagree, " + otherType.repr() + " is not assignable to " + then.type());
             }

@@ -32,7 +32,7 @@ public sealed abstract class Expression extends Ast permits ExpressionAccess, Ex
             case ExpressionChar ignored -> ValueKind.RValue;
             case ExpressionIdent ignored -> ValueKind.LValue;
             case ExpressionIndex ignored -> ValueKind.LValue;
-            case ExpressionInteger ignored -> ValueKind.LValue;
+            case ExpressionInteger ignored -> ValueKind.RValue;
             case ExpressionParens expressionParens -> expressionParens.inner.valueKind();
             case ExpressionPostfix ignored -> ValueKind.RValue;
             case ExpressionPrefix prefix -> {

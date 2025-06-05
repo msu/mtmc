@@ -6,10 +6,48 @@ import mtmc.lang.sea.ast.Error;
 import org.junit.jupiter.api.Test;
 
 
+import java.sql.Array;
+import java.util.ArrayList;
+import java.util.List;
+
 import static mtmc.lang.sea.SeaExpressionTests.Matching.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SeaStatementTests {
+    List<Statement> parseStatements(String lex) {
+        var tokens = Token.tokenize(lex);
+        var parser = new SeaParser(tokens);
+
+        try {
+            var stmts = new ArrayList<Statement>();
+            while (parser.hasMoreTokens()) {
+                var stmt = parser.parseStatement();
+                if (stmt == null) fail("parsed null!");
+                stmts.add(stmt);
+            }
+            if (parser.hasMoreTokens()) fail("more tokens in parser: " + parser.remainingTokens());
+
+            var errors = new ArrayList<Error>();
+            for (var stmt : stmts) {
+                stmt.collectErrors(errors);
+            }
+            if (!errors.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                for (Error error : errors) {
+                    Util.reportError(lex, sb, error.exception());
+                }
+                throw new ValidationException(errors, sb.toString());
+            }
+
+            return stmts;
+        } catch (ParseException e) {
+            var mb = new StringBuilder();
+            Util.reportError(lex, mb, e);
+            fail(mb.toString());
+            return null;
+        }
+    }
+
     <T extends Statement> T parseStatement(String lex) {
         var tokens = Token.tokenize(lex);
         var parser = new SeaParser(tokens);

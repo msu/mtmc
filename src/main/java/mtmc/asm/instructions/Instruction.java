@@ -43,7 +43,7 @@ public abstract class Instruction extends ASMElement {
         return type == null ? 0 : type.getSizeInBytes();
     }
 
-    public static String disassembleInstruction(short instruction, short previousInstruction) {
+    public static String disassemble(short instruction, short previousInstruction) {
         if (MonTanaMiniComputer.isDoubleWordInstruction(previousInstruction)) {
             return String.valueOf(instruction);
         }

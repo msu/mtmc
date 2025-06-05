@@ -15,7 +15,7 @@ public class Util {
             sb.append(info).append(msg.message()).append('\n');
             sb.append(prefix).append(line).append('\n');
             sb
-                    .repeat(' ', column - 1)
+                    .repeat(' ', prefix.length() + column - 1)
                     .repeat('^', Math.max(1, msg.end().end() - msg.start().start()));
             sb.append("\n\n");
         }

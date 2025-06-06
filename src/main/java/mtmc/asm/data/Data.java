@@ -5,13 +5,14 @@ import mtmc.asm.Assembler;
 import mtmc.tokenizer.MTMCToken;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class Data extends ASMElement {
     public MTMCToken valueToken;
     private byte[] value;
 
-    public Data(MTMCToken label) {
-        super(label);
+    public Data(List<MTMCToken> labels) {
+        super(labels);
     }
 
 
@@ -46,7 +47,7 @@ public class Data extends ASMElement {
 
     @Override
     public void addError(String err) {
-        addError(getLabel(), err);
+        addError(getLabels().getLast(), err);
     }
 
 }

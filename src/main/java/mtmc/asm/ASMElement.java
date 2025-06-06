@@ -7,16 +7,16 @@ import java.util.List;
 
 public abstract class ASMElement implements HasLocation {
 
-    private final MTMCToken label;
+    private final List<MTMCToken> labels;
     List<ASMError> errors = new ArrayList<>();
     private int location = -1;
 
-    public ASMElement(MTMCToken label) {
-        this.label = label;
+    public ASMElement(List<MTMCToken> labels) {
+        this.labels = labels;
     }
 
-    public MTMCToken getLabel() {
-        return label;
+    public List<MTMCToken> getLabels() {
+        return labels;
     }
 
     public int getLocation() {

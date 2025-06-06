@@ -5,6 +5,8 @@ import mtmc.asm.Assembler;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.List;
+
 public abstract class Instruction extends ASMElement {
 
     private final InstructionType type;
@@ -22,8 +24,8 @@ public abstract class Instruction extends ASMElement {
         // default does nothing
     }
 
-    public Instruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
-        super(label);
+    public Instruction(InstructionType type, List<MTMCToken> labels, MTMCToken instructionToken) {
+        super(labels);
         this.type = type;
         this.instructionToken = instructionToken;
     }

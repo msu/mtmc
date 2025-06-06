@@ -4,6 +4,8 @@ import mtmc.asm.Assembler;
 import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.List;
+
 import static mtmc.util.BinaryUtils.getBits;
 
 public class TestInstruction extends Instruction {
@@ -12,7 +14,7 @@ public class TestInstruction extends Instruction {
     private MTMCToken second;
     private MTMCToken value;
 
-    public TestInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+    public TestInstruction(InstructionType type, List<MTMCToken> label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 

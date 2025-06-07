@@ -9,8 +9,7 @@ import mtmc.lang.sea.ast.Unit;
 import mtmc.os.exec.Executable;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SeaCompilationTests {
     Executable compile(String src) {
@@ -30,7 +29,7 @@ public class SeaCompilationTests {
             for (var error : errors) {
                 for (var msg : error.exception().messages) {
                     int[] lo = Token.getLineAndOffset(src, msg.span().start().start());
-                    System.out.println("at " + lo[0] + ":" + lo[1]);
+                    System.out.println("on line " + lo[0] + ", column " + lo[1]);
                     System.out.println("  " + msg.message());
                 }
             }
@@ -106,7 +105,27 @@ public class SeaCompilationTests {
     }
 
     @Test
-    public void testLiteralInt() {
+    public void printf() {
+        var pgm = """
+                int printf(char *s, ...);
+                void putn(int v);
+                
+                int main() {
+                    int x = 32;
+                    char z = 'Z';
+                    char *s = "hello, my name is pathfinder!";
+                    int n = printf("%d %c %s\\n", x, z, s);
+                    putn(n);
+                    return 0;
+                }
+                """;
+
+        var output = compileAndRun(pgm);
+        assertEquals("32 Z hello, my name is pathfinder!\n35", output);
+    }
+
+    @Test
+    public void simpleArith() {
         var pgm = """
                 void putn(int v);
                 void putc(char c);
@@ -126,25 +145,104 @@ public class SeaCompilationTests {
     }
 
     @Test
-    public void ternaryExpression() {
+    public void simpleTernary() {
         var pgm = """
                 void puts(char *s);
                 
                 int main() {
-                    int x = 12;
-                    char *a = x >= 12 ? "BIG\\n" : "little\\n";
-                    char *b = x > 11 ? "BIG\\n" : "little\\n";
-                    char *c = x < 13 ? "little\\n" : "BIG\\n";
-                    char *d = x <= 12 ? "little\\n" : "BIG\\n";
-                    puts(a);
-                    puts(b);
-                    puts(c);
-                    puts(d);
+                    char *s = 0 ? "fail\\n" : "pass\\n";
+                    puts(s);
                     return 0;
                 }
                 """;
 
         var output = compileAndRun(pgm);
-        assertEquals("BIG\nBIG\nlittle\nlittle\n", output);
+        assertEquals("pass\n", output);
+    }
+
+    @Test
+    public void comparison() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int a = 4 < 53;
+                    int b = 4 > 4;
+                    int c = 912 <= 3;
+                    printf("%d %d %d\\n", a, b, c);
+                    return 0;
+                }
+                """;
+
+        String output = compileAndRun(pgm);
+        assertEquals("1 0 0\n", output);
+    }
+
+    @Test
+    public void not() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    printf("%d, %d, %d\\n", !0, !1, !-23);
+                    return 0;
+                }
+                """;
+
+        String output = compileAndRun(pgm);
+        assertEquals("1, 0, 0\n", output);
+    }
+
+    @Test
+    public void conjunctive() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int x = 12;
+                    int y = 3;
+                    int a = x && y;
+                    int b = x && !y;
+                    int c = !x && y;
+                    int d = !x && !y;
+                    printf("TT: %d %d %d %d\\n", a, b, c, d);
+                    return 0;
+                }
+                """;
+
+        String output = compileAndRun(pgm);
+        assertEquals("TT: 1 0 0 0\n", output);
+    }
+
+    @Test
+    public void disjunctive() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int x = 12;
+                    int y = 3;
+                    int a = x || y;
+                    int b = x || !y;
+                    int c = !x || y;
+                    int d = !x || !y;
+                    printf("TT: %d %d %d %d\\n", a, b, c, d);
+                    return 0;
+                }
+                """;
+        String output = compileAndRun(pgm);
+        assertEquals("TT: 1 1 1 0\n", output);
+    }
+
+    @Test
+    public void ifStmt() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    
+                    return 0;
+                }
+                """;
     }
 }

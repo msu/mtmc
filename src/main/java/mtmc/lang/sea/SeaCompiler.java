@@ -14,6 +14,7 @@ public class SeaCompiler {
 
     private StringBuilder data = new StringBuilder();
     private StringBuilder code = new StringBuilder();
+    private HashMap<String, String> globalLabels = new HashMap<>();
     private HashMap<Object, String> dataLabels = new HashMap<>();
 
     public SeaCompiler(Unit program) {
@@ -21,6 +22,7 @@ public class SeaCompiler {
     }
 
     public Executable compile() throws CompilationException {
+        // t0, t1 are temporary values, t3 is a stack offset, t4 & t5 are comparison temporaries
         // data-types: pointers, words, and bytes
         // globals end in the 'data' segment
         // locals end up on the stack
@@ -64,9 +66,14 @@ public class SeaCompiler {
                 """;
         asm += code;
 
-        System.out.println("generate the following assembly:");
+        System.out.println("generated the following assembly:");
         System.out.println("=".repeat(20));
-        System.out.println(asm);
+        int lineno = 1;
+        for (Iterator<String> it = asm.lines().iterator(); it.hasNext(); ) {
+            String line = it.next();
+            System.out.printf("%3d | %s%n", lineno, line);
+            lineno += 1;
+        }
         System.out.println("=".repeat(20));
         var assembler = new Assembler();
         var exec = assembler.assembleExecutable("program", asm);
@@ -90,11 +97,26 @@ public class SeaCompiler {
 
     protected void compile(DeclarationFunc func) throws CompilationException {
         switch (func.name.content()) {
+            case "printf" -> {
+                if (!func.returnType.type().isInt()) {
+                    throw new CompilationException("'printf' must return void", func.returnType.span());
+                }
+
+                if (func.params.size() != 1 || !func.params.getParamType(0).isAPointerTo(SeaType.CHAR) || !func.params.isVararg()) {
+                    throw new CompilationException("'printf' must have signature (char *, ...)", Span.of(func.name));
+                }
+
+                code.append("printf:\n");
+                code.append("  sys printf\n");
+                code.append("  mov sp a1\n"); // restore the stack
+                code.append("  ret\n");
+                return;
+            }
             case "putc" -> {
                 if (!func.returnType.type().isVoid()) {
                     throw new CompilationException("'putc' must return void", func.returnType.span());
                 }
-                if (func.params.size() != 1 || !func.params.getFirst().type.type().isChar()) {
+                if (func.params.size() != 1 || !func.params.getParamType(0).isChar()) {
                     throw new CompilationException("'puts' must take a char as its only argument", Span.of(func.name));
                 }
 
@@ -107,7 +129,7 @@ public class SeaCompiler {
                 if (!func.returnType.type().isVoid()) {
                     throw new CompilationException("'puts' must return void", func.returnType.span());
                 }
-                if (func.params.size() != 1 || !func.params.getFirst().type.type().isAPointerTo(SeaType.CHAR)) {
+                if (func.params.size() != 1 || !func.params.getParamType(0).isAPointerTo(SeaType.CHAR)) {
                     throw new CompilationException("'puts' must take a char* as its only argument", Span.of(func.name));
                 }
 
@@ -120,7 +142,7 @@ public class SeaCompiler {
                 if (!func.returnType.type().isVoid()) {
                     throw new CompilationException("'putn' must return void", func.returnType.span());
                 }
-                if (func.params.size() != 1 || !func.params.getFirst().type.type().isInt()) {
+                if (func.params.size() != 1 || !func.params.getParamType(0).isInt()) {
                     throw new CompilationException("'putn' must take an int as its only argument", Span.of(func.name));
                 }
 
@@ -139,7 +161,7 @@ public class SeaCompiler {
         var paramOffset = 0;
         var frameOffsets = new HashMap<String, Integer>();
         int i = 0;
-        for (DeclarationFunc.Param param : func.params) {
+        for (DeclarationFunc.Param param : func.params.params()) {
             frameOffsets.put(param.name.content(), paramOffset);
             paramOffset += 2;
             code.append("  push a").append(i++).append("\n");
@@ -202,7 +224,7 @@ public class SeaCompiler {
 
     private void compile(Statement statement, Map<String, Integer> frameOffsets) {
         if (statement.getLabelAnchor() != null) {
-            code.append("  ").append(statement.getLabelAnchor().content()).append(": nop\n");
+            code.append(statement.getLabelAnchor().content()).append(":\n");
         }
         switch (statement) {
             case StatementBlock block -> compile(block, frameOffsets);
@@ -246,19 +268,20 @@ public class SeaCompiler {
         currentLoopHeadLabel.push("dw" + labelNo++);
         currentLoopTailLabel.push("enddw" + labelNo++);
 
-        code.append("  ").append(currentLoopHeadLabel).append(": nop\n");
+        code.append(currentLoopHeadLabel).append(":\n");
         compile(stmt.body, frameOffsets);
 
         compile(stmt.condition, frameOffsets, "t1");
         code.append("  li t0 0\n");
         code.append("  neq t1 t0\n");
         code.append("  jnz ").append(currentLoopHeadLabel).append("\n");
-        code.append(currentLoopTailLabel).append(": nop\n");
+        code.append(currentLoopTailLabel).append(":\n");
         currentLoopHeadLabel.pop();
         currentLoopTailLabel.pop();
     }
 
     void compile(StatementExpression stmt, Map<String, Integer> frameOffsets) {
+        code.append("# stmt expr\n");
         compile(stmt.expression, frameOffsets, "t0");
     }
 
@@ -269,7 +292,7 @@ public class SeaCompiler {
         if (stmt.initExpression != null) compile(stmt.initExpression, frameOffsets, "t0");
         else if (stmt.initStatement != null) compile(stmt.initStatement, frameOffsets);
 
-        code.append("  ").append(currentLoopHeadLabel).append(": nop\n");
+        code.append(currentLoopHeadLabel).append(":\n");
         compile(stmt.condition, frameOffsets, "t1");
         code.append("  li t0 0\n");
         code.append("  neq t1 t0\n");
@@ -277,7 +300,7 @@ public class SeaCompiler {
         compile(stmt.body, frameOffsets);
         compile(stmt.inc, frameOffsets, "t0");
         code.append("  j ").append(currentLoopHeadLabel).append("\n");
-        code.append("  ").append(currentLoopTailLabel).append(": nop\n");
+        code.append(currentLoopTailLabel).append(":\n");
 
         currentLoopHeadLabel.pop();
         currentLoopTailLabel.pop();
@@ -296,9 +319,9 @@ public class SeaCompiler {
         code.append("  neq t1 t0\n");
         code.append("  jz ").append(elseLabel).append("\n");
         compile(stmt.body, frameOffsets);
-        code.append("  ").append(elseLabel).append(": nop\n");
+        code.append(elseLabel).append(":\n");
         compile(stmt.elseBody, frameOffsets);
-        code.append("  ").append(endLabel).append(": nop\n");
+        code.append(endLabel).append(":\n");
     }
 
     void compile(StatementReturn stmt, Map<String, Integer> frameOffsets) {
@@ -313,10 +336,11 @@ public class SeaCompiler {
 
     void compile(StatementVar stmt, Map<String, Integer> frameOffsets) {
         if (stmt.initValue != null) {
+            code.append("# var ").append(stmt.name()).append('\n');
             compile(stmt.initValue, frameOffsets, "t0");
             // TODO: sizeof thingy
             var offset = frameOffsets.get(stmt.name());
-            code.append("  li t3 ").append(offset).append("\n");
+            code.append("  li t3 ").append(-offset).append("\n");
             code.append("  swr t0 fp t3\n");
         }
     }
@@ -327,14 +351,14 @@ public class SeaCompiler {
         currentLoopHeadLabel.push(headLabel);
         currentLoopTailLabel.push(tailLabel);
 
-        code.append("  ").append(headLabel).append(": nop\n");
+        code.append(headLabel).append(":\n");
         compile(stmt.condition, frameOffsets, "t1");
         code.append("  li t0 0\n");
         code.append("  neq t1 t0\n");
         code.append("  jz ").append(tailLabel).append("\n");
         compile(stmt.body, frameOffsets);
         code.append("  j ").append(headLabel).append("\n");
-        code.append("  ").append(tailLabel).append(": nop\n");
+        code.append(tailLabel).append(":\n");
 
         currentLoopHeadLabel.pop();
         currentLoopTailLabel.pop();
@@ -342,98 +366,131 @@ public class SeaCompiler {
 
     void compile(Expression expression, Map<String, Integer> frameOffsets, String dst) {
         switch (expression) {
-            case ExpressionAccess expr -> compile(expr, frameOffsets, dst);
-            case ExpressionBin expr -> compile(expr, frameOffsets, dst);
-            case ExpressionCall expr -> compile(expr, frameOffsets, dst);
-            case ExpressionCast expr -> compile(expr, frameOffsets, dst);
-            case ExpressionChar expr -> compile(expr, frameOffsets, dst);
-            case ExpressionIdent expr -> compile(expr, frameOffsets, dst);
-            case ExpressionIndex expr -> compile(expr, frameOffsets, dst);
-            case ExpressionInteger expr -> compile(expr, frameOffsets, dst);
-            case ExpressionParens expr -> compile(expr, frameOffsets, dst);
-            case ExpressionPostfix expr -> compile(expr, frameOffsets, dst);
-            case ExpressionPrefix expr -> compile(expr, frameOffsets, dst);
-            case ExpressionString expr -> compile(expr, frameOffsets, dst);
-            case ExpressionSyntaxError expr -> compile(expr, frameOffsets, dst);
-            case ExpressionTernary expr -> compile(expr, frameOffsets, dst);
-            case ExpressionTypeError expr -> compile(expr, frameOffsets, dst);
+            case ExpressionAccess expr -> compileAccess(expr, frameOffsets, dst);
+            case ExpressionBin expr -> compileBin(expr, frameOffsets, dst);
+            case ExpressionCall expr -> compileCall(expr, frameOffsets, dst);
+            case ExpressionCast expr -> compileCast(expr, frameOffsets, dst);
+            case ExpressionChar expr -> compileChar(expr, frameOffsets, dst);
+            case ExpressionIdent expr -> compileIdent(expr, frameOffsets, dst);
+            case ExpressionIndex expr -> compileIndex(expr, frameOffsets, dst);
+            case ExpressionInteger expr -> compileInt(expr, frameOffsets, dst);
+            case ExpressionParens expr -> compileParens(expr, frameOffsets, dst);
+            case ExpressionPostfix expr -> compilePostfix(expr, frameOffsets, dst);
+            case ExpressionPrefix expr -> compilePrefix(expr, frameOffsets, dst);
+            case ExpressionString expr -> compileStr(expr, frameOffsets, dst);
+            case ExpressionSyntaxError expr -> compileSyntaxError(expr, frameOffsets, dst);
+            case ExpressionTernary expr -> compileTernary(expr, frameOffsets, dst);
+            case ExpressionTypeError expr -> compileTypeError(expr, frameOffsets, dst);
         }
     }
 
 
-    void compile(ExpressionAccess expr, Map<String, Integer> frameOffsets, String dst) {
+    void compileAccess(ExpressionAccess expr, Map<String, Integer> frameOffsets, String dst) {
         throw new RuntimeException("unimplemented");
     }
 
-    void compile(ExpressionBin expr, Map<String, Integer> frameOffsets, String dst) {
-        if (expr.op().equals("&&") || expr.op().equals("||")) {
-            throw new RuntimeException("...");
-        }
-
-        if (expr.op().equals("<") || expr.op().equals(">") || expr.op().equals("<=") || expr.op().equals(">=")) {
-            compile(expr.lhs, frameOffsets, "t4");
-            compile(expr.rhs, frameOffsets, "t5");
-            switch (expr.op()) {
-                case "<" -> code.append("  gte t4 t5\n");
-                case ">" -> code.append("  lte t4 t5\n");
-                case "<=" -> code.append("  gt t4 t5\n");
-                case ">=" -> code.append("  lt t4 t5\n");
-            }
-            String labelFalse = "cmpno" + labelNo++;
-            String labelEnd = "endcmp" + labelNo++;
-            code.append("  jnz ").append(labelFalse).append('\n');
-            if (dst == null) {
-                code.append("  spushi 1\n");
-            } else {
-                code.append("  li ").append(dst).append(" 1\n");
-            }
-            code.append("  j ").append(labelEnd).append('\n');
-            code.append(labelFalse).append(": ");
-            if (dst == null) {
-                code.append("spushi 0\n");
-            } else {
-                code.append("li ").append(dst).append(" 0\n");
-            }
-            code.append(labelEnd).append(": nop\n");
-            return;
-        }
-
-        compile(expr.lhs, frameOffsets, null);
-        compile(expr.rhs, frameOffsets, null);
-        code.append("  ");
+    void compileBin(ExpressionBin expr, Map<String, Integer> frameOffsets, String dst) {
         switch (expr.op()) {
-            case "+" -> code.append("sadd");
-            case "-" -> code.append("ssub");
-            case "*" -> code.append("smul");
-            case "/" -> code.append("sdiv");
-            case "%" -> code.append("srem");
-            case "&" -> code.append("sand");
-            case "|" -> code.append("sor");
-            case "^" -> code.append("sxor");
-            case "<<" -> code.append("sshl");
-            case ">>" -> code.append("sshr");
-            case String s -> throw new RuntimeException(" unimplemented, bin " + s);
-        }
-        code.append("\n");
-        if (dst != null) {
-            code.append("  pop ").append(dst).append("\n");
+            case "<", ">", "<=", ">=" -> {
+                compile(expr.lhs, frameOffsets, "t4");
+                compile(expr.rhs, frameOffsets, "t5");
+                switch (expr.op()) {
+                    case "<" -> code.append("  gte t4 t5\n");
+                    case ">" -> code.append("  lte t4 t5\n");
+                    case "<=" -> code.append("  gt t4 t5\n");
+                    case ">=" -> code.append("  lt t4 t5\n");
+                }
+                String labelFalse = "cmpno" + labelNo++;
+                String labelEnd = "endcmp" + labelNo++;
+                code.append("  jnz ").append(labelFalse).append('\n');
+                String insr = dst == null ? "pushi" : "li " + dst;
+                code.append("  ").append(insr).append(" 1\n");
+                code.append("  j ").append(labelEnd).append('\n');
+                code.append(labelFalse).append(": ");
+                code.append("  ").append(insr).append(" 0\n");
+                code.append(labelEnd).append(": nop\n");
+            }
+            case "&&" -> {
+                String failLabel = "andfail" + labelNo++;
+                String endLabel = "endand" + labelNo++;
+                compileConditional(expr.lhs, frameOffsets);
+                String jump = expr.lhs instanceof ExpressionPrefix p && p.op().equals("!") ? "jnz" : "jz";
+                code.append("  ").append(jump).append(" ").append(failLabel).append('\n');
+                compileConditional(expr.rhs, frameOffsets);
+                jump = expr.rhs instanceof ExpressionPrefix p && p.op().equals("!") ? "jnz" : "jz";
+                code.append("  ").append(jump).append(" ").append(failLabel).append('\n');
+                String insr = dst == null ? "pushi" : "li " + dst;
+                code.append("  ").append(insr).append(" 1\n");
+                code.append("  j ").append(endLabel).append('\n');
+                code.append(failLabel).append(":\n");
+                code.append("  ").append(insr).append(" 0\n");
+                code.append(endLabel).append(":\n");
+            }
+            case "||" -> {
+                String trueLabel = "ortrue" + labelNo++;
+                String endLabel = "endor" + labelNo++;
+                compileConditional(expr.lhs, frameOffsets);
+                String jump = expr.lhs instanceof ExpressionPrefix p && p.op().equals("!") ? "jz" : "jnz";
+                code.append("  ").append(jump).append(" ").append(trueLabel).append('\n');
+                compileConditional(expr.rhs, frameOffsets);
+                jump = expr.rhs instanceof ExpressionPrefix p && p.op().equals("!") ? "jz" : "jnz";
+                code.append("  ").append(jump).append(" ").append(trueLabel).append('\n');
+                String load = dst == null ? "pushi" : "li " + dst;
+                code.append("  ").append(load).append(" 0\n");
+                code.append("  j ").append(endLabel).append('\n');
+                code.append(trueLabel).append(":\n");
+                code.append("  ").append(load).append(" 1\n");
+                code.append("  j ").append(endLabel).append('\n');
+                code.append(endLabel).append(":\n");
+            }
+            default -> {
+                compile(expr.lhs, frameOffsets, null);
+                compile(expr.rhs, frameOffsets, null);
+                code.append("  ");
+                switch (expr.op()) {
+                    case "+" -> code.append("sadd");
+                    case "-" -> code.append("ssub");
+                    case "*" -> code.append("smul");
+                    case "/" -> code.append("sdiv");
+                    case "%" -> code.append("srem");
+                    case "&" -> code.append("sand");
+                    case "|" -> code.append("sor");
+                    case "^" -> code.append("sxor");
+                    case "<<" -> code.append("sshl");
+                    case ">>" -> code.append("sshr");
+                    case String s -> throw new RuntimeException(" unimplemented, bin " + s);
+                }
+                code.append("\n");
+                if (dst != null) {
+                    code.append("  pop ").append(dst).append("\n");
+                }
+            }
         }
     }
 
-    void compile(ExpressionCall expr, Map<String, Integer> frameOffsets, String dst) {
-        int ti = 0;
-        for (var arg : expr.args) {
-            compile(arg, frameOffsets, "a" + ti);
-            ti += 1;
-        }
-
+    void compileCall(ExpressionCall expr, Map<String, Integer> frameOffsets, String dst) {
         if (expr.functor instanceof ExpressionIdent ident) {
+            var func = program.symbols.get(ident.name());
+            if (!(func.type() instanceof SeaType.Func f)) {
+                throw new UnsupportedOperationException("cannot invoke non-function");
+            }
+
+            for (int i = 0; i < f.params().size(); i++) {
+                compile(expr.args.get(i), frameOffsets, "a" + i);
+            }
+            code.append("  mov a").append(f.params().size()).append(" sp\n"); // move the starting pointer as the last hidden argument
+            for (int i = f.params().size(); i < expr.args.size(); i++) {
+                compile(expr.args.get(i), frameOffsets, null);
+            }
+
             code.append("  jal ").append(ident.name()).append("\n");
 
-            var func = program.symbols.get(ident.name());
-
-            if (!func.type().resultType().isVoid() && dst != null) {
-                code.append("  pop ").append(dst).append('\n');
+            if (!func.type().resultType().isVoid()) {
+                if (dst != null) {
+                    code.append("  mov ").append(dst).append(" rv\n");
+                } else {
+                    code.append("  push rv\n");
+                }
             }
 
         } else {
@@ -441,17 +498,41 @@ public class SeaCompiler {
         }
     }
 
-    void compile(ExpressionCast ignoredExpr, Map<String, Integer> ignoredFrameOffsets, String ignoredDst) {
+    void compileCast(ExpressionCast ignoredExpr, Map<String, Integer> ignoredFrameOffsets, String ignoredDst) {
         throw new RuntimeException("unimplemented");
     }
 
-    void compile(ExpressionChar expr, Map<String, Integer> ignoredFrameOffsets, String dst) {
+    String internConstant(Object constant) {
+        if (constant instanceof Character c) {
+            constant = (int) c;
+        }
+        if (dataLabels.containsKey(constant)) {
+            return dataLabels.get(constant);
+        }
+
+        String label;
+        String valueStr;
+        switch (constant) {
+            case String s -> {
+                label = "str" + Integer.toHexString(s.hashCode()).toUpperCase();
+                valueStr = StringEscapeUtils.escapeString(s);
+            }
+            case Integer i -> {
+                label = "num" + i;
+                valueStr = "" + i;
+            }
+            default ->
+                    throw new UnsupportedOperationException("cannot compile constant " + constant.getClass().getName() + " : " + constant);
+        }
+        data.append("  ").append(label).append(": ").append(valueStr).append('\n');
+        dataLabels.put(constant, label);
+        return label;
+    }
+
+    void compileChar(ExpressionChar expr, Map<String, Integer> ignoredFrameOffsets, String dst) {
         var rune = (int) expr.content();
         if (rune >= 16) {
-            String label = "num" + rune;
-            if (!dataLabels.containsKey(label)) {
-                data.append("  ").append(label).append(": ").append(rune).append('\n');
-            }
+            String label = internConstant(rune);
             if (dst != null) {
                 code.append("  lw ").append(dst).append(" ").append(label).append('\n');
             } else {
@@ -465,9 +546,10 @@ public class SeaCompiler {
         }
     }
 
-    void compile(ExpressionIdent ident, Map<String, Integer> frameOffsets, String dst) {
-        if (dataLabels.containsKey(ident.name())) {
-            var label = dataLabels.get(ident.name());
+    void compileIdent(ExpressionIdent ident, Map<String, Integer> frameOffsets, String dst) {
+        code.append("# load ").append(ident.name()).append("\n");
+        if (globalLabels.containsKey(ident.name())) {
+            var label = globalLabels.get(ident.name());
             String insr = ident.type().isAPointerTo(SeaType.CHAR) ? "la" : "lw";
             if (dst == null) {
                 code.append("  ").append(insr).append(" t0 ").append(label).append('\n');
@@ -477,7 +559,7 @@ public class SeaCompiler {
             }
         } else {
             var offset = frameOffsets.get(ident.name());
-            code.append("  li t3 ").append(offset).append("\n");
+            code.append("  li t3 ").append(-offset).append("\n");
             if (dst == null) {
                 code.append("  lwr t0 fp t3\n");
                 code.append("  push t0\n");
@@ -487,7 +569,7 @@ public class SeaCompiler {
         }
     }
 
-    void compile(ExpressionIndex expr, Map<String, Integer> frameOffsets, String dst) {
+    void compileIndex(ExpressionIndex expr, Map<String, Integer> frameOffsets, String dst) {
         compile(expr.array, frameOffsets, null);
         compile(expr.index, frameOffsets, null);
         code.append("  pop t1\n"); // load the offset into t1
@@ -504,7 +586,7 @@ public class SeaCompiler {
         }
     }
 
-    void compile(ExpressionInteger expr, Map<String, Integer> ignored, String dst) {
+    void compileInt(ExpressionInteger expr, Map<String, Integer> ignored, String dst) {
         int val = expr.value;
         if (val >= 0 && val < 16) {
             if (dst == null) {
@@ -513,10 +595,7 @@ public class SeaCompiler {
                 code.append("  li ").append(dst).append(' ').append(val).append('\n');
             }
         } else {
-            String label = "num" + val;
-            if (!dataLabels.containsKey(label)) {
-                data.append("  ").append(label).append(": ").append(val).append('\n');
-            }
+            String label = internConstant(val);
             if (dst == null) {
                 code.append("  lw t0 ").append(label).append('\n');
                 code.append("  push t0\n");
@@ -526,7 +605,7 @@ public class SeaCompiler {
         }
     }
 
-    void compile(ExpressionParens expr, Map<String, Integer> frameOffsets, String dst) {
+    void compileParens(ExpressionParens expr, Map<String, Integer> frameOffsets, String dst) {
         compile(expr.inner, frameOffsets, dst);
     }
 
@@ -535,7 +614,7 @@ public class SeaCompiler {
     // load a[i]
     // (hook) : value is on the stack, do whatever, leave (stack-value, assign-value)
     // write a[i] from stack?
-    void compile(ExpressionPostfix expr, Map<String, Integer> frameOffsets, String dst) {
+    void compilePostfix(ExpressionPostfix expr, Map<String, Integer> frameOffsets, String dst) {
         compile(expr.inner, frameOffsets, null);
         switch (expr.op()) {
 //            case "++" -> {
@@ -553,46 +632,135 @@ public class SeaCompiler {
         }
     }
 
-    void compile(ExpressionPrefix expr, Map<String, Integer> frameOffsets, String dst) {
-        throw new UnsupportedOperationException();
+    void compilePrefix(ExpressionPrefix expr, Map<String, Integer> frameOffsets, String dst) {
+        switch (expr.op()) {
+            case "!" -> {
+                compile(expr.inner, frameOffsets, "t4");
+                String nt = "nottrue" + labelNo++;
+                String end = "endnot" + labelNo++;
+                String insr = dst == null ? "pushi" : "li " + dst;
+                code.append("  li t5 0\n");
+                code.append("  neq t4 t5\n");
+                code.append("  jz ").append(nt).append('\n');
+                code.append("  ").append(insr).append(" 0\n");
+                code.append("  j ").append(end).append('\n');
+                code.append(nt).append(":\n");
+                code.append("  ").append(insr).append(" 1\n");
+                code.append(end).append(":\n");
+            }
+            case "-" -> {
+                compile(expr.inner, frameOffsets, dst);
+                if (dst == null) {
+                    code.append("  sneg\n");
+                } else {
+                    code.append("  neg ").append(dst).append('\n');
+                }
+            }
+            case String op -> throw new UnsupportedOperationException("cannot compile: " + op);
+        }
     }
 
-    void compile(ExpressionString expr, Map<String, Integer> frameOffsets, String dst) {
-        var hash = Integer.toHexString(expr.content().hashCode()).toUpperCase();
-        var label = "str" + hash;
-        if (!dataLabels.containsKey(label)) {
-            data.append("  ").append(label).append(": ").append(StringEscapeUtils.escapeString(expr.content())).append('\n');
-        }
+    void compileStr(ExpressionString expr, Map<String, Integer> frameOffsets, String dst) {
+        String content = expr.content();
+        String label = internConstant(content);
         if (dst == null) {
             code.append("  la t0 ").append(label).append('\n');
-            code.append("  push t0");
+            code.append("  push t0\n");
         } else {
             code.append("  la ").append(dst).append(' ').append(label).append('\n');
         }
     }
 
-    void compile(ExpressionSyntaxError expr, Map<String, Integer> frameOffsets, String dst) {
+    void compileSyntaxError(ExpressionSyntaxError expr, Map<String, Integer> frameOffsets, String dst) {
         throw new UnsupportedOperationException("cannot compile errors");
     }
 
-    void compile(ExpressionTernary expr, Map<String, Integer> frameOffsets, String dst) {
-        compile(expr.cond, frameOffsets, "t1");
-        code.append("  li t0 0\n");
-        code.append("  neq t1 t0\n");
-
-        String labelElse = "ternelse" + labelNo++;
-        String labelEnd = "endtern" + labelNo++;
-
-        code.append("  jz ").append(labelElse).append('\n');
-        compile(expr.then, frameOffsets, dst);
-        code.append("  j ").append(labelEnd).append('\n');
-        code.append(labelElse).append(":\n");
-        compile(expr.otherwise, frameOffsets, dst);
-        code.append(labelEnd).append(":\n");
-        code.append("  nop\n");
+    void compileTernary(ExpressionTernary expr, Map<String, Integer> frameOffsets, String dst) {
+        compileConditionalJump(
+                "ternary",
+                expr.cond,
+                frameOffsets,
+                (String elseLabel, String endLabel) -> {
+                    compile(expr.then, frameOffsets, null);
+                },
+                (String elseLabel, String endLabel) -> {
+                    compile(expr.otherwise, frameOffsets, null);
+                }
+        );
     }
 
-    void compile(ExpressionTypeError expr, Map<String, Integer> frameOffsets, String dst) {
+    interface ConditionalBranch {
+        void compile(String elseLabel, String endLabel);
+    }
+
+    void compileConditional(Expression condition, Map<String, Integer> frameOffsets) {
+        switch (condition) {
+            case ExpressionBin e -> {
+                switch (e.op()) {
+                    case "<", ">", "<=", ">=" -> {
+                        compile(e.lhs, frameOffsets, "t4");
+                        compile(e.rhs, frameOffsets, "t5");
+                        switch (e.op()) {
+                            case "<" -> code.append("  gte t4 t5\n");
+                            case ">" -> code.append("  lte t4 t5\n");
+                            case "<=" -> code.append("  gt t4 t5\n");
+                            case ">=" -> code.append("  lt t4 t5\n");
+                        }
+                    }
+                    default -> {
+                        compile(e, frameOffsets, "t4");
+                        code.append("  li t5 0\n");
+                        code.append("  neq t4 t5\n");
+                    }
+                }
+            }
+            case ExpressionPrefix e -> {
+                switch (e.op()) {
+                    case "!" -> {
+                        compileConditional(e.inner, frameOffsets);
+                    }
+                    default -> {
+                        compile(e, frameOffsets, "t4");
+                        code.append("  li t5 0\n");
+                        code.append("  neq t4 t5\n");
+                    }
+                }
+            }
+            case Expression e -> {
+                compile(e, frameOffsets, "t4");
+                code.append("  li t5 0\n");
+                code.append("  neq t4 t5\n");
+            }
+        }
+    }
+
+    void compileConditionalJump(
+            String prefix,
+            Expression condition,
+            Map<String, Integer> frameOffsets,
+            ConditionalBranch then,
+            ConditionalBranch otherwise
+    ) {
+        String elseLabel = prefix + "else" + labelNo++;
+        String endLabel = "end" + prefix + labelNo++;
+        compileConditional(condition, frameOffsets);
+        code.append("  jz ").append(elseLabel).append('\n');
+        if (condition instanceof ExpressionPrefix p && p.op().equals("!")) {
+            otherwise.compile(elseLabel, endLabel);
+        } else {
+            then.compile(elseLabel, endLabel);
+        }
+        code.append("  j ").append(endLabel).append('\n');
+        code.append(elseLabel).append(":\n");
+        if (condition instanceof ExpressionPrefix p && p.op().equals("!")) {
+            then.compile(elseLabel, endLabel);
+        } else {
+            otherwise.compile(elseLabel, endLabel);
+        }
+        code.append(endLabel).append(":\n");
+    }
+
+    void compileTypeError(ExpressionTypeError expr, Map<String, Integer> frameOffsets, String dst) {
         throw new UnsupportedOperationException();
     }
 
@@ -604,8 +772,8 @@ public class SeaCompiler {
         if (item.initializer != null) {
             value = evalConstant(item.initializer);
         }
-        var label = addGlobal(value);
-        dataLabels.put(item.name.content(), label);
+        var label = internConstant(value);
+        globalLabels.put(item.name.content(), label);
     }
 
     protected Object evalConstant(Expression expression) throws CompilationException {
@@ -704,28 +872,5 @@ public class SeaCompiler {
             default ->
                     throw new UnsupportedOperationException("invalid constant expression: " + expression.getClass().getSimpleName());
         };
-    }
-
-    int varNo = 0;
-
-    String addGlobal(Object value) {
-        var label = "dat" + varNo++;
-        data.append("  ").append(label).append(": ");
-        switch (value) {
-            case String s -> {
-                var str = StringEscapeUtils.escapeString(s);
-                data.append(str).append('\n');
-            }
-            case Integer i -> {
-                data.append(i).append('\n');
-            }
-            case null -> {
-                data.append(0).append('\n');
-            }
-            case Object v -> throw new RuntimeException("don't know how to compile constant " + v.getClass());
-        }
-        ;
-
-        return label;
     }
 }

@@ -449,7 +449,7 @@ public class Assembler {
 
     private static List<MTMCToken> maybeGetLabels(LinkedList<MTMCToken> tokens) {
         LinkedList<MTMCToken> labels = new LinkedList<>();
-        while (tokens.getFirst().type() == LABEL) {
+        while (!tokens.isEmpty() &&  tokens.getFirst().type() == LABEL) {
             MTMCToken label = tokens.poll();
             labels.add(label);
         }

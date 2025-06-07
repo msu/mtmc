@@ -665,6 +665,10 @@ public class MonTanaMiniComputer {
     }
 
     public void writeByteToMemory(int address, byte value) {
+        if (address < 0 || address >= memory.length) {
+            setStatus(PERMANENT_ERROR);
+            return;
+        }
         memory[address] = value;
         observers.forEach(o -> o.memoryUpdated(address, value));
     }

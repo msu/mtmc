@@ -49,10 +49,11 @@ public record Token(
         RIGHT_BRACE("}"),
 
         // Simple Punct
+        DOT3("..."),
+        DOT("."),
         SEMICOLON(";"),
         COMMA(","),
         COLON(":"),
-        DOT("."),
         TILDE("~"),
         QUESTION("?"),
 
@@ -231,8 +232,31 @@ public record Token(
     }
 
     public static Token tokenizeOne(String src, int offset) throws TokenizeException {
-        while (offset < src.length() && Character.isWhitespace(src.charAt(offset))) {
-            offset += Character.charCount(src.charAt(offset));
+        while (offset < src.length()) {
+            if (Character.isWhitespace(src.charAt(offset))) {
+                offset += Character.charCount(src.charAt(offset));
+            } else if (match(src, offset, "//")) {
+                offset += 2;
+                while (offset < src.length()) {
+                    char c = src.charAt(offset);
+                    offset += Character.charCount(c);
+                    if (c == '\n') {
+                        break;
+                    }
+                }
+            } else if (match(src, offset, "/*")) {
+                offset += 2;
+                while (offset < src.length()) {
+                    if (match(src, offset, "*/")) {
+                        offset += 2;
+                        break;
+                    } else {
+                        offset += Character.charCount(src.charAt(offset));
+                    }
+                }
+            } else {
+                break;
+            }
         }
         if (offset >= src.length()) return null;
 

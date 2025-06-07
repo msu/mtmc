@@ -66,9 +66,15 @@ public class SeaParser {
         return new Unit(declarations, this.symbols);
     }
 
-    public List<DeclarationFunc.Param> parseParamList() throws ParseException {
+    public DeclarationFunc.ParamList parseParamList() throws ParseException {
         var params = new ArrayList<DeclarationFunc.Param>();
+        boolean isVararg = false;
         while (hasMoreTokens() && !match(RIGHT_PAREN)) {
+            if (take(DOT3)) {
+                isVararg = true;
+                break;
+            }
+
             TypeExpr paramType = parseSimpleType();
 
             if (!match(LIT_IDENT)) {
@@ -83,6 +89,11 @@ public class SeaParser {
         }
 
         if (!take(RIGHT_PAREN)) {
+            if (isVararg) {
+                var msg = new Message(peekToken(), "expected ')' after vararg parameters '...'");
+                throw new ParseException(msg);
+            }
+
             try {
                 parseSimpleType();
                 var msg = new Message(peekToken(), "expected ')', did you forget a comma?");
@@ -94,7 +105,7 @@ public class SeaParser {
             throw new ParseException(msg);
         }
 
-        return params;
+        return new DeclarationFunc.ParamList(params, isVararg);
     }
 
     public DeclarationTypedef parseDeclarationTypedef() throws ParseException {
@@ -149,8 +160,11 @@ public class SeaParser {
 
         if (take(LEFT_PAREN)) {
             var lparen = lastToken();
-            var params = parseParamList();
-            if (params.size() > 4) {
+            var paramList = parseParamList();
+
+            if (paramList.isVararg() && paramList.size() > 3) {
+                throw new ParseException(new Message(Span.of(lparen, lastToken()), "a vararg function can have at most 3 parameters!"));
+            } else if (paramList.size() > 4) {
                 throw new ParseException(new Message(Span.of(lparen, lastToken()), "a function can have at most 4 parameters!"));
             }
 
@@ -164,7 +178,7 @@ public class SeaParser {
                 scope = new Vector<>();
                 var paramScope = new LinkedHashMap<String, Symbol>();
                 scope.add(paramScope);
-                for (DeclarationFunc.Param param : params) {
+                for (DeclarationFunc.Param param : paramList.params()) {
                     if (!defineLocal(param.name, param.type.type())) {
                         throw new ParseException(new Message(name, "the parameter name '" + name.content() + "' was used twice!"));
                     }
@@ -175,7 +189,7 @@ public class SeaParser {
                 bodyBrace = null;
             }
 
-            var func = new DeclarationFunc(type, name, params, body, body == null ? lastToken() : body.end);
+            var func = new DeclarationFunc(type, name, paramList, body, body == null ? lastToken() : body.end);
             symbols.put(name.content(), new Symbol(name, func.type()));
             return func;
         } else {
@@ -1082,17 +1096,18 @@ public class SeaParser {
 
                 SeaType type;
                 var functorTy = expr.type();
-                if (!(functorTy instanceof SeaType.Func(List<SeaType> params, SeaType result))) {
+                if (!(functorTy instanceof SeaType.Func(List<SeaType> params, boolean isVararg, SeaType result))) {
                     expr = new ExpressionTypeError(expr, "cannot invoke " + functorTy.repr());
                     type = SeaType.INT;
-                } else if (args.size() != params.size()) {
+                } else if (isVararg ? args.size() < params.size() : args.size() != params.size()) {
                     var s = new StringBuilder();
                     s.append("argument mismatch, expected (");
                     for (int i = 0; i < params.size(); i++) {
                         if (i > 0) s.append(", ");
                         s.append(params.get(i).repr());
                     }
-                    s.append("), instead found (");
+                    s.append(isVararg ? ", ...)" : ")");
+                    s.append(", instead found (");
                     for (int i = 0; i < args.size(); i++) {
                         if (i > 0) s.append(", ");
                         s.append(args.get(i).type().repr());
@@ -1111,6 +1126,7 @@ public class SeaParser {
                         String s = "argument of type " + argTy.repr() + " is not convertible to " + paramTy.repr();
                         args.set(i, new ExpressionTypeError(args.get(i), s));
                     }
+
                     type = result;
                 }
 

@@ -82,7 +82,7 @@ public sealed interface SeaType {
 
     default String repr() {
         if (this instanceof Pointer p) {
-            if (p.baseType() instanceof Func(List<SeaType> params, SeaType result)) {
+            if (p.baseType() instanceof Func(List<SeaType> params, boolean isVararg, SeaType result)) {
                 var s = new StringBuilder();
                 s.append(result.repr()).append("(*");
                 var x = p.component;
@@ -106,7 +106,7 @@ public sealed interface SeaType {
         if (this == CHAR) return "char";
         if (this == INT) return "int";
         if (this == VOID) return "void";
-        if (this instanceof Func(List<SeaType> params, SeaType result)) {
+        if (this instanceof Func(List<SeaType> params, boolean isVararg, SeaType result)) {
             var s = new StringBuilder();
             s.append(result.repr());
             s.append("(");
@@ -144,7 +144,11 @@ public sealed interface SeaType {
         }
     }
 
-    record Func(List<SeaType> params, SeaType result) implements SeaType {}
+    record Func(List<SeaType> params, boolean isVararg, SeaType result) implements SeaType {
+        public Func(List<SeaType> params, SeaType result) {
+            this(params, false, result);
+        }
+    }
 
     record Struct(String name, Map<String, SeaType> args) implements SeaType {}
 }

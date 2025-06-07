@@ -8,19 +8,24 @@ public enum SysCall {
     WCHR(0x04),
     RCHR(0x05),
     WSTR(0x06),
-    RFILE(0x07),
-    WFILE(0x08),
-    RND(0x09),
-    SLEEP(0x0A),
-    FBRESET(0x0B),
-    FBSTAT(0x0C),
-    FBSET(0x0D),
-    FBLINE(0x0E),
-    FBRECT(0x0F),
-    FBFLUSH(0x10),
-    JOYSTICK(0x11),
-    SCOLOR(0x12),
-    MEMCOPY(0x13),
+    PRINTF(0x07),
+
+    RFILE(0x10),
+    WFILE(0x11),
+
+    RND(0x20),
+    SLEEP(0x21),
+
+    FBRESET(0x30),
+    FBSTAT(0x31),
+    FBSET(0x32),
+    FBLINE(0x33),
+    FBRECT(0x34),
+    FBFLUSH(0x35),
+    JOYSTICK(0x3A),
+    SCOLOR(0x3B),
+
+    MEMCOPY(0x40),
     ERROR(0x0FF);
 
     private final byte value;

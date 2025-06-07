@@ -23,7 +23,7 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
         return switch (this) {
             case DeclarationFunc declarationFunc -> {
                 Stream<Ast> out = Stream.of(declarationFunc.returnType);
-                out = Stream.concat(out, declarationFunc.params.stream());
+                out = Stream.concat(out, declarationFunc.params.params().stream());
                 if (declarationFunc.body != null) {
                     out = Stream.concat(out, Stream.of(declarationFunc.body));
                 }

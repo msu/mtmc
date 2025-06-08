@@ -215,6 +215,27 @@ public class SeaCompilationTests {
     }
 
     @Test
+    public void antiConjunctive() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int x = 12;
+                    int y = 3;
+                    int a = !(x && y);
+                    int b = !(x && !y);
+                    int c = !(!x && y);
+                    int d = !(!x && !y);
+                    printf("TT: %d %d %d %d\\n", a, b, c, d);
+                    return 0;
+                }
+                """;
+
+        String output = compileAndRun(pgm);
+        assertEquals("TT: 0 1 1 1\n", output);
+    }
+
+    @Test
     public void disjunctive() {
         var pgm = """
                 int printf(char *s, ...);
@@ -235,14 +256,92 @@ public class SeaCompilationTests {
     }
 
     @Test
+    public void antiDisjunctive() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int x = 12;
+                    int y = 3;
+                    int a = !(x || y);
+                    int b = !(x || !y);
+                    int c = !(!x || y);
+                    int d = !(!x || !y);
+                    printf("TT: %d %d %d %d\\n", a, b, c, d);
+                    return 0;
+                }
+                """;
+        String output = compileAndRun(pgm);
+        assertEquals("TT: 0 0 0 1\n", output);
+    }
+
+    @Test
+    public void complexLogical() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int x = 3;
+                    int y = 0;
+                    int z = 8;
+                    int q = 4;
+                
+                    int a = x || y && z;
+                    int b = x && y && z;
+                    int c = x && !y && z;
+                    int d = !x || y || !z;
+                    int e = x && z && q;
+                
+                    printf("%d %d %d %d %d\\n", a, b, c, d, e);
+                    return 0;
+                }
+                """;
+
+        var output = compileAndRun(pgm);
+        assertEquals("1 0 1 0 1\n", output);
+    }
+
+    @Test
+    public void equality() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int a = 1 == 1;
+                    int b = 2 == 1;
+                    int c = 834 != 3822;
+                    printf("%d %d %d\\n", a, b, c);
+                    return 0;
+                }
+                """;
+        String output = compileAndRun(pgm);
+        assertEquals("1 0 1\n", output);
+    }
+
+
+    @Test
     public void ifStmt() {
         var pgm = """
                 int printf(char *s, ...);
                 
                 int main() {
-                    
+                    int x = 13;
+                    int y = 42;
+               
+                    if (x > y || y / x == 3) {
+                        printf("yo!\\n");
+                    }
+                
+                    if (x > y) {
+                        printf("never\\n");
+                    } else {
+                        printf("I'm a little teapot\\n");
+                    }
+                
                     return 0;
                 }
                 """;
+        String output = compileAndRun(pgm);
+        assertEquals("yo!\nI'm a little teapot\n", output);
     }
 }

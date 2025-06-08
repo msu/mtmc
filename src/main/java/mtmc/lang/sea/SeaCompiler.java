@@ -167,9 +167,14 @@ public class SeaCompiler {
             code.append("  push a").append(i++).append("\n");
         }
 
-        int maxLocals = calcMaxLocals(func.body);
-        if (maxLocals > 0) {
-            code.append("  dec sp ").append(2 * maxLocals).append("\n");
+        int maxLocalSize = calcMaxLocalSize(func.body);
+        if (maxLocalSize > 0) {
+            if (maxLocalSize > 15) {
+                code.append("  li t0 ").append(maxLocalSize).append("\n");
+                code.append("  sub sp t0\n");
+            } else {
+                code.append("  dec sp ").append(maxLocalSize).append("\n");
+            }
         }
 
         compile(func.body, frameOffsets);
@@ -178,16 +183,16 @@ public class SeaCompiler {
         // TODO: dangling return
     }
 
-    private int calcMaxLocals(Statement body) {
+    private int calcMaxLocalSize(Statement body) {
         return switch (body) {
             case StatementBlock statementBlock -> {
                 int vars = 0;
                 int temps = 0;
                 for (var child : statementBlock.statements) {
                     if (child instanceof StatementVar) {
-                        vars += 1;
+                        vars += 2;
                     } else {
-                        int r = calcMaxLocals(child);
+                        int r = calcMaxLocalSize(child);
                         temps = Math.max(temps, r);
                     }
                 }
@@ -196,27 +201,27 @@ public class SeaCompiler {
             case StatementBreak ignored -> 0;
             case StatementContinue ignored -> 0;
             case StatementDoWhile stmt -> {
-                int n = calcMaxLocals(stmt.body);
+                int n = calcMaxLocalSize(stmt.body);
                 yield n;
             }
             case StatementExpression ignored -> 0;
             case StatementFor stmt -> {
                 int n = 0;
-                if (stmt.initStatement != null) n += calcMaxLocals(stmt.initStatement);
-                n += calcMaxLocals(stmt.body);
+                if (stmt.initStatement != null) n += calcMaxLocalSize(stmt.initStatement);
+                n += calcMaxLocalSize(stmt.body);
                 yield n;
             }
             case StatementGoto ignored -> 0;
             case StatementIf statementIf -> {
-                int t = calcMaxLocals(statementIf.body);
-                int e = calcMaxLocals(statementIf.elseBody);
+                int t = calcMaxLocalSize(statementIf.body);
+                int e = statementIf.elseBody == null ? 0 : calcMaxLocalSize(statementIf.elseBody);
                 yield Math.max(t, e);
             }
             case StatementReturn ignored -> 0;
             case StatementSyntaxError ignored -> 0;
-            case StatementVar ignored -> 1;
+            case StatementVar ignored -> 2;
             case StatementWhile stmt -> {
-                int n = calcMaxLocals(stmt.body);
+                int n = calcMaxLocalSize(stmt.body);
                 yield n;
             }
         };
@@ -317,10 +322,16 @@ public class SeaCompiler {
         compile(stmt.condition, frameOffsets, "t1");
         code.append("  li t0 0\n");
         code.append("  neq t1 t0\n");
-        code.append("  jz ").append(elseLabel).append("\n");
-        compile(stmt.body, frameOffsets);
-        code.append(elseLabel).append(":\n");
-        compile(stmt.elseBody, frameOffsets);
+        if (stmt.elseBody != null) {
+            code.append("  jz ").append(elseLabel).append("\n");
+            compile(stmt.body, frameOffsets);
+            code.append("  j ").append(endLabel).append('\n');
+            code.append(elseLabel).append(":\n");
+            compile(stmt.elseBody, frameOffsets);
+        } else {
+            code.append("  jz ").append(endLabel).append("\n");
+            compile(stmt.body, frameOffsets);
+        }
         code.append(endLabel).append(":\n");
     }
 
@@ -340,7 +351,12 @@ public class SeaCompiler {
             compile(stmt.initValue, frameOffsets, "t0");
             // TODO: sizeof thingy
             var offset = frameOffsets.get(stmt.name());
-            code.append("  li t3 ").append(-offset).append("\n");
+            if (offset > 15) {
+                String label = internConstant(-offset);
+                code.append("  lw t3 ").append(label).append('\n');
+            } else {
+                code.append("  li t3 ").append(-offset).append("\n");
+            }
             code.append("  swr t0 fp t3\n");
         }
     }
@@ -391,57 +407,41 @@ public class SeaCompiler {
 
     void compileBin(ExpressionBin expr, Map<String, Integer> frameOffsets, String dst) {
         switch (expr.op()) {
-            case "<", ">", "<=", ">=" -> {
-                compile(expr.lhs, frameOffsets, "t4");
-                compile(expr.rhs, frameOffsets, "t5");
-                switch (expr.op()) {
-                    case "<" -> code.append("  gte t4 t5\n");
-                    case ">" -> code.append("  lte t4 t5\n");
-                    case "<=" -> code.append("  gt t4 t5\n");
-                    case ">=" -> code.append("  lt t4 t5\n");
-                }
-                String labelFalse = "cmpno" + labelNo++;
-                String labelEnd = "endcmp" + labelNo++;
-                code.append("  jnz ").append(labelFalse).append('\n');
-                String insr = dst == null ? "pushi" : "li " + dst;
-                code.append("  ").append(insr).append(" 1\n");
-                code.append("  j ").append(labelEnd).append('\n');
-                code.append(labelFalse).append(": ");
-                code.append("  ").append(insr).append(" 0\n");
-                code.append(labelEnd).append(": nop\n");
+            case "<", ">", "<=", ">=", "==", "!=" -> {
+                int label = labelNo++;
+                var insr = dst == null ? "pushi" : "li " + dst;
+                compileBranchingInstruction(
+                        expr,
+                        frameOffsets,
+                        "cmpFalse" + label,
+                        "cmpEnd" + label,
+                        () -> code.append("  ").append(insr).append(" 1\n"),
+                        () -> code.append("  ").append(insr).append(" 0\n")
+                );
             }
             case "&&" -> {
-                String failLabel = "andfail" + labelNo++;
-                String endLabel = "endand" + labelNo++;
-                compileConditional(expr.lhs, frameOffsets);
-                String jump = expr.lhs instanceof ExpressionPrefix p && p.op().equals("!") ? "jnz" : "jz";
-                code.append("  ").append(jump).append(" ").append(failLabel).append('\n');
-                compileConditional(expr.rhs, frameOffsets);
-                jump = expr.rhs instanceof ExpressionPrefix p && p.op().equals("!") ? "jnz" : "jz";
-                code.append("  ").append(jump).append(" ").append(failLabel).append('\n');
-                String insr = dst == null ? "pushi" : "li " + dst;
-                code.append("  ").append(insr).append(" 1\n");
-                code.append("  j ").append(endLabel).append('\n');
-                code.append(failLabel).append(":\n");
-                code.append("  ").append(insr).append(" 0\n");
-                code.append(endLabel).append(":\n");
+                int label = labelNo++;
+                var insr = dst == null ? "pushi" : "li " + dst;
+                compileBranchingInstruction(
+                        expr,
+                        frameOffsets,
+                        "andFalse" + label,
+                        "andEnd" + label,
+                        () -> code.append("  ").append(insr).append(" 1\n"),
+                        () -> code.append("  ").append(insr).append(" 0\n")
+                );
             }
             case "||" -> {
-                String trueLabel = "ortrue" + labelNo++;
-                String endLabel = "endor" + labelNo++;
-                compileConditional(expr.lhs, frameOffsets);
-                String jump = expr.lhs instanceof ExpressionPrefix p && p.op().equals("!") ? "jz" : "jnz";
-                code.append("  ").append(jump).append(" ").append(trueLabel).append('\n');
-                compileConditional(expr.rhs, frameOffsets);
-                jump = expr.rhs instanceof ExpressionPrefix p && p.op().equals("!") ? "jz" : "jnz";
-                code.append("  ").append(jump).append(" ").append(trueLabel).append('\n');
-                String load = dst == null ? "pushi" : "li " + dst;
-                code.append("  ").append(load).append(" 0\n");
-                code.append("  j ").append(endLabel).append('\n');
-                code.append(trueLabel).append(":\n");
-                code.append("  ").append(load).append(" 1\n");
-                code.append("  j ").append(endLabel).append('\n');
-                code.append(endLabel).append(":\n");
+                int label = labelNo++;
+                var insr = dst == null ? "pushi" : "li " + dst;
+                compileBranchingInstruction(
+                        expr,
+                        frameOffsets,
+                        "orElse" + label,
+                        "orEnd" + label,
+                        () -> code.append("  ").append(insr).append(" 1\n"),
+                        () -> code.append("  ").append(insr).append(" 0\n")
+                );
             }
             default -> {
                 compile(expr.lhs, frameOffsets, null);
@@ -518,7 +518,7 @@ public class SeaCompiler {
                 valueStr = StringEscapeUtils.escapeString(s);
             }
             case Integer i -> {
-                label = "num" + i;
+                label = "num" + (i < 0 ? "_" + -i : i);
                 valueStr = "" + i;
             }
             default ->
@@ -676,88 +676,140 @@ public class SeaCompiler {
     }
 
     void compileTernary(ExpressionTernary expr, Map<String, Integer> frameOffsets, String dst) {
-        compileConditionalJump(
-                "ternary",
+        int label = labelNo++;
+        compileBranchingInstruction(
                 expr.cond,
                 frameOffsets,
-                (String elseLabel, String endLabel) -> {
-                    compile(expr.then, frameOffsets, null);
-                },
-                (String elseLabel, String endLabel) -> {
-                    compile(expr.otherwise, frameOffsets, null);
-                }
+                "ternaryElse" + label,
+                "ternaryEnd" + label,
+                () -> compile(expr.then, frameOffsets, null),
+                () -> compile(expr.otherwise, frameOffsets, null)
         );
     }
 
-    interface ConditionalBranch {
-        void compile(String elseLabel, String endLabel);
-    }
-
-    void compileConditional(Expression condition, Map<String, Integer> frameOffsets) {
-        switch (condition) {
-            case ExpressionBin e -> {
-                switch (e.op()) {
-                    case "<", ">", "<=", ">=" -> {
-                        compile(e.lhs, frameOffsets, "t4");
-                        compile(e.rhs, frameOffsets, "t5");
-                        switch (e.op()) {
-                            case "<" -> code.append("  gte t4 t5\n");
-                            case ">" -> code.append("  lte t4 t5\n");
-                            case "<=" -> code.append("  gt t4 t5\n");
-                            case ">=" -> code.append("  lt t4 t5\n");
-                        }
-                    }
-                    default -> {
-                        compile(e, frameOffsets, "t4");
-                        code.append("  li t5 0\n");
-                        code.append("  neq t4 t5\n");
-                    }
-                }
-            }
-            case ExpressionPrefix e -> {
-                switch (e.op()) {
-                    case "!" -> {
-                        compileConditional(e.inner, frameOffsets);
-                    }
-                    default -> {
-                        compile(e, frameOffsets, "t4");
-                        code.append("  li t5 0\n");
-                        code.append("  neq t4 t5\n");
-                    }
-                }
-            }
-            case Expression e -> {
-                compile(e, frameOffsets, "t4");
-                code.append("  li t5 0\n");
-                code.append("  neq t4 t5\n");
-            }
-        }
-    }
-
-    void compileConditionalJump(
-            String prefix,
-            Expression condition,
+    void compileBranchingInstruction(
+            Expression expression,
             Map<String, Integer> frameOffsets,
-            ConditionalBranch then,
-            ConditionalBranch otherwise
+            String falseLabel,
+            String endLabel,
+            Runnable then,
+            Runnable other
     ) {
-        String elseLabel = prefix + "else" + labelNo++;
-        String endLabel = "end" + prefix + labelNo++;
-        compileConditional(condition, frameOffsets);
-        code.append("  jz ").append(elseLabel).append('\n');
-        if (condition instanceof ExpressionPrefix p && p.op().equals("!")) {
-            otherwise.compile(elseLabel, endLabel);
-        } else {
-            then.compile(elseLabel, endLabel);
+        compileBranchingInstruction(expression, frameOffsets, falseLabel, endLabel, then, other, false);
+    }
+
+    private final static List<String> BRANCHING_BIN_INSRS = List.of("<", ">", "<=", ">=", "==", "!=");
+
+    void compileBranchingInstruction(
+            Expression expression,
+            Map<String, Integer> frameOffsets,
+            String falseLabel,
+            String endLabel,
+            Runnable then,
+            Runnable other,
+            boolean negated
+    ) {
+        if (expression instanceof ExpressionBin bin) {
+            if (BRANCHING_BIN_INSRS.contains(bin.op())) {
+                compile(bin.lhs, frameOffsets, "t4");
+                compile(bin.rhs, frameOffsets, "t5");
+                String insr = switch (bin.op()) {
+                    case "<" -> "lt";
+                    case ">" -> "gt";
+                    case "<=" -> "lte";
+                    case ">=" -> "gte";
+                    case "==" -> "eq";
+                    case "!=" -> "neq";
+                    default -> throw new IllegalStateException("Unexpected value: " + bin.op());
+                };
+                code.append("  ").append(insr).append(" t4 t5\n");
+                String jump = negated ? "jnz" : "jz";
+                code.append("  ").append(jump).append(" ").append(falseLabel).append('\n');
+                then.run();
+                if (other != null) {
+                    code.append("  j ").append(endLabel).append('\n');
+                    code.append(falseLabel).append(":\n");
+                    other.run();
+                    code.append(endLabel).append(":\n");
+                }
+                return;
+            }
+
+            if (bin.op().equals("&&")) {
+                // we're essentially applying De Morgan's Law here, this is `!a || !b`
+                compileBranchingInstruction(
+                        bin.lhs,
+                        frameOffsets,
+                        falseLabel,
+                        endLabel,
+                        () -> {
+                            compileBranchingInstruction(
+                                    bin.rhs,
+                                    frameOffsets,
+                                    falseLabel,
+                                    endLabel,
+                                    then,
+                                    null,
+                                    false
+                            );
+                        },
+                        other,
+                        negated
+                );
+                return;
+            }
+
+            if (bin.op().equals("||")) {
+                compileBranchingInstruction(
+                        bin.lhs,
+                        frameOffsets,
+                        falseLabel,
+                        endLabel,
+                        () -> {
+                            compileBranchingInstruction(
+                                    bin.rhs,
+                                    frameOffsets,
+                                    falseLabel,
+                                    endLabel,
+                                    other,
+                                    null,
+                                    !negated
+                            );
+                        },
+                        then,
+                        !negated
+                );
+                return;
+            }
+        } else if (expression instanceof ExpressionPrefix pfx) {
+            if (pfx.op().equals("!")) {
+                compileBranchingInstruction(
+                        pfx.inner,
+                        frameOffsets,
+                        falseLabel,
+                        endLabel,
+                        then,
+                        other,
+                        !negated
+                );
+                return;
+            }
+        } else if (expression instanceof ExpressionParens p) {
+            compileBranchingInstruction(p.inner, frameOffsets, falseLabel, endLabel, then, other, negated);
         }
-        code.append("  j ").append(endLabel).append('\n');
-        code.append(elseLabel).append(":\n");
-        if (condition instanceof ExpressionPrefix p && p.op().equals("!")) {
-            then.compile(elseLabel, endLabel);
-        } else {
-            otherwise.compile(elseLabel, endLabel);
+
+        String insr = negated ? "jnz" : "jz";
+        compile(expression, frameOffsets, "t4");
+        code.append("  li t5 0\n");
+        code.append("  neq t4 t5\n");
+        code.append("  ").append(insr).append(" ").append(falseLabel).append('\n');
+        then.run();
+        if (other != null) {
+            code.append("  j ").append(endLabel).append('\n');
+            code.append(falseLabel).append(":\n");
+            other.run();
+            code.append(endLabel).append(":\n");
         }
-        code.append(endLabel).append(":\n");
     }
 
     void compileTypeError(ExpressionTypeError expr, Map<String, Integer> frameOffsets, String dst) {

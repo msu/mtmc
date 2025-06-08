@@ -559,7 +559,12 @@ public class SeaCompiler {
             }
         } else {
             var offset = frameOffsets.get(ident.name());
-            code.append("  li t3 ").append(-offset).append("\n");
+            if (offset > 15) {
+                String label = internConstant(-offset);
+                code.append("  lw t3 ").append(label).append('\n');
+            } else {
+                code.append("  li t3 ").append(-offset).append("\n");
+            }
             if (dst == null) {
                 code.append("  lwr t0 fp t3\n");
                 code.append("  push t0\n");

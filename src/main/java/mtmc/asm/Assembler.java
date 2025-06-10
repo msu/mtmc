@@ -126,20 +126,13 @@ public class Assembler {
         }
         // label only lines are ok and propagate to the next instruction
         List<MTMCToken> labelTokens = maybeGetLabels(tokens);
-        if (!labelTokens.isEmpty()) {
-            if (tokens.isEmpty()) {
-                lastLabels = labelTokens;
-            } else {
-                lastLabels = List.of(); // labels always reset after one line
-            }
-        } else {
-            labelTokens = lastLabels;
-            lastLabels = List.of(); // labels always reset after one line
-        }
+        var labels = new ArrayList<>(lastLabels);
+        labels.addAll(labelTokens);
+        lastLabels = labels;
         if (mode == ASMMode.TEXT) {
-            parseInstruction(tokens, labelTokens);
+            parseInstruction(tokens, labels);
         } else {
-            parseData(tokens, labelTokens);
+            parseData(tokens, labels);
         }
     }
 
@@ -156,6 +149,7 @@ public class Assembler {
     }
 
     private void parseData(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
+        lastLabels = List.of();
         MTMCToken dataToken = tokens.poll();
         Data dataElt = new Data(labelTokens);
         if (dataToken == null) {
@@ -222,6 +216,7 @@ public class Assembler {
         MTMCToken instructionToken = tokens.peekFirst();
         if (instructionToken == null) return;
 
+        lastLabels = List.of();
         if (instructionToken.type() != IDENTIFIER) {
             instructions.add(new ErrorInstruction(labelTokens, instructionToken, "Invalid Token"));
             return;

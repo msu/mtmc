@@ -471,10 +471,14 @@ public class SeaParser {
     }
 
     StatementDoWhile parseStatementDoWhile() throws ParseException {
-        if (!take(KW_WHILE)) return null;
+        if (!take(KW_DO)) return null;
         var start = lastToken();
 
         var body = parseStatement();
+
+        if (!take(KW_WHILE)) {
+            throw new ParseException(new Message(lastToken(), "expected 'while' after do body"));
+        }
 
         if (!take(LEFT_PAREN)) throw new ParseException(new Message(lastToken(), "expected '(' after do body"));
         Expression condition = parseExpression();

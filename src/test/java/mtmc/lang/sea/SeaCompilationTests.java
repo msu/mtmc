@@ -344,4 +344,112 @@ public class SeaCompilationTests {
         String output = compileAndRun(pgm);
         assertEquals("yo!\nI'm a little teapot\n", output);
     }
+
+    @Test
+    public void doWhileStmt() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int a = 1;
+                    int b = 1;
+                    printf("%d %d ", a, b);
+                
+                    do {
+                        a = a + b;
+                        b = a - b;
+                        printf("%d ", a);
+                    } while (a < 100 || b < 100);
+                
+                    return 0;
+                }
+                """;
+        String output = compileAndRun(pgm);
+        assertEquals("1 1 2 3 5 8 13 21 34 55 89 144 233 ", output);
+    }
+
+    @Test
+    public void collatzWhile() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                
+                    int n = 12;
+                    while (n != 1) {
+                        printf("%d ", n);
+                        if (n % 2 == 0) n /= 2;
+                        else n = 3 * n + 1;
+                    }
+                
+                    return 0;
+                }
+                """;
+
+        var output = compileAndRun(pgm);
+        assertEquals("12 6 3 10 5 16 8 4 2 ", output);
+    }
+
+    @Test
+    public void forLoop() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int sum = 0;
+                    for (int i = 0; i < 10; i += 1) {
+                        printf("%d ", i);
+                        sum += i;
+                    }
+                    printf("\\nsum = %d\\n", sum);
+                
+                    for (sum = 3; sum < 25; sum *= 2) {
+                        printf("%d ", sum);
+                        if (sum % 2 == 0) break;
+                        else continue;
+                    }
+                
+                    return 0;
+                }
+                
+                """;
+
+        var output = compileAndRun(pgm);
+        assertEquals("0 1 2 3 4 5 6 7 8 9 \nsum = 45\n3 6 ", output);
+    }
+
+    @Test
+    public void fibHops() {
+        var pgm = """
+                int printf(char *s, ...);
+                
+                int main() {
+                    int a = 1;
+                    int b = 1;
+                    goto printer;
+                
+                    fib:
+                    a += b;
+                    b = a - b;
+                
+                    printer:
+                    printf("%d ", a);
+                
+                    if (a < 10000) goto fib;
+                
+                    return 0;
+                }
+                """;
+
+        var output = compileAndRun(pgm);
+        assertEquals("1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181 6765 10946 ", output);
+    }
+
+    @Test
+    public void scanfMe() {
+
+        var output = compileAndRun("""
+                
+                """);
+    }
 }

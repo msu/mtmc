@@ -91,8 +91,8 @@ public class SeaCompiler {
     }
 
     // the tail label of the current loop
-    Stack<String> currentLoopTailLabel = new Stack<>();
-    Stack<String> currentLoopHeadLabel = new Stack<>();
+    Stack<String> currentLoopBreakLabel = new Stack<>();
+    Stack<String> currentLoopContinueLabel = new Stack<>();
     int labelNo = 0;
 
     protected void compile(DeclarationFunc func) throws CompilationException {
@@ -237,13 +237,13 @@ public class SeaCompiler {
             case StatementContinue ignored -> compileContinue();
             case StatementDoWhile stmt -> compile(stmt, frameOffsets);
             case StatementExpression stmt -> compile(stmt, frameOffsets);
-            case StatementFor stmt -> compile(stmt, frameOffsets);
+            case StatementFor stmt -> compileFor(stmt, frameOffsets);
             case StatementGoto stmt -> compileGoto(stmt);
             case StatementIf stmt -> compile(stmt, frameOffsets);
             case StatementReturn stmt -> compile(stmt, frameOffsets);
             case StatementSyntaxError stmt -> compile(stmt, frameOffsets);
             case StatementVar stmt -> compile(stmt, frameOffsets);
-            case StatementWhile stmt -> compile(stmt, frameOffsets);
+            case StatementWhile stmt -> compileWhile(stmt, frameOffsets);
         }
     }
 
@@ -262,27 +262,31 @@ public class SeaCompiler {
     }
 
     void compileBreak() {
-        code.append("  j ").append(currentLoopTailLabel).append("\n");
+        code.append("  j ").append(currentLoopBreakLabel.peek()).append("\n");
     }
 
     void compileContinue() {
-        code.append("  j ").append(currentLoopHeadLabel).append("\n");
+        code.append("  j ").append(currentLoopContinueLabel.peek()).append("\n");
     }
 
     void compile(StatementDoWhile stmt, Map<String, Integer> frameOffsets) {
-        currentLoopHeadLabel.push("dw" + labelNo++);
-        currentLoopTailLabel.push("enddw" + labelNo++);
+        int label = labelNo++;
+        String head = "doWhile" + label;
+        String cond = "doWhileCond" + label;
+        String tail = "endDoWhile" + label;
 
-        code.append(currentLoopHeadLabel).append(":\n");
+        code.append(head).append(":\n");
+        currentLoopContinueLabel.push(cond);
+        currentLoopBreakLabel.push(tail);
         compile(stmt.body, frameOffsets);
+        currentLoopContinueLabel.pop();
+        currentLoopBreakLabel.pop();
 
-        compile(stmt.condition, frameOffsets, "t1");
-        code.append("  li t0 0\n");
-        code.append("  neq t1 t0\n");
-        code.append("  jnz ").append(currentLoopHeadLabel).append("\n");
-        code.append(currentLoopTailLabel).append(":\n");
-        currentLoopHeadLabel.pop();
-        currentLoopTailLabel.pop();
+        code.append(cond).append(":\n");
+        compile(stmt.condition, frameOffsets, "t0");
+        code.append("  eqi t0 1\n");
+        code.append("  jnz ").append(head).append("\n");
+        code.append(tail).append(":\n");
     }
 
     void compile(StatementExpression stmt, Map<String, Integer> frameOffsets) {
@@ -290,25 +294,40 @@ public class SeaCompiler {
         compile(stmt.expression, frameOffsets, "t0");
     }
 
-    void compile(StatementFor stmt, Map<String, Integer> frameOffsets) {
-        currentLoopHeadLabel.push("for" + labelNo++);
-        currentLoopTailLabel.push("endfor" + labelNo++);
+    void compileFor(StatementFor stmt, Map<String, Integer> frameOffsets) {
+        int label = labelNo++;
+        String head = "for" + label;
+        String cont = "forInc" + label;
+        String tail = "endFor" + label;
 
-        if (stmt.initExpression != null) compile(stmt.initExpression, frameOffsets, "t0");
-        else if (stmt.initStatement != null) compile(stmt.initStatement, frameOffsets);
+        if (stmt.initExpression != null) {
+            compile(stmt.initExpression, frameOffsets, "t0");
+        } else if (stmt.initStatement != null) {
+            frameOffsets.put(stmt.initStatement.name(), 2 * frameOffsets.size());
+            compile(stmt.initStatement, frameOffsets);
+        }
 
-        code.append(currentLoopHeadLabel).append(":\n");
-        compile(stmt.condition, frameOffsets, "t1");
-        code.append("  li t0 0\n");
-        code.append("  neq t1 t0\n");
-        code.append("  jz ").append(currentLoopTailLabel).append("\n");
+        code.append(head).append(":\n");
+        compile(stmt.condition, frameOffsets, "t0");
+        code.append("  eqi t0 0\n");
+        code.append("  jnz ").append(tail).append("\n");
+
+        currentLoopContinueLabel.push(stmt.inc == null ? head : cont);
+        currentLoopBreakLabel.push(tail);
         compile(stmt.body, frameOffsets);
-        compile(stmt.inc, frameOffsets, "t0");
-        code.append("  j ").append(currentLoopHeadLabel).append("\n");
-        code.append(currentLoopTailLabel).append(":\n");
+        currentLoopContinueLabel.pop();
+        currentLoopBreakLabel.pop();
 
-        currentLoopHeadLabel.pop();
-        currentLoopTailLabel.pop();
+        if (stmt.inc != null) {
+            code.append(cont).append(":\n");
+            compile(stmt.inc, frameOffsets, "t0");
+        }
+        code.append("  j ").append(head).append("\n");
+        code.append(tail).append(":\n");
+
+        if (stmt.initStatement != null) {
+            frameOffsets.remove(stmt.initStatement.name());
+        }
     }
 
     void compileGoto(StatementGoto stmt) {
@@ -317,19 +336,18 @@ public class SeaCompiler {
 
     void compile(StatementIf stmt, Map<String, Integer> frameOffsets) {
         String elseLabel = "ifElse" + labelNo++;
-        String endLabel = "endif" + labelNo++;
+        String endLabel = "endIf" + labelNo++;
 
-        compile(stmt.condition, frameOffsets, "t1");
-        code.append("  li t0 0\n");
-        code.append("  neq t1 t0\n");
+        compile(stmt.condition, frameOffsets, "t0");
+        code.append("  eqi t0 0\n");
         if (stmt.elseBody != null) {
-            code.append("  jz ").append(elseLabel).append("\n");
+            code.append("  jnz ").append(elseLabel).append("\n");
             compile(stmt.body, frameOffsets);
             code.append("  j ").append(endLabel).append('\n');
             code.append(elseLabel).append(":\n");
             compile(stmt.elseBody, frameOffsets);
         } else {
-            code.append("  jz ").append(endLabel).append("\n");
+            code.append("  jnz ").append(endLabel).append("\n");
             compile(stmt.body, frameOffsets);
         }
         code.append(endLabel).append(":\n");
@@ -349,7 +367,6 @@ public class SeaCompiler {
         if (stmt.initValue != null) {
             code.append("# var ").append(stmt.name()).append('\n');
             compile(stmt.initValue, frameOffsets, "t0");
-            // TODO: sizeof thingy
             var offset = frameOffsets.get(stmt.name());
             if (offset > 15) {
                 String label = internConstant(-offset);
@@ -361,23 +378,23 @@ public class SeaCompiler {
         }
     }
 
-    void compile(StatementWhile stmt, Map<String, Integer> frameOffsets) {
-        var headLabel = "while" + labelNo++;
-        var tailLabel = "endwhile" + labelNo++;
-        currentLoopHeadLabel.push(headLabel);
-        currentLoopTailLabel.push(tailLabel);
+    void compileWhile(StatementWhile stmt, Map<String, Integer> frameOffsets) {
+        int label = labelNo++;
+        var headLabel = "while" + label;
+        var tailLabel = "endWhile" + label;
 
         code.append(headLabel).append(":\n");
-        compile(stmt.condition, frameOffsets, "t1");
-        code.append("  li t0 0\n");
-        code.append("  neq t1 t0\n");
-        code.append("  jz ").append(tailLabel).append("\n");
+        compile(stmt.condition, frameOffsets, "t0");
+        code.append("  eqi t0 0\n");
+        code.append("  jnz ").append(tailLabel).append("\n");
+        currentLoopContinueLabel.push(headLabel);
+        currentLoopBreakLabel.push(tailLabel);
         compile(stmt.body, frameOffsets);
+        currentLoopContinueLabel.pop();
+        currentLoopBreakLabel.pop();
         code.append("  j ").append(headLabel).append("\n");
         code.append(tailLabel).append(":\n");
 
-        currentLoopHeadLabel.pop();
-        currentLoopTailLabel.pop();
     }
 
     void compile(Expression expression, Map<String, Integer> frameOffsets, String dst) {
@@ -407,6 +424,48 @@ public class SeaCompiler {
 
     void compileBin(ExpressionBin expr, Map<String, Integer> frameOffsets, String dst) {
         switch (expr.op()) {
+            case "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=" -> {
+                if (!(expr.lhs instanceof ExpressionIdent id)) {
+                    throw new UnsupportedOperationException("don't know how to compile " + expr.lhs.getClass().getSimpleName());
+                }
+
+                final String name = id.name();
+                code.append("# store ").append(name).append('\n');
+
+
+                if (expr.op().equals("=")) {
+                    compile(expr.rhs, frameOffsets, "t0");
+                } else {
+                    compile(id, frameOffsets, "t0");
+                    compile(expr.rhs, frameOffsets, "t1");
+                    switch (expr.op()) {
+                        case "+=" -> code.append("  add t0 t1\n");
+                        case "-=" -> code.append("  sub t0 t1\n");
+                        case "*=" -> code.append("  mul t0 t1\n");
+                        case "/=" -> code.append("  div t0 t1\n");
+                        case "%=" -> code.append("  mod t0 t1\n");
+                        case "&=" -> code.append("  and t0 t1\n");
+                        case "|=" -> code.append("  or t0 t1\n");
+                        case "^=" -> code.append("  xor t0 t1\n");
+                        case "<<=" -> code.append("  lsh t0 t1\n");
+                        case ">>=" -> code.append("  rsh t0 t1\n");
+                        case String op -> throw new UnsupportedOperationException("I dunnot how to compile " +  op);
+                    }
+                }
+
+                if (globalLabels.containsKey(name)) {
+                    code.append("  sw t0 ").append(globalLabels.get(name)).append('\n');
+                } else {
+                    var offset = frameOffsets.get(name);
+                    if (offset > 15) {
+                        String label = internConstant(-offset);
+                        code.append("  lw t1 ").append(label).append('\n');
+                    } else {
+                        code.append("  li t1 ").append(-offset).append('\n');
+                    }
+                    code.append("  swr t0 fp t1\n");
+                }
+            }
             case "<", ">", "<=", ">=", "==", "!=" -> {
                 int label = labelNo++;
                 var insr = dst == null ? "pushi" : "li " + dst;
@@ -422,26 +481,40 @@ public class SeaCompiler {
             case "&&" -> {
                 int label = labelNo++;
                 var insr = dst == null ? "pushi" : "li " + dst;
-                compileBranchingInstruction(
-                        expr,
-                        frameOffsets,
-                        "andFalse" + label,
-                        "andEnd" + label,
-                        () -> code.append("  ").append(insr).append(" 1\n"),
-                        () -> code.append("  ").append(insr).append(" 0\n")
-                );
+
+                String falseLabel = "andFalse" + label;
+                String endLabel = "andEnd" + label;
+
+                compile(expr.lhs, frameOffsets, "t4");
+                code.append("  eqi t4 0\n");
+                code.append("  jnz ").append(falseLabel).append('\n');
+                compile(expr.rhs, frameOffsets, "t4");
+                code.append("  eqi t4 0\n");
+                code.append("  jnz ").append(falseLabel).append('\n');
+                code.append("  ").append(insr).append(" 1\n");
+                code.append("  j ").append(endLabel).append('\n');
+                code.append(falseLabel).append(":\n");
+                code.append("  ").append(insr).append(" 0\n");
+                code.append(endLabel).append(":\n");
             }
             case "||" -> {
                 int label = labelNo++;
                 var insr = dst == null ? "pushi" : "li " + dst;
-                compileBranchingInstruction(
-                        expr,
-                        frameOffsets,
-                        "orElse" + label,
-                        "orEnd" + label,
-                        () -> code.append("  ").append(insr).append(" 1\n"),
-                        () -> code.append("  ").append(insr).append(" 0\n")
-                );
+
+                String trueLabel = "orTrue" + label;
+                String endLabel = "orEnd" + label;
+
+                compile(expr.lhs, frameOffsets, "t4");
+                code.append("  eqi t4 0\n");
+                code.append("  jz ").append(trueLabel).append('\n');
+                compile(expr.rhs, frameOffsets, "t4");
+                code.append("  eqi t4 0\n");
+                code.append("  jz ").append(trueLabel).append('\n');
+                code.append("  ").append(insr).append(" 0\n");
+                code.append("  j ").append(endLabel).append('\n');
+                code.append(trueLabel).append(":\n");
+                code.append("  ").append(insr).append(" 1\n");
+                code.append(endLabel).append(":\n");
             }
             default -> {
                 compile(expr.lhs, frameOffsets, null);
@@ -452,7 +525,7 @@ public class SeaCompiler {
                     case "-" -> code.append("ssub");
                     case "*" -> code.append("smul");
                     case "/" -> code.append("sdiv");
-                    case "%" -> code.append("srem");
+                    case "%" -> code.append("smod");
                     case "&" -> code.append("sand");
                     case "|" -> code.append("sor");
                     case "^" -> code.append("sxor");
@@ -644,9 +717,8 @@ public class SeaCompiler {
                 String nt = "nottrue" + labelNo++;
                 String end = "endnot" + labelNo++;
                 String insr = dst == null ? "pushi" : "li " + dst;
-                code.append("  li t5 0\n");
-                code.append("  neq t4 t5\n");
-                code.append("  jz ").append(nt).append('\n');
+                code.append("  eqi t4 0\n");
+                code.append("  jnz ").append(nt).append('\n');
                 code.append("  ").append(insr).append(" 0\n");
                 code.append("  j ").append(end).append('\n');
                 code.append(nt).append(":\n");
@@ -697,10 +769,10 @@ public class SeaCompiler {
             Map<String, Integer> frameOffsets,
             String falseLabel,
             String endLabel,
-            Runnable then,
-            Runnable other
+            Runnable trueBlock,
+            Runnable falseBlock
     ) {
-        compileBranchingInstruction(expression, frameOffsets, falseLabel, endLabel, then, other, false);
+        compileBranchingInstruction(expression, frameOffsets, falseLabel, endLabel, trueBlock, falseBlock, false);
     }
 
     private final static List<String> BRANCHING_BIN_INSRS = List.of("<", ">", "<=", ">=", "==", "!=");
@@ -708,10 +780,10 @@ public class SeaCompiler {
     void compileBranchingInstruction(
             Expression expression,
             Map<String, Integer> frameOffsets,
-            String falseLabel,
+            String condFailedLabel,
             String endLabel,
-            Runnable then,
-            Runnable other,
+            Runnable trueBlock,
+            Runnable falseBlock,
             boolean negated
     ) {
         if (expression instanceof ExpressionBin bin) {
@@ -729,12 +801,12 @@ public class SeaCompiler {
                 };
                 code.append("  ").append(insr).append(" t4 t5\n");
                 String jump = negated ? "jnz" : "jz";
-                code.append("  ").append(jump).append(" ").append(falseLabel).append('\n');
-                then.run();
-                if (other != null) {
+                code.append("  ").append(jump).append(" ").append(condFailedLabel).append('\n');
+                trueBlock.run();
+                if (falseBlock != null) {
                     code.append("  j ").append(endLabel).append('\n');
-                    code.append(falseLabel).append(":\n");
-                    other.run();
+                    code.append(condFailedLabel).append(":\n");
+                    falseBlock.run();
                     code.append(endLabel).append(":\n");
                 }
                 return;
@@ -745,74 +817,40 @@ public class SeaCompiler {
                 compileBranchingInstruction(
                         bin.lhs,
                         frameOffsets,
-                        falseLabel,
+                        condFailedLabel,
                         endLabel,
                         () -> {
                             compileBranchingInstruction(
                                     bin.rhs,
                                     frameOffsets,
-                                    falseLabel,
+                                    condFailedLabel,
                                     endLabel,
-                                    then,
+                                    trueBlock,
                                     null,
                                     false
                             );
                         },
-                        other,
+                        falseBlock,
                         negated
                 );
                 return;
             }
-
-            if (bin.op().equals("||")) {
-                compileBranchingInstruction(
-                        bin.lhs,
-                        frameOffsets,
-                        falseLabel,
-                        endLabel,
-                        () -> {
-                            compileBranchingInstruction(
-                                    bin.rhs,
-                                    frameOffsets,
-                                    falseLabel,
-                                    endLabel,
-                                    other,
-                                    null,
-                                    !negated
-                            );
-                        },
-                        then,
-                        !negated
-                );
-                return;
-            }
-        } else if (expression instanceof ExpressionPrefix pfx) {
-            if (pfx.op().equals("!")) {
-                compileBranchingInstruction(
-                        pfx.inner,
-                        frameOffsets,
-                        falseLabel,
-                        endLabel,
-                        then,
-                        other,
-                        !negated
-                );
-                return;
-            }
-        } else if (expression instanceof ExpressionParens p) {
-            compileBranchingInstruction(p.inner, frameOffsets, falseLabel, endLabel, then, other, negated);
         }
 
-        String insr = negated ? "jnz" : "jz";
+        if (expression instanceof ExpressionParens p) {
+            compileBranchingInstruction(p.inner, frameOffsets, condFailedLabel, endLabel, trueBlock, falseBlock, negated);
+            return;
+        }
+
+        String insr = negated ? "jz" : "jnz";
         compile(expression, frameOffsets, "t4");
-        code.append("  li t5 0\n");
-        code.append("  neq t4 t5\n");
-        code.append("  ").append(insr).append(" ").append(falseLabel).append('\n');
-        then.run();
-        if (other != null) {
+        code.append("  eqi t4 0\n");
+        code.append("  ").append(insr).append(" ").append(condFailedLabel).append('\n');
+        trueBlock.run();
+        if (falseBlock != null) {
             code.append("  j ").append(endLabel).append('\n');
-            code.append(falseLabel).append(":\n");
-            other.run();
+            code.append(condFailedLabel).append(":\n");
+            falseBlock.run();
             code.append(endLabel).append(":\n");
         }
     }

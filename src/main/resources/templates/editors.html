@@ -3,7 +3,7 @@
     <li class="file-explorer">
         <a
                 class="directory-entry"
-                fx-swap="innerHTML"
+                fx-swap="outerHTML"
                 fx-target="#visual-shell"
                 fx-action="/fs/toggle/{{ listing.path }}"
         > <img class="folder-icon" src="/img/single-folder-icon.ico">
@@ -36,6 +36,24 @@
             <textarea id='editor'> {{ computer.currentFileContent }} </textarea>
         </div>
     {% else %}
-        {{ render_listing(computer.getFileSystem().getRoot()) }}
+        <div class="site">
+            <div class="heading-bar">Icon: Exploring - {{ computer.getFileSystem().getCWD() }}</div>
+
+            <header class="file-system-nav-bar">
+                <ul class="tray">
+                    <li class="nav-button">File</li>
+                    <li class="nav-button">Edit</li>
+                    <li class="nav-button">View</li>
+                    <li class="nav-button">Tools</li>
+                    <li class="nav-button">Help</li>
+                </ul>
+            </header>
+            <form method="post" action="/fs/cwd">
+                <input name="cwd" placeholder="Current Directory" type="text" value="{{ computer.getFileSystem().getCWD() }}">
+            </form>
+            <body class="file-explorer-body">
+            {{ render_listing(computer.getFileSystem().listCWD()) }}
+            </body>
+        </div>
     {% endif %}
 </div>

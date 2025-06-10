@@ -10,6 +10,7 @@
 #controls {
     padding: 0;
 }
+
 #controls > * > * {
     margin: 4px;
 }
@@ -54,12 +55,15 @@
 .px.d {
     background-color: #2a453b;
 }
+
 .px.m {
     background-color: #365d48;
 }
+
 .px.l {
     background-color: #577c44;
 }
+
 .px.w {
     background-color: #7f860f;
 }
@@ -169,7 +173,7 @@ main {
 
 .cross-button {
     background-color: #232426;
-    background-image: repeating-linear-gradient(36deg, rgba(255,255,255, 0.1), rgba(255,255,255, 0.1) 1px, transparent 0px, transparent 2px);
+    background-image: repeating-linear-gradient(36deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1) 1px, transparent 0px, transparent 2px);
     text-align: center;
     vertical-align: center
 }
@@ -208,7 +212,7 @@ main {
 .small-button {
     transform: rotate(-25deg) translateY(20px) translateX(-20px);
     margin: 2px;
-    width:50px;
+    width: 50px;
     background-color: #7e777b;
     border: 1px solid dimgray;
     border-radius: 8px;
@@ -290,6 +294,7 @@ main {
     background-color: black;
     color: var(--pdp-off-white);
 }
+
 #register-table td {
     text-align: right;
     white-space: nowrap;
@@ -297,7 +302,6 @@ main {
     text-overflow: ellipsis;
     padding: 0;
 }
-
 
 
 .mem-highlight {
@@ -342,54 +346,99 @@ main {
     color: var(--console-primary);
     border: none;
 }
+
 #console-history div {
     white-space: pre;
 }
 
-ul{
+ul {
     list-style: none;
 }
-.li{
+
+.li {
     list-style: none;
     padding-bottom: 2px;
 }
-.file-explorer{
-    border: 1px solid darkgrey;
-    list-style:none;
-    padding-bottom: 2px;
+
+.heading-bar {
+    padding-left: 1px;
+    color: white;
+    background-color: blue;
 }
-.directory-entry{
+
+.file-system-nav-bar {
+    float: left;
+    background-color: darkgray;
+    /*flex: 1;*/
+}
+
+.tray {
+    list-style: none;
+    margin-block: 0;
+    padding-inline: 0;
+}
+
+.nav-button {
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 5px 3px;
+    text-decoration: none;
+}
+
+.directory-entry {
     padding: 2px;
 }
-.folder-icon{
+
+.folder-icon {
     position: relative;
     height: 20px;
     width: 20px;
     margin-right: 0.5em;
 }
 
-.file-entry{
-    margin-top:1px;
+.file-entry {
+    margin-top: 1px;
     position: absolute;
 }
-.file-listing{
+
+.file-listing {
     margin-top: 1px;
     position: relative;
 }
-.blank-sheet-icon{
-    position:relative;
+
+.file-explorer {
+    list-style: none;
+    padding-bottom: 2px;
+}
+
+.file-explorer-body {
+    flex: 1;
+}
+
+.blank-sheet-icon {
+    position: relative;
     height: 18px;
     width: 18px;
     margin-right: 0.35em;
 }
 
+.site {
+    display: flex;
+    flex-direction: column;
+
+}
+
 #visual-shell {
     position: relative;
 }
+
 textarea#editor {
-    position:absolute;
-    top:50px;
-    left:5px;
-    right:5px;
-    bottom:5px;
-    padding:1em }
+    position: absolute;
+    top: 50px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    padding: 1em
+}

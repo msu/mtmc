@@ -119,8 +119,11 @@ public class WebServer {
                 })
                 .get("/fs/toggle/*", ctx -> {
                     String path = ctx.path().substring("/fs/toggle/".length());
-                    computerView.togglePath(path);
-                    ctx.html(computerView.getVisualShell());
+                    computerView.getFileSystem().setCWD(path);
+                    ctx.html(render("templates/editors.html"));
+
+                    //ctx.html(computerView.getVisualShell());
+                    // .getVisualShell() is outdated. renderFileTree() is manual input.
                 })
                 .get("/fs/open/*", ctx -> {
                     String path = ctx.path().substring("/fs/open/".length());
@@ -129,6 +132,9 @@ public class WebServer {
                         ctx.status(HttpStatus.NOT_FOUND);
                     }
                     ctx.html(render("templates/editors.html"));
+                })
+                .post("/fs/cwd", ctx -> {
+                    var newCWD = ctx.pathParam("cwd");
                 })
                 .get("/fs/close", ctx -> {
                     computerView.closeFile();

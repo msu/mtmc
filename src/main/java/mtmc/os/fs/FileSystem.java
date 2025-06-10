@@ -14,6 +14,10 @@ public class FileSystem {
         cwd = cd;
     }
 
+    public String getCWD() {
+        return cwd;
+    }
+
     public String resolve(String fileName) {
         String resolvedString = "";
         String[] cwdPath = cwd.split("/");
@@ -109,7 +113,11 @@ public class FileSystem {
         return listing;
     }
 
-    public Listing getRoot() {
+    public Listing listCWD() {
+        return listFiles(cwd);
+    }
+
+    public Listing listRoot() {
         return listFiles("/");
     }
 }

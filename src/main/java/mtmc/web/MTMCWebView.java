@@ -111,13 +111,13 @@ public class MTMCWebView {
         return currentFileContent;
     }
 
-    public String getVisualShell() {
+    /*public String getVisualShell() {
         if (currentFileContent != null) {
             return renderEditor();
         } else {
             return renderFileTree();
         }
-    }
+    }*/
 
     private String renderEditor() {
         return "<div><button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button></div>" +

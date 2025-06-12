@@ -6,8 +6,8 @@
                 fx-swap="outerHTML"
                 fx-target="#visual-shell"
                 fx-action="/fs/toggle/{{ listing.path }}"
-        > <img class="folder-icon" src="/img/single-folder-icon.ico">
-            {{ listing.name }}</a>
+        >
+            {% if listing.name == "disk" %} <img class="folder-icon" src="/img/disk-icon">/ {% else %} <img class="folder-icon" src="/img/single-folder-icon.ico">{{ listing.name }} {% endif %}</a>
         <ul>
             {% for subdir in listing.subdirectories %}
                 <li>
@@ -48,8 +48,11 @@
                     <li class="nav-button">Help</li>
                 </ul>
             </header>
-            <form method="post" action="/fs/cwd">
-                <input name="cwd" placeholder="Current Directory" type="text" value="{{ computer.getFileSystem().getCWD() }}">
+            <form fx-method="POST" fx-action="/fs/cwd/" fx-swap="outerHTML"
+                  fx-target="#visual-shell">
+                <input id="cd-search" name="cwd" placeholder="Current Directory" type="text" autocomplete="off"
+                       value="{{ computer.getFileSystem().getCWD() }}">
+
             </form>
             <body class="file-explorer-body">
             {{ render_listing(computer.getFileSystem().listCWD()) }}

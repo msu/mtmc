@@ -106,10 +106,10 @@ public class WebServer {
                 })
                 .post("/io/{button}/{action}", ctx -> {
                     MTMCIO io = computer.getIO();
-                    if(ctx.pathParam("action").equals("pressed")) {
+                    if (ctx.pathParam("action").equals("pressed")) {
                         io.keyPressed(ctx.pathParam("button"));
                     }
-                    if(ctx.pathParam("action").equals("released")) {
+                    if (ctx.pathParam("action").equals("released")) {
                         io.keyReleased(ctx.pathParam("button"));
                     }
                 })
@@ -128,13 +128,15 @@ public class WebServer {
                 .get("/fs/open/*", ctx -> {
                     String path = ctx.path().substring("/fs/open/".length());
                     boolean successfullyOpened = computerView.openFile(path);
-                    if(!successfullyOpened) {
+                    if (!successfullyOpened) {
                         ctx.status(HttpStatus.NOT_FOUND);
                     }
                     ctx.html(render("templates/editors.html"));
                 })
                 .post("/fs/cwd", ctx -> {
-                    var newCWD = ctx.pathParam("cwd");
+                    computerView.getFileSystem().setCWD(ctx.formParam("cwd"));
+                    ctx.html(render("templates/editors.html"));
+
                 })
                 .get("/fs/close", ctx -> {
                     computerView.closeFile();

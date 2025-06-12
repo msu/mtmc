@@ -7,7 +7,8 @@
                 fx-target="#visual-shell"
                 fx-action="/fs/toggle/{{ listing.path }}"
         >
-            {% if listing.name == "disk" %} <img class="folder-icon" src="/img/disk-icon">/ {% else %} <img class="folder-icon" src="/img/single-folder-icon.ico">{{ listing.name }} {% endif %}</a>
+            {% if listing.name == "disk" %} <img class="folder-icon" src="/img/disk-icon.ico">/ {% else %}
+                <img class="folder-icon" src="/img/single-folder-icon.ico">{{ listing.name }} {% endif %}</a>
         <ul>
             {% for subdir in listing.subdirectories %}
                 <li>
@@ -37,7 +38,8 @@
         </div>
     {% else %}
         <div class="site">
-            <div class="heading-bar">Icon: Exploring - {{ computer.getFileSystem().getCWD() }}</div>
+            <div class="heading-bar"><img class="blank-sheet-icon" src="/img/search-folder-ico">
+                Exploring - {{ computer.getFileSystem().getCWD() }}</div>
 
             <header class="file-system-nav-bar">
                 <ul class="tray">

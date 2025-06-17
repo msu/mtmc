@@ -1,6 +1,7 @@
 {% macro render_listing(listing) %}
 
     <li class="file-explorer">
+
         <a
                 class="directory-entry"
                 fx-swap="outerHTML"
@@ -9,24 +10,27 @@
         >
             {% if listing.name == "disk" %} <img class="folder-icon" src="/img/disk-icon.ico">/ {% else %}
                 <img class="folder-icon" src="/img/single-folder-icon.ico">{{ listing.name }} {% endif %}</a>
-        <ul>
-            {% for subdir in listing.subdirectories %}
-                <li>
-                    {{ render_listing(subdir.value) }}
-                </li>
-            {% endfor %}
-            {% for file in listing.listOfFiles %}
-                <li class="file-listing">
-                    <img class="blank-sheet-icon" src="/img/blank-sheet.ico">
-                    <a
-                            class="file-entry"
-                            fx-swap="outerHTML"
-                            fx-target="#visual-shell"
-                            fx-action="/fs/open/{{ listing.path + "/" + file.getName() }}"
-                    >{{ file.getName() }}</a>
-                </li>
-            {% endfor %}
-        </ul>
+        <button type="button" class="collapsible">+</button>
+        <div class="content" style="display: none">
+            <ul>
+                {% for subdir in listing.subdirectories %}
+                    <li>
+                        {{ render_listing(subdir.value) }}
+                    </li>
+                {% endfor %}
+                {% for file in listing.listOfFiles %}
+                    <li>
+                        <img class="blank-sheet-icon" src="/img/blank-sheet.ico">
+                        <a
+                                class="file-entry"
+                                fx-swap="outerHTML"
+                                fx-target="#visual-shell"
+                                fx-action="/fs/open/{{ listing.path + "/" + file.getName() }}"
+                        >{{ file.getName() }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
     </li>
 {% endmacro %}
 
@@ -38,8 +42,10 @@
         </div>
     {% else %}
         <div class="site">
-            <div class="heading-bar"><img class="blank-sheet-icon" src="/img/search-folder-ico">
-                Exploring - {{ computer.getFileSystem().getCWD() }}</div>
+            <div class="heading-bar">
+                <img id="search-folder-icon" src="/img/search-folder-icon.ico">
+                <span> Exploring - {{ computer.getFileSystem().getCWD() }}</span>
+            </div>
 
             <header class="file-system-nav-bar">
                 <ul class="tray">
@@ -62,3 +68,23 @@
         </div>
     {% endif %}
 </div>
+<script>
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function () {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            var content = this.nextElementSibling;
+            if (content && content.classList.contains("content")) {
+                content.style.display = (content.style.display === "block") ? "none" : "block";
+            }
+            {#if (content.style.display === "block") {
+                content.style.display = "none";
+            }#} else {
+                content.style.display = "block";
+            }
+        });
+    }
+</script>

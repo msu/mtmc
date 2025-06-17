@@ -1,7 +1,7 @@
 
 :root {
     --pdp-blue: #243571;
-    --pdp-light-blue: #3286CE;
+    --pdp-light-blue: #3286ce;
     --pdp-beige: #fdfddc;
     --pdp-white: #f1f1f6;
     --pdp-off-white: #F0EBCD;
@@ -361,15 +361,20 @@ ul {
 }
 
 .heading-bar {
-    padding-left: 1px;
+    width: 100%;
+
     color: white;
-    background-color: blue;
+    background-color: #243571;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+
 }
 
 .file-system-nav-bar {
+    width:100%;
     float: left;
-    background-color: darkgray;
-    /*flex: 1;*/
+    background-color: #3286ce;
 }
 
 .tray {
@@ -391,13 +396,28 @@ ul {
 }
 .directory-entry {
     padding: 2px;
+    position:relative;
+    bottom:3px;
 }
-
+#search-folder-icon{
+    position:relative;
+    height: 18px;
+    width:18px;
+    padding-top:1.25px;
+    padding-left: 2px;
+    margin:2px;
+}
 .folder-icon {
     position: relative;
     height: 20px;
     width: 20px;
     margin-right: 0.5em;
+}
+.blank-sheet-icon {
+    position: relative;
+    height: 18px;
+    width: 18px;
+    margin-right: 0.35em;
 }
 
 .file-entry {
@@ -409,6 +429,14 @@ ul {
     margin-top: 1px;
     position: relative;
 }
+.content{
+    position: relative;
+    padding: 0 18px;
+    background-color: white;
+    max-height: 0;
+    overflow: visible;
+    transition: max-height 0.2s ease-out;
+}
 
 .file-explorer {
     list-style: none;
@@ -418,12 +446,17 @@ ul {
 .file-explorer-body {
     flex: 1;
 }
-
-.blank-sheet-icon {
-    position: relative;
-    height: 18px;
-    width: 18px;
-    margin-right: 0.35em;
+.collapsible{
+    background-color: #eee;
+    color: #444;
+    cursor: pointer;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+}
+.active, .collapsible:hover{
+    background-color:grey;
 }
 
 .site {

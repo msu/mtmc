@@ -1,17 +1,17 @@
+<div id="fs"><li class="file-explorer">
 {% macro render_listing(listing) %}
 
-    <li class="file-explorer">
 
-        <a
+        <details open><summary><a
                 class="directory-entry"
                 fx-swap="outerHTML"
                 fx-target="#visual-shell"
                 fx-action="/fs/toggle/{{ listing.path }}"
         >
             {% if listing.name == "disk" %} <img class="folder-icon" src="/img/disk-icon.ico">/ {% else %}
-                <img class="folder-icon" src="/img/single-folder-icon.ico">{{ listing.name }} {% endif %}</a>
-        <button type="button" class="collapsible">+</button>
-        <div class="content" style="display: none">
+                <img class="folder-icon" src="/img/single-folder-icon.ico">{{ listing.name }} {% endif %}</a></summary>
+
+        <div class="content">
             <ul>
                 {% for subdir in listing.subdirectories %}
                     <li>
@@ -30,7 +30,7 @@
                     </li>
                 {% endfor %}
             </ul>
-        </div>
+        </div></details>
     </li>
 {% endmacro %}
 
@@ -67,24 +67,4 @@
             </body>
         </div>
     {% endif %}
-</div>
-<script>
-    var coll = document.getElementsByClassName("collapsible");
-    var i;
-
-    for (i = 0; i < coll.length; i++) {
-        coll[i].addEventListener("click", function () {
-            this.classList.toggle("active");
-            var content = this.nextElementSibling;
-            var content = this.nextElementSibling;
-            if (content && content.classList.contains("content")) {
-                content.style.display = (content.style.display === "block") ? "none" : "block";
-            }
-            {#if (content.style.display === "block") {
-                content.style.display = "none";
-            }#} else {
-                content.style.display = "block";
-            }
-        });
-    }
-</script>
+</div></div>

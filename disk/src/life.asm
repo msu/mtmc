@@ -1,6 +1,6 @@
 .data
-INIT_FILE: "/data/gun.gol"
-OLD_WORLD: byte[700] # 80x70 = 700
+INIT_FILE: "/data/gun.cells"
+OLD_WORLD: byte[700] # 80x70 = 700 bytes
 NEW_WORLD: byte[700]
 
 .text
@@ -311,8 +311,11 @@ set_bit_val:
     ret
 
 load_file:
-    # load the init file into the bit map
-    li a0 INIT_FILE
+    eqi a0 0
+    jz file_given
+        # no file given, load the default file into the new world
+        li a0 INIT_FILE
+    file_given:
     li a1 NEW_WORLD
     li a2 80    # 80 cols
     li a3 70    # 70 rows

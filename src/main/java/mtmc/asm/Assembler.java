@@ -275,7 +275,7 @@ public class Assembler {
                 aluInst.setTo(toRegister);
                 MTMCToken fromRegister = requireReadableRegister(tokens, aluInst);
                 aluInst.setFrom(fromRegister);
-            } else if (aluInst.isImmediatOp()) {
+            } else if (aluInst.isImmediateOp()) {
                 MTMCToken immediateOp = requireALUOp(tokens, aluInst);
                 // TODO - validate is max or lower op
                 aluInst.setImmediateOp(immediateOp);

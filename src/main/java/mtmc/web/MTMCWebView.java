@@ -198,7 +198,9 @@ public class MTMCWebView {
 
             short val = (short) (memory[i] & 0xFF);
             int originalPos = i;
-            if (cols == 2) {
+            boolean twoCols = false;
+            if (cols == 2 && i % 2 == 0) {
+                twoCols = true;
                 i++; // consuming a word for this cell
                 val = (short) (val << 8);
                 val = (short) (val | (memory[i] & 0xFF));
@@ -214,9 +216,9 @@ public class MTMCWebView {
             builder.append("' class='");
             builder.append(memoryClass);
             builder.append("'");
-            if (cols > 1) {
+            if (twoCols) {
                 builder.append(" colspan='");
-                builder.append(cols);
+                builder.append(2);
                 builder.append("'");
             }
             builder.append(">");

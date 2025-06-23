@@ -347,13 +347,14 @@ main {
     white-space: pre;
 }
 
-#visual-shell {
-    position: relative;
-}
-textarea#editor {
-    position:absolute;
-    top:50px;
-    left:5px;
-    right:5px;
-    bottom:5px;
-    padding:1em }
+/*#visual-shell {*/
+/*    position: relative;*/
+/*}*/
+/*textarea#editor {*/
+/*    position:absolute;*/
+/*    top:50px;*/
+/*    left:5px;*/
+/*    right:5px;*/
+/*    bottom:5px;*/
+/*    padding:1em */
+/*}*/

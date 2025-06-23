@@ -123,8 +123,8 @@ public class MTOS {
             String fileType = fileName.substring(fileName.lastIndexOf('.') + 1);
 
             try {
-                // special handling for game-of-life files
-                if ("gol".equals(fileType)) {
+                // special handling for game-of-life cell files
+                if ("cells".equals(fileType)) {
 
                     String str = Files.readString(file.toPath());
                     List<String> lines = Arrays

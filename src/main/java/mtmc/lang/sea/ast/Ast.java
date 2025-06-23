@@ -1,7 +1,10 @@
 package mtmc.lang.sea.ast;
 
+import mtmc.lang.Span;
 import mtmc.lang.sea.Token;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Expression, Statement, TypeExpr, Unit {
@@ -12,11 +15,15 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
         this.end = end;
     }
 
+    public Span span() {
+        return Span.of(start, end);
+    }
+
     public Stream<Ast> getChildren() {
         return switch (this) {
             case DeclarationFunc declarationFunc -> {
                 Stream<Ast> out = Stream.of(declarationFunc.returnType);
-                out = Stream.concat(out, declarationFunc.params.stream());
+                out = Stream.concat(out, declarationFunc.params.params().stream());
                 if (declarationFunc.body != null) {
                     out = Stream.concat(out, Stream.of(declarationFunc.body));
                 }
@@ -48,6 +55,7 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
             case ExpressionPostfix expressionPostfix -> Stream.of(expressionPostfix.inner);
             case ExpressionPrefix expressionPrefix -> Stream.of(expressionPrefix.inner);
             case ExpressionString ignored -> Stream.empty();
+            case ExpressionTypeError typeError -> Stream.of(typeError.inner);
             case ExpressionSyntaxError expressionSyntaxError -> {
                 if (expressionSyntaxError.child != null) {
                     yield Stream.of(expressionSyntaxError.child);
@@ -107,8 +115,22 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
             case TypeExprChar ignored -> Stream.empty();
             case TypeExprInt ignored -> Stream.empty();
             case TypeExprRef ignored -> Stream.empty();
+            case TypeExprVoid ignored -> Stream.empty();
             case TypePointer ignored -> Stream.empty();
             case Unit unit -> unit.declarations.stream().map(x -> x);
         };
+    }
+
+    public List<Error> collectErrors() {
+        var errors = new ArrayList<Error>();
+        collectErrors(errors);
+        return errors;
+    }
+
+    public void collectErrors(List<Error> errors) {
+        if (this instanceof Error e) {
+            errors.add(e);
+        }
+        getChildren().forEach(child -> child.collectErrors(errors));
     }
 }

@@ -281,7 +281,7 @@ public class MTMCWebView {
         return switch (format) {
             case HEX -> String.format("%02X ", val);
             case DEC -> String.valueOf(val);
-            case INS -> Instruction.disassembleInstruction(val, previousValue);
+            case INS -> Instruction.disassemble(val, previousValue);
             case STR -> get1252String(val);
             default -> throw new IllegalArgumentException("Can't render displayValue " + format);
         };

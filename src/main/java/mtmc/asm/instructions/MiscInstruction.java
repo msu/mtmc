@@ -5,6 +5,8 @@ import mtmc.emulator.Register;
 import mtmc.os.SysCall;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.List;
+
 import static mtmc.util.BinaryUtils.getBits;
 
 public class MiscInstruction extends Instruction {
@@ -14,8 +16,8 @@ public class MiscInstruction extends Instruction {
     private MTMCToken toRegister;
     private MTMCToken value;
 
-    public MiscInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
-        super(type, label, instructionToken);
+    public MiscInstruction(InstructionType type, List<MTMCToken> labels, MTMCToken instructionToken) {
+        super(type, labels, instructionToken);
     }
 
     public void setSyscallType(MTMCToken type) {

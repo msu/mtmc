@@ -1,8 +1,9 @@
 package mtmc.asm.instructions;
 
 import mtmc.asm.Assembler;
-import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
+
+import java.util.List;
 
 import static mtmc.util.BinaryUtils.getBits;
 
@@ -10,7 +11,7 @@ public class JumpInstruction extends Instruction {
 
     private MTMCToken addressToken;
 
-    public JumpInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+    public JumpInstruction(InstructionType type, List<MTMCToken> label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 

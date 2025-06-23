@@ -4,6 +4,8 @@ import mtmc.asm.Assembler;
 import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.List;
+
 import static mtmc.util.BinaryUtils.getBits;
 
 public class ALUInstruction extends Instruction {
@@ -13,7 +15,7 @@ public class ALUInstruction extends Instruction {
     private MTMCToken immediateOp;
     private MTMCToken value;
 
-    public ALUInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+    public ALUInstruction(InstructionType type, List<MTMCToken> label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 

@@ -1,6 +1,9 @@
 package mtmc.os.fs;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -117,5 +120,16 @@ public class FileSystem {
             }
         }
         return listing;
+    }
+
+    public void writeFile(String path, String contents) throws IOException {
+        Path filePath = getDiskPath(path);
+        Files.writeString(filePath, contents);
+    }
+
+    public String readFile(String path) throws FileNotFoundException, IOException {
+        Path filePath = getDiskPath(path);
+        var contents = Files.readString(filePath);
+        return contents;
     }
 }

@@ -39,6 +39,9 @@ public class MTMCScanner {
         if(scanNumber()) {
             return;
         }
+        if (scanChar()) {
+            return;
+        }
         if(scanString()) {
             return;
         }
@@ -65,6 +68,46 @@ public class MTMCScanner {
 
     private boolean moreChars() {
         return !scanEnd();
+    }
+
+    private boolean scanChar() {
+        StringBuilder sb = new StringBuilder();
+        if (peek() != '\'') return false;
+
+        int start = position;
+        takeChar();
+        char c;
+        if (scanEnd()) {
+            tokens.add(makeToken(ERROR, strValueFrom(start + 1), start));
+            return true;
+        }
+        c = takeChar();
+        if (c == '\\') {
+            if (moreChars()) {
+                char nextChar = takeChar();
+                if (nextChar == 'n') {
+                    sb.append('\n');
+                } else if (nextChar == 't') {
+                    sb.append('\t');
+                } else {
+                    sb.append(nextChar);
+                }
+            }
+        } else {
+            sb.append(c);
+        }
+        if (scanEnd()) {
+            tokens.add(makeToken(ERROR, strValueFrom(start + 1), start));
+            return true;
+        }
+        c = takeChar();
+        if (c != '\'') {
+            tokens.add(makeToken(ERROR, strValueFrom(start + 1), start));
+            return true;
+        }
+
+        tokens.add(makeToken(CHAR, sb.toString(), start));
+        return true;
     }
 
     private boolean scanString() {
@@ -120,22 +163,27 @@ public class MTMCScanner {
     }
 
     private boolean scanNumber() {
-        if(isDigit(peek())) {
+        if(isDigit(peek()) || (peek() == '-' && isDigit(peek(1)))) {
+            boolean negative = peek() == '-';
             int start = position;
-            if (peek(1) == 'x') {
-                return scanHex(start);
-            } else if (peek(1) == 'b') {
-                return scanBinary(start);
-            } else {
-                return scanDecimal();
+            if (negative) {
+                takeChar();
+            } else if (peek() == '0') {
+                if (peek(1) == 'x') {
+                    return scanHex(start);
+                }
+                if (peek(1) == 'b') {
+                    return scanBinary(start);
+                }
             }
+
+            return scanDecimal(start);
         } else {
             return false;
         }
     }
 
-    private boolean scanDecimal() {
-        int start = position;
+    private boolean scanDecimal(int start) {
         while (isDigit(peek())) {
             takeChar();
         }

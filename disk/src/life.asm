@@ -1,7 +1,7 @@
 .data
 INIT_FILE: "/data/gun.cells"
-OLD_WORLD: byte[700] # 80x70 = 700 bytes
-NEW_WORLD: byte[700]
+OLD_WORLD: byte[720] # 80x72 = 720 bytes
+NEW_WORLD: byte[720]
 
 .text
 main:
@@ -57,7 +57,7 @@ update:
             modi a0 80
             jnz update_col_loop
         inc a1
-        modi a1 70
+        modi a1 72
         jnz update_row_loop
     pop ra
     ret
@@ -318,7 +318,7 @@ load_file:
     file_given:
     li a1 NEW_WORLD
     li a2 80    # 80 cols
-    li a3 70    # 70 rows
+    li a3 72    # 72 rows
     sys rfile
     ret
 
@@ -369,7 +369,7 @@ sys fbreset   # reset the frame buffer
             modi a0 80
             jnz write_to_display_col_loop
         inc a1
-        modi a1 70
+        modi a1 72
         jnz write_to_display_row_loop
     sys fbflush   # sync the screen
     pop ra

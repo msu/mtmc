@@ -8,7 +8,7 @@ import java.io.IOException;
 
 public class MTMCDisplay {
 
-    public static final int ROWS = 140;
+    public static final int ROWS = 144;
     public static final int COLS = 160;
     private BufferedImage buffer = new BufferedImage(COLS, ROWS, BufferedImage.TYPE_INT_ARGB);
     private DisplayColor currentColor;

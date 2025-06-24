@@ -183,9 +183,21 @@ main {
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
 }
 
+.cross-button.down:active {
+    transform: scaleY(0.95);
+    transform-origin: top;
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
 .cross-button.right {
     border-radius: 0 4px 4px 0;
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.cross-button.right:active {
+    transform: scaleX(0.95);
+    transform-origin: left;
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
 }
 
 .cross-button.left {
@@ -193,9 +205,21 @@ main {
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
 }
 
+.cross-button.left:active {
+    transform: scaleX(0.95);
+    transform-origin: right;
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
 .cross-button.up {
     border-radius: 4px 4px 0 0;
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.cross-button.up:active {
+    transform: scaleY(0.95);
+    transform-origin: bottom;
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
 }
 
 .big-button {
@@ -209,6 +233,16 @@ main {
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
 }
 
+.big-button.a:active {
+    transform: scale(0.95);
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
+.big-button.b:active {
+    transform: scale(0.95);
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
 .small-button {
     transform: rotate(-25deg) translateY(20px) translateX(-20px);
     margin: 2px;
@@ -218,6 +252,16 @@ main {
     border-radius: 8px;
     color: whitesmoke;
     box-shadow: rgb(0, 0, 0, .2) 2px 2px 1px 1px;
+}
+
+.small-button.select:active {
+    transform: rotate(-25deg) translateY(20px) translateX(-20px) scale(0.95);
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
+.small-button.start:active {
+    transform: rotate(-25deg) translateY(20px) translateX(-20px) scale(0.95);
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
 }
 
 .buff {

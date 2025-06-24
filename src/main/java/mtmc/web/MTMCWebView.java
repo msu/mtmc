@@ -111,19 +111,6 @@ public class MTMCWebView {
         return currentFileContent;
     }
 
-   /* public String getVisualShell() {
-        if (currentFileContent != null) {
-            return renderEditor();
-        } else {
-            return renderFileTree();
-        }
-    }
-
-    private String renderEditor() {
-        return "<div><button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button></div>" +
-                "<textarea id='editor'>" + currentFileContent + "</textarea>";
-    }
-*/
     @NotNull
     private String renderFileTree() {
         File rootFile = computer.getOS().loadFile("/");

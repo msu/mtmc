@@ -6,12 +6,13 @@ import java.util.*;
 
 public class FileSystem {
     private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
-    private String cwd = "/";
+    private String cwd = "/home";
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
     static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
 
-    public void setCWD(String cd) {
-        cwd = cd;
+
+    public void setCWD(String cwd) {
+        this.cwd = resolve(cwd);
     }
 
     public String getCWD() {
@@ -31,7 +32,12 @@ public class FileSystem {
 
         return resolvedString;
     }
-
+    /*public String pathConstructor(ArrayList<String> cwd, ArrayList<String> path){
+        ArrayList<String> constructedPath = new ArrayList<>();
+        if(path.get(0).equals("")){
+            path.removeFirst();
+        }
+    }*/
     public String pathConstructor(ArrayList<String> cwd, ArrayList<String> path) {
         ArrayList<String> constructedPath = new ArrayList<>();
         if (path.isEmpty()) { // This fulfills (cd " ")
@@ -39,7 +45,9 @@ public class FileSystem {
         } else if (path.get(0).equals("")) {
             path.removeFirst();
             for (String link : path) {
-                if (link.equals("..") && !constructedPath.isEmpty()) { // Check if there is a directory to move up
+                if(link.equals("..") && constructedPath.isEmpty()){
+                }
+                else if (link.equals("..") && !constructedPath.isEmpty()) { // Check if there is a directory to move up
                     constructedPath.removeLast();
                 } else if (!link.equals(".")) { // Don't add "." to path string
                     constructedPath.add(link);
@@ -48,6 +56,7 @@ public class FileSystem {
         } else { // Else-If given path is absolute
             constructedPath.addAll(cwd); // Only added when ".." or "." are at the beginning
             for (String link : path) {
+                if(link.equals("..") && constructedPath.isEmpty()){}
                 if (link.equals("..") && !constructedPath.isEmpty()) { // Check if there is a directory to move up
                     constructedPath.removeLast();
                 } else if (!link.equals(".")) { // Don't add "." to path string

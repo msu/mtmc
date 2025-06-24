@@ -353,11 +353,27 @@ main {
 
 ul {
     list-style: none;
+    margin-top: 7px;
 }
 
 .li {
     list-style: none;
     padding-bottom: 2px;
+}
+
+details > summary {
+    list-style-type: "+";
+
+}
+
+.directory-details details.directory-details details.directory-details {
+    margin-left: -16px;
+}
+
+.site {
+    display: flex;
+    flex-direction: column;
+    height: 98.90%;
 }
 
 .heading-bar {
@@ -372,7 +388,7 @@ ul {
 }
 
 .file-system-nav-bar {
-    width:100%;
+    width: 100%;
     float: left;
     background-color: #3286ce;
 }
@@ -391,29 +407,34 @@ ul {
     padding: 5px 3px;
     text-decoration: none;
 }
-#cd-search{
+
+#cd-search {
     width: 100%;
 }
+
 .directory-entry {
-    padding: 2px;
-    position:relative;
-    bottom:3px;
+    padding: 3px;
+    position: relative;
+    bottom: 0;
 }
-#search-folder-icon{
-    position:relative;
+
+#search-folder-icon {
+    position: relative;
     height: 18px;
-    width:18px;
-    padding-top:1.25px;
+    width: 18px;
+    padding-top: 1.25px;
     padding-left: 2px;
-    margin:2px;
+    margin: 2px;
 }
+
 .folder-icon {
     position: relative;
     height: 20px;
     width: 20px;
-    top:0;
     margin-right: 0.5em;
+    top: 3px;
 }
+
 .blank-sheet-icon {
     position: relative;
     height: 18px;
@@ -428,40 +449,20 @@ ul {
 
 .file-listing {
     margin-top: 1px;
-    position: relative;
 }
-.content{
-    position: relative;
-    padding: 0 18px;
-    background-color: white;
-    max-height: 0;
-    overflow: visible;
+
+.file-explorer {
+    list-style: none;
+}
+
+.content {
     transition: max-height 0.2s ease-out;
 }
-.fs{
-    height: 100%;
-}
-.file-explorer {
-    list-style:none;
 
-}
-
-.file-explorer-body {
-    flex: 1;
-}
-
-details > summary{
-    list-style-type: "+";
-
-}
-details[open] summary{
-    border-bottom: black 2px;
-}
 .site {
     display: flex;
     flex-direction: column;
     height: 98.90%;
-
 }
 
 #visual-shell {
@@ -469,10 +470,8 @@ details[open] summary{
 }
 
 textarea#editor {
-    position: absolute;
-    top: 50px;
-    left: 5px;
-    right: 5px;
-    bottom: 5px;
-    padding: 1em
+    padding: 1em;
+    height: 95%;
+    width: 100%;
+    margin-top: 15px;
 }

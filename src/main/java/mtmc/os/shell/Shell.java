@@ -99,6 +99,7 @@ public class Shell {
             }
         } catch (Exception e) {
             computer.getConsole().println(e.getMessage());
+            e.printStackTrace();
         }
     }
 

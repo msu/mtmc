@@ -1,6 +1,11 @@
 // connect to sse endpoint
 const sseSource = new EventSource("/sse", {withCredentials: true});
 
+sseSource.addEventListener("update:filesystem", (e) => {
+    let element = document.getElementById("fs");
+    element.outerHTML = e.data;
+});
+
 sseSource.addEventListener("update:display", (e) => {
     let element = document.getElementById("display-img");
     element.src = "/display?" + Date.now()

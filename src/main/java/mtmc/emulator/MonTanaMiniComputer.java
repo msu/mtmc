@@ -30,7 +30,7 @@ public class MonTanaMiniComputer {
     MTOS os = new MTOS(this);
     MTMCConsole console = new MTMCConsole(this);
     MTMCDisplay display = new MTMCDisplay(this);
-    FileSystem fileSystem = new FileSystem();
+    FileSystem fileSystem = new FileSystem(this);
 
     // listeners
     private List<MTMCObserver> observers = new ArrayList<>();
@@ -741,6 +741,14 @@ public class MonTanaMiniComputer {
         if (observers != null) {
             for (MTMCObserver observer : observers) {
                 observer.displayUpdated();
+            }
+        }
+    }
+
+    public void notifyOfFileSystemUpdate() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.filesystemUpdated();
             }
         }
     }

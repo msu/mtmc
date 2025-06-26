@@ -19,6 +19,7 @@ public class WebUIUpdater implements MTMCObserver {
     int UPDATE_REGISTER_UI = 0x001;
     int UPDATE_MEMORY_UI = 0x100;
     int UPDATE_DISPLAY_UI = 0x010;
+    int UPDATE_FILESYSTEM_UI = 0x1000;
 
     public static final int UI_UPDATE_INTERVAL = 50;
 
@@ -43,6 +44,9 @@ public class WebUIUpdater implements MTMCObserver {
                         if ((updates & UPDATE_DISPLAY_UI) != 0) {
                             webServer.sendEvent("update:display", "dummy");
                         }
+                        if ((updates & UPDATE_FILESYSTEM_UI) != 0) {
+                            webServer.sendEvent("update:filesystem", webServer.render("templates/editors.html"));
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -51,6 +55,11 @@ public class WebUIUpdater implements MTMCObserver {
         });
         updateThread.start();
 
+    }
+    
+    @Override
+    public void filesystemUpdated() {
+        updateFlags.updateAndGet(operand -> operand | UPDATE_FILESYSTEM_UI);
     }
 
     @Override

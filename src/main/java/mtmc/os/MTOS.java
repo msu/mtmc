@@ -34,6 +34,12 @@ public class MTOS {
             // wint
             short value = computer.getRegisterValue(A0);
             computer.getConsole().writeInt(value);
+        } else if (syscallNumber == SysCall.getValue("rchr")) {
+            char val = computer.getConsole().readChar();
+            computer.setRegisterValue(RV, val);
+        } else if (syscallNumber == SysCall.getValue("wchr")) {
+            short value = computer.getRegisterValue(A0);
+            computer.getConsole().print("" + (char) value);
         } else if (syscallNumber == SysCall.getValue("rstr")) {
             // rstr
             short pointer = computer.getRegisterValue(A0);
@@ -51,6 +57,43 @@ public class MTOS {
             short pointer = computer.getRegisterValue(A0);
             String outputString = readStringFromMemory(pointer);
             computer.getConsole().print(outputString);
+        } else if (syscallNumber == SysCall.getValue("printf")) {
+            short pointer = computer.getRegisterValue(A0);
+            short initSP = computer.getRegisterValue(A1);
+            String fmtString = readStringFromMemory(pointer);
+            StringBuilder sb = new StringBuilder();
+            int stackOff = 0;
+            int i = 0;
+            while (i < fmtString.length()) {
+                char c = fmtString.charAt(i++);
+                if (c != '%') {
+                    sb.append(c);
+                    continue;
+                }
+
+                if (i >= fmtString.length()) break;
+                c = fmtString.charAt(i++);
+
+                if (c == 'd') {
+                    stackOff += 2;
+                    int v = computer.fetchWordFromMemory(initSP - stackOff);
+                    sb.append(v);
+                } else if (c == 'c') {
+                    stackOff += 2;
+                    char v = (char) computer.fetchWordFromMemory(initSP - stackOff);
+                    sb.append(v);
+                } else if (c == 's') {
+                    stackOff += 2;
+                    short valuePointer = computer.fetchWordFromMemory(initSP - stackOff);
+                    String s = readStringFromMemory(valuePointer);
+                    sb.append(s);
+                } else {
+                    sb.append('%').append(c);
+                }
+            }
+
+            computer.getConsole().print(sb.toString());
+            computer.setRegisterValue(RV, sb.length());
         } else if (syscallNumber == SysCall.getValue("rnd")) {
             // rnd
             short low = computer.getRegisterValue(A0);
@@ -123,8 +166,8 @@ public class MTOS {
             String fileType = fileName.substring(fileName.lastIndexOf('.') + 1);
 
             try {
-                // special handling for game-of-life files
-                if ("gol".equals(fileType)) {
+                // special handling for game-of-life cell files
+                if ("cells".equals(fileType)) {
 
                     String str = Files.readString(file.toPath());
                     List<String> lines = Arrays
@@ -172,8 +215,13 @@ public class MTOS {
         while (computer.fetchByteFromMemory(pointer + length) != 0) {
             length++;
         }
-        String outputString = new String(computer.getMemory(), pointer, length, Charsets.US_ASCII);
-        return outputString;
+        try {
+            String outputString = new String(computer.getMemory(), pointer, length, Charsets.US_ASCII);
+            return outputString;
+        } catch (StringIndexOutOfBoundsException ignored) {
+            computer.setStatus(MonTanaMiniComputer.ComputerStatus.PERMANENT_ERROR);
+            return "";
+        }
     }
 
     public void processCommand(String command) {

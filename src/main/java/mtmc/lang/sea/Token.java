@@ -1,5 +1,6 @@
 package mtmc.lang.sea;
 
+import mtmc.lang.Location;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ public record Token(
         String content,
         int start,
         int end
-) {
+) implements mtmc.lang.Token {
     public static final Token SOF = new Token(Token.Type.SOF, "", 0, 0);
     public static final Token EOF = new Token(Token.Type.EOF, "", Integer.MAX_VALUE, Integer.MAX_VALUE);
 
@@ -35,6 +36,7 @@ public record Token(
         KW_SIZEOF("sizeof"),
         KW_INT("int"),
         KW_CHAR("char"),
+        KW_VOID("void"),
         SOF(null),
         EOF(null),
 
@@ -47,10 +49,11 @@ public record Token(
         RIGHT_BRACE("}"),
 
         // Simple Punct
+        DOT3("..."),
+        DOT("."),
         SEMICOLON(";"),
         COMMA(","),
         COLON(":"),
-        DOT("."),
         TILDE("~"),
         QUESTION("?"),
 
@@ -155,8 +158,9 @@ public record Token(
         int end = src.length();
         for (int i = index; i < src.length(); i++) {
             if (src.charAt(i) == '\n') {
-                end = i + 1;
+                break;
             }
+            end = i + 1;
         }
         return src.substring(start, end);
     }
@@ -204,8 +208,8 @@ public record Token(
         do {
             Token token = tokenizeOne(src, offset);
             if (token == null) break;
-            offset = token.end();
             tokens.add(token);
+            offset = token.end();
         } while (true);
         return tokens;
     }
@@ -228,8 +232,31 @@ public record Token(
     }
 
     public static Token tokenizeOne(String src, int offset) throws TokenizeException {
-        while (offset < src.length() && Character.isWhitespace(src.charAt(offset))) {
-            offset += Character.charCount(src.charAt(offset));
+        while (offset < src.length()) {
+            if (Character.isWhitespace(src.charAt(offset))) {
+                offset += Character.charCount(src.charAt(offset));
+            } else if (match(src, offset, "//")) {
+                offset += 2;
+                while (offset < src.length()) {
+                    char c = src.charAt(offset);
+                    offset += Character.charCount(c);
+                    if (c == '\n') {
+                        break;
+                    }
+                }
+            } else if (match(src, offset, "/*")) {
+                offset += 2;
+                while (offset < src.length()) {
+                    if (match(src, offset, "*/")) {
+                        offset += 2;
+                        break;
+                    } else {
+                        offset += Character.charCount(src.charAt(offset));
+                    }
+                }
+            } else {
+                break;
+            }
         }
         if (offset >= src.length()) return null;
 
@@ -286,7 +313,7 @@ public record Token(
                 content = String.valueOf(d);
             }
 
-            if (offset >= src.length() || src.charAt(offset) == '\'') {
+            if (offset >= src.length() || src.charAt(offset) != '\'') {
                 throw new TokenizeException("unterminated character literal", start, offset);
             }
             offset += Character.charCount('\'');
@@ -320,6 +347,8 @@ public record Token(
                             throw new TokenizeException("invalid string escape " + d, start, offset);
                     };
                     sb.append(s);
+                } else if (d == '\n') {
+                    break;
                 } else {
                     sb.append(d);
                 }
@@ -344,7 +373,7 @@ public record Token(
             }
 
             if (type == null) {
-                return null;
+                throw new TokenizeException("unexpected character '" + src.charAt(start) + "'", start, offset);
             }
         }
 
@@ -355,10 +384,15 @@ public record Token(
     public static class TokenizeException extends IllegalArgumentException {
         public final int start, end;
 
-        public TokenizeException(String s, int start, int end) {
-            super(s);
+        public TokenizeException(String msg, int start, int end) {
+            super(msg);
             this.start = start;
             this.end = end;
+        }
+
+        @Override
+        public String toString() {
+            return "TokenizeException at " + start + ":" + end + ", " + getLocalizedMessage();
         }
     }
 
@@ -372,5 +406,20 @@ public record Token(
     @Override
     public int hashCode() {
         return Objects.hash(type, content, start, end);
+    }
+
+    @Override
+    public Location getStart() {
+        return new Location(start);
+    }
+
+    @Override
+    public Location getEnd() {
+        return new Location(end);
+    }
+
+    @Override
+    public String getContent() {
+        return content();
     }
 }

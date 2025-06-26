@@ -4,13 +4,15 @@ import mtmc.asm.Assembler;
 import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.List;
+
 import static mtmc.util.BinaryUtils.getBits;
 
 public class JumpRegisterInstruction extends Instruction {
 
     private MTMCToken register;
 
-    public JumpRegisterInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+    public JumpRegisterInstruction(InstructionType type, List<MTMCToken> label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 

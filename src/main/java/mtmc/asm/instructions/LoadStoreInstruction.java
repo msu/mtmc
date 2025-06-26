@@ -4,6 +4,8 @@ import mtmc.asm.Assembler;
 import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.List;
+
 import static mtmc.util.BinaryUtils.getBits;
 
 public class LoadStoreInstruction extends Instruction {
@@ -12,7 +14,7 @@ public class LoadStoreInstruction extends Instruction {
     private MTMCToken offsetToken;
     private MTMCToken value;
 
-    public LoadStoreInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+    public LoadStoreInstruction(InstructionType type, List<MTMCToken> label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 

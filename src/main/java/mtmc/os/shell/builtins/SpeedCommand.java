@@ -4,15 +4,10 @@ import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.os.shell.ShellCommand;
 import mtmc.tokenizer.MTMCTokenizer;
 
-import java.util.Random;
-
 import static mtmc.tokenizer.MTMCToken.TokenType.IDENTIFIER;
 import static mtmc.tokenizer.MTMCToken.TokenType.INTEGER;
 
 public class SpeedCommand extends ShellCommand {
-
-    Random random = new Random();
-
     @Override
     public void exec(MTMCTokenizer tokens, MonTanaMiniComputer computer) throws Exception {
         if (tokens.match(IDENTIFIER)) {

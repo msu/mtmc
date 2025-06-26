@@ -4,11 +4,11 @@ The MonTana state Mini Computer is a virtual computer intended to show how digit
 way.
 
 The MTSC combines ideas from
-the [PDP-11](https://en.wikipedia.org/wiki/PDP-11), 
+the [PDP-11](https://en.wikipedia.org/wiki/PDP-11),
 [MIPS](https://en.wikipedia.org/wiki/MIPS_architecture),
-the [Scott CPU](https://www.youtube.com/watch?v=RRg5hRlywIg), 
+the [Scott CPU](https://www.youtube.com/watch?v=RRg5hRlywIg),
 the [Game Boy](https://en.wikipedia.org/wiki/Game_Boy) and
-the [JVM](https://en.wikipedia.org/wiki/Java_virtual_machine) 
+the [JVM](https://en.wikipedia.org/wiki/Java_virtual_machine)
 to make a relatively simple 16-bit computer that can
 accomplish basic computing tasks.
 
@@ -17,22 +17,22 @@ accomplish basic computing tasks.
 - 16-bit binary computer
 - byte-addressable
 - 2 byte (16-bit) words
-- 4k of Memory 
-  - 4096 bytes/addresses
-  - 2048 words
+- 4k of Memory
+    - 4096 bytes/addresses
+    - 2048 words
 - 16 Registers (see below)
 - 160x140 2-bit green scale display
-  - `00` - `#2a453b` - darkest
-  - `01` - `#365d48` - dark
-  - `10` - `#577c44` - light
-  - `11` - `#7f860f` - lightest
+    - `00` - `#2a453b` - darkest
+    - `01` - `#365d48` - dark
+    - `10` - `#577c44` - light
+    - `11` - `#7f860f` - lightest
 - Console for text input/output & commands
 - Operating System (MTOS)
 - Core data types are signed 16-bit integers & bytes
 
 ## Registers
 
-The MTMC has a total of 16 user-facing register.  They are outlined below.
+The MTMC has a total of 16 user-facing register. They are outlined below.
 
 | index | name | description                                                                      |
 |-------|------|----------------------------------------------------------------------------------|
@@ -76,7 +76,7 @@ The `flags` register is four bits:
 
 ## Instructions (16 bit)
 
-There are eight instruction types in the MTSC.  
+There are eight instruction types in the MTSC.
 
 Instructions can be either one or two words long.
 
@@ -107,15 +107,15 @@ Misc (miscellaneous) instructions start with the nibble `0000`.
 | `debug`     | `0000 1000 vvvv vvvv` | Prints the associated debug string to the console           | `debug "Here"` |
 | `nop`       | `0000 1111 1111 1111` | A no-op instruction                                         | `nop`          |
 
-### ALU 
- 
+### ALU
+
 ALU operations start with the nibble `0001` and come in two forms:
 
 - Binary operations
 - Unary operations
 
 Binary operations take the form `0001 oooo rrrr ssss`, where `oooo` is the operation, `rrrr` is the first register and
-`ssss` is the second register.  Any registers can be referenced with ALU operations.  
+`ssss` is the second register. Any registers can be referenced with ALU operations.
 
 Logically, binary operations end up looking like this:
 
@@ -125,7 +125,7 @@ rrrr = rrrr OP ssss
 
 Unary operations take the form `0001 oooo 0000 rrrr`, where `oooo` is the operation, `rrrr` is the register to modify.
 
-There is one special instruction, the `imm` ALU instruction.  This instruction takes the ALU instruction found in the
+There is one special instruction, the `imm` ALU instruction. This instruction takes the ALU instruction found in the
 third nibble and applies it to the register in the fourth nibble and the word in memory immediately following the
 instruction.
 
@@ -151,7 +151,7 @@ be set to `1`
 | `neg`       | `0001 1110 rrrr 0000 ` | Negates the value of `rrrr` and saves it to `rrrr`                                                                  | `neg t0`    |
 | `imm`       | `0001 1111 rrrr aaaa ` | Applies the ALU operation found in `aaaa` and applies it to `rrr` and the next word in memory after the instruction | `neg t0`    |
 
-The second nibble of the instruction determines the ALU operation.  Here is a table of those operations:
+The second nibble of the instruction determines the ALU operation. Here is a table of those operations:
 
 | Operation | Hex | binary |
 |-----------|-----|--------|
@@ -176,7 +176,7 @@ The second nibble of the instruction determines the ALU operation.  Here is a ta
 
 Stack operations start with the nibble `0010`.
 
-The MTMC offers the following stack manipulation instructions: 
+The MTMC offers the following stack manipulation instructions:
 
 * push
 * pop
@@ -188,17 +188,17 @@ The MTMC offers the following stack manipulation instructions:
 * stack operations (sop) ALU instructions
 * pushi - push an immediate value
 
-In the case of ALU stack operations, if the ALU operator is a binary operation, the top two values of the stack are 
-consumed and the result is pushed back onto the stack.  
+In the case of ALU stack operations, if the ALU operator is a binary operation, the top two values of the stack are
+consumed and the result is pushed back onto the stack.
 
-If the operator is unary operation, the top value of the stack 
+If the operator is unary operation, the top value of the stack
 is consumed and the result is pushed back onto the stack.
 
 Note that stacks always grow _down_ in memory on the MTMC.
 
 #### Assembly Notes
 
-Stack assembly instructions do not require you specify a stack pointer register.  
+Stack assembly instructions do not require you specify a stack pointer register.
 
 If it is omitted then the assembler will assume you want to use the `sp` register.
 
@@ -218,7 +218,8 @@ If it is omitted then the assembler will assume you want to use the `sp` registe
 
 Test instructions start with the nibble `0011`.
 
-These instructions all set the `test bit` of the `flags` register with their result, which can then be used with the `jz`
+These instructions all set the `test bit` of the `flags` register with their result, which can then be used with the
+`jz`
 (jump if the test bit is zero) instruction for conditionals.
 
 | Instruction | Form                  | Description                                                                                               | Example     |
@@ -260,11 +261,11 @@ The final nibble specifies an offset register, which holds a value to offset the
 
 ### LOAD/STORE
 
-The MTMC allows you to load and store words and bytes in memory with "load" and "store" instructions.  
+The MTMC allows you to load and store words and bytes in memory with "load" and "store" instructions.
 
-These instructions start with the nibble `1000`. 
+These instructions start with the nibble `1000`.
 
-The next nibble specify which type of load/store instruction it is.  
+The next nibble specify which type of load/store instruction it is.
 
 The next nibble specifies a register holding the address to save to or read from.
 
@@ -276,7 +277,7 @@ Assembly programmers may omit the offset:
   lw t0 BUFFER # zero offset
 ```
 
-The address or value to load or store from is found in the word immediately after the instruction.  
+The address or value to load or store from is found in the word immediately after the instruction.
 
 | Instruction | Form                  | Description                                                                                                                      | Example                  |
 |-------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|--------------------------|
@@ -294,20 +295,20 @@ The address or value to load or store from is found in the word immediately afte
 
 The MTMC supports one jump command that uses a register as the address to jump to, `jr`
 
-| Instruction | Form                   | Description                                                                                       | Example                                    |
-|-------------|------------------------|---------------------------------------------------------------------------------------------------|--------------------------------------------|
-| `jr`        | `10001 0000 0000 rrrr` | Jumps to the location found in register `rrrr`                                                    | `jr ra` (aliased as `ret`)                 |
+| Instruction | Form                  | Description                                    | Example                    |
+|-------------|-----------------------|------------------------------------------------|----------------------------|
+| `jr`        | `1000 0000 0000 rrrr` | Jumps to the location found in register `rrrr` | `jr ra` (aliased as `ret`) |
 
 ### JUMPS
 
-The MTMC supports four absolute jump commands, which all start with the first two bits `11`.  
+The MTMC supports four absolute jump commands, which all start with the first two bits `11`.
 
 The next two bits specify the type of jump, followed by 12-bits that specify the address to jump to.
 
 Conditional jumps are based on the `test bit` value in the `flags` register.
 
-The Jump & Link (`jal`) instruction is used to implement function call.  It sets the program counter to the address 
-encoded in the lower three bytes of the instruction, while setting the `ra` register to the address of the instruction 
+The Jump & Link (`jal`) instruction is used to implement function call. It sets the program counter to the address
+encoded in the lower three bytes of the instruction, while setting the `ra` register to the address of the instruction
 after itself.
 
 | Instruction | Form                  | Description                                                                                       | Example                                    |
@@ -316,7 +317,6 @@ after itself.
 | `jz`        | `1101 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `test bit` of `flags` is 0                              | `jz end`                                   |
 | `jnz`       | `1110 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `test bit` of `flags` is 1                              | `jz end`                                   |
 | `jal`       | `1111 vvvv vvvv vvvv` | Sets `ra` to the address of the next instruction (`pc` + 1) and sets the `pc` to `vvvv vvvv vvvv` | `jal square` (jump to function `square()`) |
-
 
 ## MTMC Calling Conventions
 
@@ -328,19 +328,18 @@ after itself.
 
 ## MTMC IO - WORK IN PROGRESS
 
-
-| Name       | Hex | binary | Description                                  |
-|------------|-----|--------|----------------------------------------------|
-| `up`       | `1` | `0001` | the up arrow key was pressed                 |
-| `right`    | `2` | `0010` | the right arrow key was pressed              |
-| `down`     | `B` | `1011` | the mouse was pressed down (but not clicked) |
-| `up`       | `C` | `1100` | the mouse was released                       |
-| `down`     | `3` | `0011` | the down arrow key was pressed               |
-| `left`     | `4` | `0100` | the left arrow key was pressed               |
-| `a`        | `6` | `0110` | the A button was pressed                     |
-| `b`        | `7` | `0111` | the B key was pressed                        |
-| `start`    | `8` | `1000` | the d key was pressed                        |
-| `select`   | `9` | `1001` | the f key was pressed                        |
+| Name     | Hex | binary | Description                                  |
+|----------|-----|--------|----------------------------------------------|
+| `up`     | `1` | `0001` | the up arrow key was pressed                 |
+| `right`  | `2` | `0010` | the right arrow key was pressed              |
+| `down`   | `B` | `1011` | the mouse was pressed down (but not clicked) |
+| `up`     | `C` | `1100` | the mouse was released                       |
+| `down`   | `3` | `0011` | the down arrow key was pressed               |
+| `left`   | `4` | `0100` | the left arrow key was pressed               |
+| `a`      | `6` | `0110` | the A button was pressed                     |
+| `b`      | `7` | `0111` | the B key was pressed                        |
+| `start`  | `8` | `1000` | the d key was pressed                        |
+| `select` | `9` | `1001` | the f key was pressed                        |
 
 #### System Codes
 

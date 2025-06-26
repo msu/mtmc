@@ -184,7 +184,9 @@ public class MTMCWebView {
 
             short val = (short) (memory[i] & 0xFF);
             int originalPos = i;
-            if (cols == 2) {
+            boolean twoCols = false;
+            if (cols == 2 && i % 2 == 0) {
+                twoCols = true;
                 i++; // consuming a word for this cell
                 val = (short) (val << 8);
                 val = (short) (val | (memory[i] & 0xFF));
@@ -200,9 +202,9 @@ public class MTMCWebView {
             builder.append("' class='");
             builder.append(memoryClass);
             builder.append("'");
-            if (cols > 1) {
+            if (twoCols) {
                 builder.append(" colspan='");
-                builder.append(cols);
+                builder.append(2);
                 builder.append("'");
             }
             builder.append(">");
@@ -265,7 +267,7 @@ public class MTMCWebView {
         return switch (format) {
             case HEX -> String.format("%02X ", val);
             case DEC -> String.valueOf(val);
-            case INS -> Instruction.disassembleInstruction(val, previousValue);
+            case INS -> Instruction.disassemble(val, previousValue);
             case STR -> get1252String(val);
             default -> throw new IllegalArgumentException("Can't render displayValue " + format);
         };

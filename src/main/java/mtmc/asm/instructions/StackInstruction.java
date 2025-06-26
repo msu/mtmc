@@ -4,6 +4,8 @@ import mtmc.asm.Assembler;
 import mtmc.emulator.Register;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.List;
+
 import static mtmc.util.BinaryUtils.getBits;
 
 public class StackInstruction extends Instruction {
@@ -13,7 +15,7 @@ public class StackInstruction extends Instruction {
     private MTMCToken aluOpToken;
     private MTMCToken value;
 
-    public StackInstruction(InstructionType type, MTMCToken label, MTMCToken instructionToken) {
+    public StackInstruction(InstructionType type, List<MTMCToken> label, MTMCToken instructionToken) {
         super(type, label, instructionToken);
     }
 

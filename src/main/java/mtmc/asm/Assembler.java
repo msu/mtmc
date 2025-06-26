@@ -31,7 +31,7 @@ public class Assembler {
 
     ASMMode mode = ASMMode.TEXT;
     MTMCTokenizer tokenizer;
-    private MTMCToken lastLabel;
+    private List<MTMCToken> lastLabels = List.of();
 
     public Assembler() {
         labels = new HashMap<>();
@@ -85,7 +85,7 @@ public class Assembler {
     private byte[] codeGen() {
         byte[] code = new byte[instructionsSize];
         for (Instruction instruction : instructions) {
-            instruction.genCode(code, this);
+           instruction.genCode(code, this);
         }
         return code;
     }
@@ -125,21 +125,14 @@ public class Assembler {
             return;
         }
         // label only lines are ok and propagate to the next instruction
-        MTMCToken labelToken = maybeGetLabel(tokens);
-        if (labelToken != null) {
-            if (tokens.isEmpty()) {
-                lastLabel = labelToken;
-            } else {
-                lastLabel = null; // labels always reset after one line
-            }
-        } else {
-            labelToken = lastLabel;
-            lastLabel = null; // labels always reset after one line
-        }
+        List<MTMCToken> labelTokens = maybeGetLabels(tokens);
+        var labels = new ArrayList<>(lastLabels);
+        labels.addAll(labelTokens);
+        lastLabels = labels;
         if (mode == ASMMode.TEXT) {
-            parseInstruction(tokens, labelToken);
+            parseInstruction(tokens, labels);
         } else {
-            parseData(tokens, labelToken);
+            parseData(tokens, labels);
         }
     }
 
@@ -155,11 +148,12 @@ public class Assembler {
         return null;
     }
 
-    private void parseData(LinkedList<MTMCToken> tokens, MTMCToken labelToken) {
+    private void parseData(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
+        lastLabels = List.of();
         MTMCToken dataToken = tokens.poll();
-        Data dataElt = new Data(labelToken);
+        Data dataElt = new Data(labelTokens);
         if (dataToken == null) {
-            dataElt.addError(labelToken, "Expected data");
+            dataElt.addError(labelTokens.getLast(), "Expected data");
         } else {
             if (dataToken.type() == STRING) {
                 byte[] stringBytes = dataToken.stringValue().getBytes(StandardCharsets.US_ASCII);
@@ -169,7 +163,7 @@ public class Assembler {
                 dataElt.setValue(dataToken, nullTerminated);
             } else if (isInteger(dataToken)) {
                 int integerValue = dataToken.intValue();
-                if (integerValue > Short.MAX_VALUE) {
+                if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
                     dataElt.addError(dataToken, "Number is too large");
                 }
                 dataElt.setValue(dataToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
@@ -208,7 +202,7 @@ public class Assembler {
             }
         }
 
-        if (labelToken != null) {
+        for (MTMCToken labelToken : labelTokens) {
             if (hasLabel(labelToken.stringValue())) {
                 dataElt.addError(tokens.poll(), "Label already defined: " + labelToken.stringValue());
             } else {
@@ -218,12 +212,13 @@ public class Assembler {
         data.add(dataElt);
     }
 
-    private void parseInstruction(LinkedList<MTMCToken> tokens, MTMCToken labelToken) {
+    private void parseInstruction(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
         MTMCToken instructionToken = tokens.peekFirst();
         if (instructionToken == null) return;
 
+        lastLabels = List.of();
         if (instructionToken.type() != IDENTIFIER) {
-            instructions.add(new ErrorInstruction(labelToken, instructionToken, "Invalid Token"));
+            instructions.add(new ErrorInstruction(labelTokens, instructionToken, "Invalid Token"));
             return;
         }
 
@@ -233,13 +228,13 @@ public class Assembler {
         InstructionType type = InstructionType.fromString(instructionToken.stringValue());
 
         if (type == null) {
-            instructions.add(new ErrorInstruction(labelToken, instructionToken, "Unknown instruction token type: " + instructionToken.stringValue()));
+            instructions.add(new ErrorInstruction(labelTokens, instructionToken, "Unknown instruction token type: " + instructionToken.stringValue()));
             return;
         }
 
         Instruction instruction;
         if (type.getInstructionClass() == MISC) {
-            MiscInstruction miscInst = new MiscInstruction(type, labelToken, instructionToken);
+            MiscInstruction miscInst = new MiscInstruction(type, labelTokens, instructionToken);
             if (type == InstructionType.SYS) {
                 MTMCToken sysCallType = requireSysCall(tokens, miscInst);
                 miscInst.setSyscallType(sysCallType);
@@ -269,13 +264,13 @@ public class Assembler {
             }
             instruction = miscInst;
         } else if (type.getInstructionClass() == ALU) {
-            ALUInstruction aluInst = new ALUInstruction(type, labelToken, instructionToken);
+            ALUInstruction aluInst = new ALUInstruction(type, labelTokens, instructionToken);
             if (aluInst.isBinaryOp()) {
                 MTMCToken toRegister = requireWriteableRegister(tokens, aluInst);
                 aluInst.setTo(toRegister);
                 MTMCToken fromRegister = requireReadableRegister(tokens, aluInst);
                 aluInst.setFrom(fromRegister);
-            } else if (aluInst.isImmediatOp()) {
+            } else if (aluInst.isImmediateOp()) {
                 MTMCToken immediateOp = requireALUOp(tokens, aluInst);
                 // TODO - validate is max or lower op
                 aluInst.setImmediateOp(immediateOp);
@@ -291,7 +286,7 @@ public class Assembler {
             }
             instruction = aluInst;
         } else if (type.getInstructionClass() == STACK) {
-            StackInstruction stackInst = new StackInstruction(type, labelToken, instructionToken);
+            StackInstruction stackInst = new StackInstruction(type, labelTokens, instructionToken);
             if (type == InstructionType.PUSH) {
                 MTMCToken targetRegister = requireReadableRegister(tokens, stackInst);
                 stackInst.setTarget(targetRegister);
@@ -314,7 +309,7 @@ public class Assembler {
 
             instruction = stackInst;
         } else if (type.getInstructionClass() == TEST) {
-            TestInstruction testInst = new TestInstruction(type, labelToken, instructionToken);
+            TestInstruction testInst = new TestInstruction(type, labelTokens, instructionToken);
             testInst.setFirst(requireReadableRegister(tokens, testInst));
             if(testInst.isImmediate()) {
                 testInst.setImmediateValue(requireIntegerToken(tokens, testInst, 15));
@@ -323,7 +318,7 @@ public class Assembler {
             }
             instruction = testInst;
         } else if (type.getInstructionClass() == LOAD_STORE) {
-            LoadStoreInstruction loadInst = new LoadStoreInstruction(type, labelToken, instructionToken);
+            LoadStoreInstruction loadInst = new LoadStoreInstruction(type, labelTokens, instructionToken);
 
             MTMCToken targetReg = requireReadableRegister(tokens, loadInst);
             loadInst.setTargetToken(targetReg);
@@ -338,7 +333,7 @@ public class Assembler {
 
             instruction = loadInst;
         } else if (type.getInstructionClass() == LOAD_STORE_REGISTER) {
-            LoadStoreRegisterInstruction loadInst = new LoadStoreRegisterInstruction(type, labelToken, instructionToken);
+            LoadStoreRegisterInstruction loadInst = new LoadStoreRegisterInstruction(type, labelTokens, instructionToken);
 
             MTMCToken targetReg = requireWriteableRegister(tokens, loadInst);
             loadInst.setTargetToken(targetReg);
@@ -353,12 +348,12 @@ public class Assembler {
             }
             instruction = loadInst;
         } else if (type.getInstructionClass() == JUMP_REGISTER) {
-            JumpRegisterInstruction jumpInst = new JumpRegisterInstruction(type, labelToken, instructionToken);
+            JumpRegisterInstruction jumpInst = new JumpRegisterInstruction(type, labelTokens, instructionToken);
             MTMCToken register = requireReadableRegister(tokens, jumpInst);
             jumpInst.setRegister(register);
             instruction = jumpInst;
         } else if (type.getInstructionClass() == JUMP) {
-            JumpInstruction jumpInst = new JumpInstruction(type, labelToken, instructionToken);
+            JumpInstruction jumpInst = new JumpInstruction(type, labelTokens, instructionToken);
             MTMCToken labelValue = maybeGetLabelReference(tokens);
             MTMCToken valueToken;
             if (labelValue != null) {
@@ -372,7 +367,7 @@ public class Assembler {
             instruction = new ErrorInstruction(null, instructionToken, "Unexpected Token");
         }
 
-        if (labelToken != null) {
+        for (MTMCToken labelToken : labelTokens) {
             if (hasLabel(labelToken.stringValue())) {
                 instruction.addError(tokens.poll(), "Label already defined: " + labelToken.stringValue());
             } else {
@@ -447,12 +442,13 @@ public class Assembler {
         return sysCallType;
     }
 
-    private static MTMCToken maybeGetLabel(LinkedList<MTMCToken> tokens) {
-        MTMCToken label = null;
-        if (tokens.getFirst().type() == LABEL) {
-            label = tokens.poll();
+    private static List<MTMCToken> maybeGetLabels(LinkedList<MTMCToken> tokens) {
+        LinkedList<MTMCToken> labels = new LinkedList<>();
+        while (!tokens.isEmpty() &&  tokens.getFirst().type() == LABEL) {
+            MTMCToken label = tokens.poll();
+            labels.add(label);
         }
-        return label;
+        return labels;
     }
 
     private static MTMCToken maybeGetLabelReference(LinkedList<MTMCToken> tokens) {

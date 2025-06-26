@@ -3,9 +3,11 @@ package mtmc.asm.instructions;
 import mtmc.asm.Assembler;
 import mtmc.tokenizer.MTMCToken;
 
+import java.util.List;
+
 public class ErrorInstruction extends Instruction {
-    public ErrorInstruction(MTMCToken label, MTMCToken instruction, String error) {
-        super(null, label, instruction);
+    public ErrorInstruction(List<MTMCToken> labels, MTMCToken instruction, String error) {
+        super(null, labels, instruction);
         addError(instruction, error);
     }
 

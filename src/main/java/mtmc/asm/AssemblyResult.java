@@ -6,9 +6,9 @@ import java.util.List;
 
 public record AssemblyResult(byte[] code, byte[] data, DebugInfo debugInfo, List<ASMError> errors, String source) {
     public String printErrors() {
-        StringBuilder builder = new StringBuilder("Errors:");
+        StringBuilder builder = new StringBuilder("Errors:\n");
         for (ASMError error : errors) {
-            builder.append("  Line " + error.token().line() + ": " + error.error());
+            builder.append("  Line " + error.token().line() + ": " + error.error()).append('\n');
         }
         return builder.toString();
     }

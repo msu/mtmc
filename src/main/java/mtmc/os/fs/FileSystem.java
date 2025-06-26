@@ -21,6 +21,10 @@ public class FileSystem {
     public String getCWD() {
         return cwd;
     }
+    
+    public boolean exists(String path) {
+        return new File(DISK_PATH.toFile(), resolve(path)).exists();
+    }
 
     public String resolve(String fileName) {
         String resolvedString = "";

@@ -232,7 +232,7 @@ public class MTOS {
 
     public File loadFile(String path) {
         var fs = computer.getFileSystem();
-        File file = fs.getRealPath(path);
+        File file = fs.getRealPath(path).toFile();
         return file;
     }
 }

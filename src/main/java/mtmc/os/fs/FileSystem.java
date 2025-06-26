@@ -90,14 +90,14 @@ public class FileSystem {
         return joinedPath;
     }
 
-    public File getRealPath(String path) { // Resolves given path and returns /disk/ + path
+    public Path getRealPath(String path) { // Resolves given path and returns /disk/ + path
         String resolvedPath = resolve(path);
         String slashGone = resolvedPath.substring(1);
-        return DISK_PATH.resolve(slashGone).toFile();
+        return DISK_PATH.resolve(slashGone).toFile().toPath();
     }
 
     public Listing listFiles(String path) {
-        File resolvedPath = getRealPath(path);
+        File resolvedPath = getRealPath(path).toFile();
         Listing listing = listFilesRecursive(resolvedPath, 0);
         return listing;
     }
@@ -134,12 +134,12 @@ public class FileSystem {
     }
 
     public void writeFile(String path, String contents) throws IOException {
-        Path filePath = getDiskPath(path);
+        Path filePath = getRealPath(path);
         Files.writeString(filePath, contents);
     }
 
     public String readFile(String path) throws FileNotFoundException, IOException {
-        Path filePath = getDiskPath(path);
+        Path filePath = getRealPath(path);
         var contents = Files.readString(filePath);
         return contents;
     }

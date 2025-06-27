@@ -98,6 +98,15 @@ public class MTOS {
             // rnd
             short low = computer.getRegisterValue(A0);
             short high = computer.getRegisterValue(A1);
+            short temp;
+            
+            if(low > high)
+            {
+                temp = low;
+                low = high;
+                high = temp;
+            }
+
             computer.setRegisterValue(RV, random.nextInt(low, high + 1));
         } else if (syscallNumber == SysCall.getValue("sleep")) {
             // sleep

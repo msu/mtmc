@@ -23,13 +23,14 @@ public class MonTanaMiniComputer {
     short[] registerFile; // 16 user visible + the instruction register
     byte[]  memory;
     ComputerStatus status = READY;
-    private int speed = 0;
+    private int speed = 10000000;
     private MTMCIO io = new MTMCIO();
 
     // helpers
     MTOS os = new MTOS(this);
     MTMCConsole console = new MTMCConsole(this);
     MTMCDisplay display = new MTMCDisplay(this);
+    MTMCClock clock = new MTMCClock(this);
     FileSystem fileSystem = new FileSystem(this);
 
     // listeners
@@ -71,29 +72,23 @@ public class MonTanaMiniComputer {
         // reset computer status
         status = READY;
     }
+    
+    public long pulse(long instructions)
+    {
+        long count = 0;
+        
+        for (long i=0; i<instructions && status == EXECUTING; i++) {
+            fetchAndExecute();
+            count++;
+        }
+        
+        return count;
+    }
 
     public void run() {
         status = EXECUTING;
-        while (status == EXECUTING) {
-            long startTime = 0;
-            if (speed > 0) {
-                startTime = System.currentTimeMillis();
-            }
-            fetchAndExecute();
-            if (speed > 0) {
-                int delay = 1000 / speed;
-                long endTime = System.currentTimeMillis();
-                long instructionTime = endTime - startTime;
-                long delta = delay - instructionTime;
-                if (delta > 0) {
-                    try {
-                        Thread.sleep(delta);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
+        
+        clock.run();
     }
 
     public void setStatus(ComputerStatus status) {
@@ -733,6 +728,10 @@ public class MonTanaMiniComputer {
         status = READY;
     }
 
+    public int getSpeed() {
+        return speed;
+    }
+    
     public void setSpeed(int speed) {
         this.speed = speed;
     }

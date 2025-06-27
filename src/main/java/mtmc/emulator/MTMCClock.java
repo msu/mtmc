@@ -27,13 +27,15 @@ public class MTMCClock
         
         long speed = 0;
         long pulse;
+        long ms = 10;
         
         while(computer.status == EXECUTING) {
-            deltaStart = System.currentTimeMillis();
-            delta = 10 - (System.currentTimeMillis() - deltaStart);
-            
             speed = Math.max(computer.getSpeed(), 0);
-            pulse = (speed <= 0 ? 1000000 : Math.max(speed / 100, 10));
+            pulse = (speed <= 0 ? 1000000 : Math.max(speed / 100, 1));
+            ms = (pulse < 10 ? 1000 / speed : 10);
+            
+            deltaStart = System.currentTimeMillis();
+            delta = ms - (System.currentTimeMillis() - deltaStart);
             
             /* We've lost more than a second. Recalibrate. */
             if ((expected - virtual) > pulse * 100) {

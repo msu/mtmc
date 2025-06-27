@@ -116,6 +116,14 @@ public class FileSystem {
         String slashGone = resolvedPath.substring(1);
         return DISK_PATH.resolve(slashGone).toFile().toPath();
     }
+    
+    public File[] getFileList(String path) {
+        File resolvedPath = getRealPath(path).toFile();
+        
+        if (!resolvedPath.isDirectory()) return new File[]{ resolvedPath };
+        
+        return resolvedPath.listFiles();
+    }
 
     public Listing listFiles(String path) {
         File resolvedPath = getRealPath(path).toFile();

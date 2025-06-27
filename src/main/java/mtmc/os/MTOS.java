@@ -219,7 +219,7 @@ public class MTOS {
             }
             
             //TODO: Should this return the length with or without the null terminator?
-            computer.writeByteToMemory(destination + maxSize, (byte)0);
+            computer.writeByteToMemory(destination + maxSize - 1, (byte)0);
             computer.setRegisterValue(RV, maxSize-1);
         } else if (syscallNumber == SysCall.getValue("chdir")) {
 

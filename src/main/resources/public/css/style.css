@@ -403,6 +403,7 @@ main {
     font-weight: bold;
     color: var(--console-primary);
     border: none;
+    width: 375px;
 }
 
 #console-history div {

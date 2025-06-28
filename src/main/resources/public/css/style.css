@@ -7,6 +7,10 @@
     --pdp-off-white: #F0EBCD;
 }
 
+body {
+    margin: 0;
+}
+
 #controls {
     padding: 0;
 }
@@ -86,22 +90,26 @@ main {
     grid-template-rows: auto auto minmax(0, 1fr);
     display: grid;
     grid-gap: 4px;
-    height: 98vh;
-    max-height: 98vh;
+    height: 100vh;
+    max-height: 100vh;
 }
 
 #center {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     grid-gap: 4px;
-    max-height: 98vh;
+    height: 100vh;
+    max-height: 100vh;
 }
 
 #right {
-    grid-template-rows: 1fr;
+    background-color: var(--pdp-white);
+/*    grid-template-rows: 1fr;
     display: grid;
-    grid-gap: 4px;
-    max-height: 98vh;
+    grid-gap: 4px;*/
+    height: 100vh;
+    max-height: 100vh;
+    overflow: auto;
 }
 
 .panel {
@@ -123,11 +131,11 @@ main {
     height: 95%;
 }
 
-#memory {
+/*#memory {
     font-family: monospace;
     height: 90%;
     overflow-y: scroll;
-}
+}*/
 
 #display {
     background-color: #c7c3c0;
@@ -290,6 +298,7 @@ main {
 
 .memory {
     font-family: monospace;
+    overflow: auto;
 }
 
 .memory td {
@@ -297,11 +306,16 @@ main {
     overflow: hidden;
 }
 
+#memory-panel {
+    display: flex;
+    flex-direction: column;
+}
+
 #memory-header {
     font-family: monospace;
     font-weight: bold;
     font-size: 16px;
-    overflow: auto;
+/*    overflow: auto;*/
     padding: 4px;
 }
 

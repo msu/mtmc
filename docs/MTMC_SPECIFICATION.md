@@ -361,4 +361,5 @@ Here are the syscodes supported by MTOS - WORK IN PROGRESS
 | `fbss`    | 0x14 | Draws the sprite found at sprite index `a0` into the framebuffer at location `a1`, `a2`.  If `a3` is `1`, transparency will be respected.             |
 | `fbds`    | 0x14 | Draws the sprite found at sprite index `a0` into the framebuffer at location `a1`, `a2`.  If `a3` is `1`, transparency will be respected.             |
 | `fbsync`  | 0x14 | Synchronizes the frame buffer to the screen                                                                                                           |
-| `error`   | 0xF0 | Aborts the current program execution with an error message, `a0` is a pointer to the error message                                                    |
+| `error`   | 0xF0 | Aborts the current program execution with an error message, `a0` is a pointer to the error message      
+| `timer`   | 0x22 | If `a0` is non-zero, sets a timer to count down the number of milliseconds specified in `a0`. Returns the remaining number of ms in `rv`.             |

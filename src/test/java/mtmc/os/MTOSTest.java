@@ -81,4 +81,26 @@ public class MTOSTest {
         assertTrue(duration > 100, "Duration should be greater than 100 : " + duration);
     }
 
+    @Test
+    public void testTimer() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        short inst = 0b0000_0000_0010_0010; // sys timer
+        
+        computer.setRegisterValue(A0, 10);
+        computer.execInstruction(inst);
+        
+        assertEquals(10, computer.getRegisterValue(RV));
+        
+        computer.setRegisterValue(A0, 0);
+        computer.execInstruction(inst);
+        
+        // The time may tick by a ms by the time we run the check. So checking both 9 and 10
+        assertTrue(computer.getRegisterValue(RV) == 10 || computer.getRegisterValue(RV) == 9);
+        
+        try { Thread.sleep(10); } catch(InterruptedException e) {}
+        
+        computer.execInstruction(inst);
+        assertEquals(0, computer.getRegisterValue(RV)); // Timer exhausted
+    }
+
 }

@@ -17,6 +17,7 @@ import static mtmc.emulator.Register.*;
 public class MTOS {
 
     private final MonTanaMiniComputer computer;
+    private long timer = 0;
     Random random = new Random();
 
     public MTOS(MonTanaMiniComputer computer) {
@@ -250,6 +251,12 @@ public class MTOS {
             } else {
                 computer.setRegisterValue(RV, 1);
             }
+        } else if (syscallNumber == SysCall.getValue("timer")) {
+            short value = computer.getRegisterValue(A0);
+            
+            if (value > 0) this.timer = System.currentTimeMillis() + value;
+            
+            computer.setRegisterValue(RV, (int)Math.max(0, this.timer - System.currentTimeMillis()));
         }
     }
 

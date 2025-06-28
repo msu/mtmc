@@ -42,6 +42,14 @@ public class MTMCWebView {
         return computer.getFileSystem();
     }
 
+    public boolean isExecuting() {
+        return (computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING);
+    }
+    
+    public int getSpeed() {
+        return computer.getSpeed();
+    }
+
     public String blinken(int bit, int register) {
         short value = computer.getRegisterValue(register);
         int mask = 0b1 << bit;

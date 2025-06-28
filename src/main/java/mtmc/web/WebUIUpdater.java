@@ -16,12 +16,13 @@ public class WebUIUpdater implements MTMCObserver {
     Thread updateThread;
     AtomicInteger updateFlags = new AtomicInteger(0);
 
-    int UPDATE_REGISTER_UI = 0x001;
-    int UPDATE_MEMORY_UI = 0x100;
-    int UPDATE_DISPLAY_UI = 0x010;
-    int UPDATE_FILESYSTEM_UI = 0x1000;
+    int UPDATE_REGISTER_UI   = 0x00001;
+    int UPDATE_MEMORY_UI     = 0x00100;
+    int UPDATE_DISPLAY_UI    = 0x00010;
+    int UPDATE_FILESYSTEM_UI = 0x01000;
+    int UPDATE_EXECUTION_UI  = 0x10000;
 
-    public static final int UI_UPDATE_INTERVAL = 50;
+    public static final int UI_UPDATE_INTERVAL = 16; // Approximately 60 FPS
 
     public WebUIUpdater(WebServer webServer) {
         this.webServer = webServer;
@@ -47,6 +48,9 @@ public class WebUIUpdater implements MTMCObserver {
                         if ((updates & UPDATE_FILESYSTEM_UI) != 0) {
                             webServer.sendEvent("update:filesystem", webServer.render("templates/editors.html"));
                         }
+                        if ((updates & UPDATE_EXECUTION_UI) != 0) {
+                            webServer.sendEvent("update:execution", webServer.render("templates/control.html"));
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -55,6 +59,11 @@ public class WebUIUpdater implements MTMCObserver {
         });
         updateThread.start();
 
+    }
+    
+    @Override
+    public void executionUpdated() {
+        updateFlags.updateAndGet(operand -> operand | UPDATE_EXECUTION_UI);
     }
     
     @Override

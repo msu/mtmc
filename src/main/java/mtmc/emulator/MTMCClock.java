@@ -29,7 +29,7 @@ public class MTMCClock
         long pulse;
         long ms = 10;
         
-        while(computer.status == EXECUTING) {
+        while(computer.getStatus() == EXECUTING) {
             speed = Math.max(computer.getSpeed(), 0);
             pulse = (speed <= 0 ? 1000000 : Math.max(speed / 100, 1));
             ms = (pulse < 10 ? 1000 / speed : 10);

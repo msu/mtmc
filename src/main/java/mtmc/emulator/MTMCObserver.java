@@ -2,6 +2,8 @@ package mtmc.emulator;
 
 public interface MTMCObserver {
 
+    void executionUpdated();
+    
     void filesystemUpdated();
     
     void registerUpdated(int register, int value);

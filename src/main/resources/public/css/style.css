@@ -13,6 +13,8 @@ body {
 
 #controls {
     padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 #controls > * > * {
@@ -140,6 +142,8 @@ main {
 #display {
     background-color: #c7c3c0;
     padding: 8px;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 #display-wrapper {
@@ -565,6 +569,7 @@ textarea#editor {
         scroll-snap-type: x mandatory;
         width: 100vw;
         height: 100vh;
+        touch-action: manipulation;
     }
     
     #left, #center, #right {
@@ -577,9 +582,5 @@ textarea#editor {
     
     #console-input {
         width: 325px;
-    }
-    
-    #display-img {
-        width: calc(280px);
     }
 }

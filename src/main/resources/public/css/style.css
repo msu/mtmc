@@ -156,6 +156,10 @@ main {
     border-radius: 2px;
 }
 
+#display-img {
+    width: 340px;
+}
+
 #display-control-wrapper {
     padding: 12px;
     display: grid;
@@ -373,17 +377,13 @@ main {
 }
 
 #console-panel {
-    display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: 445px;
+    display: flex;
     overflow: hidden;
 }
 
 #console {
-    width: 99%;
     background: var(--console-background);
     color: var(--console-primary);
-    box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: auto;
     word-break: break-all;
@@ -391,6 +391,7 @@ main {
     padding: 8px;
     font-family: monospace;
     font-weight: bold;
+    flex-grow: 1;
 }
 
 #console-input {
@@ -403,7 +404,7 @@ main {
     font-weight: bold;
     color: var(--console-primary);
     border: none;
-    width: 375px;
+    width: 370px;
 }
 
 #console-history div {
@@ -468,7 +469,7 @@ details > summary {
 }
 
 #cd-search {
-    width: 100%;
+    width: calc(100% - 8px);
 }
 
 .directory-entry {
@@ -545,3 +546,40 @@ textarea#editor {
 /*    bottom:5px;*/
 /*    padding:1em */
 /*}*/
+
+@media only screen and (max-width: 768px) {
+    
+    body {
+        
+        width: 100vw;
+        max-width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+    }
+    
+    main {
+        grid-template-columns: 100vw 100vw 100vw;
+        grid-gap: 0px;
+        overflow: auto;
+        scroll-snap-type: x mandatory;
+        width: 100vw;
+        height: 100vh;
+    }
+    
+    #left, #center, #right {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        scroll-snap-align: center;
+    }
+    
+    #console-input {
+        width: 325px;
+    }
+    
+    #display-img {
+        width: calc(280px);
+    }
+}

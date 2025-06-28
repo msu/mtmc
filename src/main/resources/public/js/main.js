@@ -107,12 +107,30 @@ function initJoystick(){
     Object.keys(virtual_button_mappings).forEach(key => {
         const value = virtual_button_mappings[key];
         
-        document.querySelector(key).addEventListener("mousedown", ()=> {
+        document.querySelector(key).addEventListener("mousedown", (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
             buttons |= value;
             fetch("/io/" + buttons.toString(16), {method: 'POST'});
         });
         
-        document.querySelector(key).addEventListener("mouseup", ()=> {
+        document.querySelector(key).addEventListener("mouseup", (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
+            buttons &= ~value;
+            fetch("/io/" + buttons.toString(16), {method: 'POST'});
+        });
+        
+        document.querySelector(key).addEventListener("touchstart", (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
+            buttons |= value;
+            fetch("/io/" + buttons.toString(16), {method: 'POST'});
+        });
+        
+        document.querySelector(key).addEventListener("touchend", (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
             buttons &= ~value;
             fetch("/io/" + buttons.toString(16), {method: 'POST'});
         });
@@ -134,6 +152,7 @@ function initJoystick(){
     let display = document.getElementById('display');
     display.addEventListener("keydown", (e) => {
         e.preventDefault();
+        e.stopPropagation();
         
         if (!key_mappings[e.key]) return;
         if (buttons & key_mappings[e.key]) return; // Eliminate key repeat
@@ -144,6 +163,7 @@ function initJoystick(){
     
     display.addEventListener("keyup", (e) => {
         e.preventDefault();
+        e.stopPropagation();
         
         if (!key_mappings[e.key]) return;
         

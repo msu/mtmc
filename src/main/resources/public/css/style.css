@@ -398,17 +398,26 @@ main {
     flex-grow: 1;
 }
 
+#console-input-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
 #console-input {
-    display: inline;
     outline: none;
     visibility: visible;
     caret: var(--console-primary) block;
     background-color: var(--console-background);
     font-family: monospace;
     font-weight: bold;
+    font-size: 13px;
     color: var(--console-primary);
     border: none;
-    width: 370px;
+    /*width: 370px;*/
+    margin: 0;
+    padding: 0;
+    flex-grow: 1;
 }
 
 #console-history div {
@@ -584,7 +593,7 @@ textarea#editor {
         scroll-snap-align: center;
     }
     
-    #console-input {
+/*    #console-input {
         width: 325px;
-    }
+    }*/
 }

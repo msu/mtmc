@@ -7,6 +7,10 @@
     --pdp-off-white: #F0EBCD;
 }
 
+html {
+    overscroll-behavior: none;
+}
+
 body {
     margin: 0;
 }

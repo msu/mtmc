@@ -21,7 +21,7 @@ accomplish basic computing tasks.
     - 4096 bytes/addresses
     - 2048 words
 - 16 Registers (see below)
-- 160x140 2-bit green scale display
+- 160x144 2-bit green scale display
     - `00` - `#2a453b` - darkest
     - `01` - `#365d48` - dark
     - `10` - `#577c44` - light

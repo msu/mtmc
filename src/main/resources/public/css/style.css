@@ -553,12 +553,16 @@ textarea#editor {
 
 @media only screen and (max-width: 768px) {
     
+    html {
+        overflow: hidden;
+    }
+    
     body {
         
         width: 100vw;
         max-width: 100vw;
-        height: 100vh;
-        max-height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
         overflow: hidden;
     }
     
@@ -568,15 +572,15 @@ textarea#editor {
         overflow: auto;
         scroll-snap-type: x mandatory;
         width: 100vw;
-        height: 100vh;
+        height: 100dvh;
         touch-action: manipulation;
     }
     
     #left, #center, #right {
         width: 100vw;
         max-width: 100vw;
-        height: 100vh;
-        max-height: 100vh;
+        height: 100dvh;
+        max-height: 100dvh;
         scroll-snap-align: center;
     }
     

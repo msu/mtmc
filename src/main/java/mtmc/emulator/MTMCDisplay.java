@@ -114,7 +114,7 @@ public class MTMCDisplay {
     public void drawRectangle(short startCol, short startRow, short width, short height) {
         Graphics graphics = buffer.getGraphics();
         graphics.setColor(currentColor.getJavaColor());
-        graphics.drawRect(startCol, startRow, width, height);
+        graphics.fillRect(startCol, startRow, width, height);
         graphics.dispose();
     }
 

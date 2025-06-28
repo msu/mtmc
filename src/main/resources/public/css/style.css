@@ -593,7 +593,7 @@ textarea#editor {
         scroll-snap-align: center;
     }
     
-/*    #console-input {
-        width: 325px;
-    }*/
-}
+    #display {
+        border: 0;
+        padding: 0;
+    }

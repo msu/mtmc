@@ -35,17 +35,21 @@
     width:      40
     height:     36
 
-    speed:      250
+    speed:      200
     direction:  0b10000000
     crash:      0
 
     offset:     0
     length:     1
-    max_length: 8
+    max_length: 20
 
     tail_size:  3
-    tail_x:     "1234567890"
-    tail_y:     "1234567890"
+    tail_x:     "123456789012345678901234567890"
+    tail_y:     "123456789012345678901234567890"
+
+  food:
+    food_x:     0
+    food_y:     0
 
   messages:
     separator: "--------------------------------\n"
@@ -68,6 +72,7 @@ main_loop:
   jal  erase_tail
   jal  move_snake
   jal  check_crashed
+  jal  check_food
 
   j main_loop
 
@@ -90,6 +95,7 @@ init_game:
 
   jal  clear_buffer
   jal  draw_walls
+  jal  place_food
 
   pop  ra
   ret
@@ -176,37 +182,37 @@ right_wall:
 # Draws the snake to the buffer       #
 #######################################
 draw_snake:
-   push ra
+  push ra
 
-   lw   t0 offset
-   lw   t1 length
-   li   t2 0         # counter
-   lw   t3 max_length
+  lw   t0 offset
+  lw   t1 length
+  li   t2 0         # counter
+  lw   t3 max_length
 
 draw_snake_loop:
-   lbo  a0 t0 tail_x # x
-   lbo  a1 t0 tail_y # y
-   lw   a2 width     # width
-   lw   a3 height    # height
+  lbo  a0 t0 tail_x # x
+  lbo  a1 t0 tail_y # y
+  lw   a2 width     # width
+  lw   a3 height    # height
 
-   mov  t4 a2        # position = width
-   mul  t4 a1        # position = width * y
-   add  t4 a0        # position = (width * y) + x
+  mov  t4 a2        # position = width
+  mul  t4 a1        # position = width * y
+  add  t4 a0        # position = (width * y) + x
 
-   li   t5 1
-   sbo  t5 t4 1024   # store 1 to address 1024 + ((width * y) + x)
+  li   t5 1
+  sbo  t5 t4 1024   # store 1 to address 1024 + ((width * y) + x)
 
 draw_snake_increment_offset:
-   inc  t0           # offset++
-   mod  t0 t3        # offset = offset % max_length
+  inc  t0           # offset++
+  mod  t0 t3        # offset = offset % max_length
 
 draw_snake_counter:
-   inc  t2           # counter++
-   lt   t2 t1        # counter < length
-   jnz  draw_snake_loop
+  inc  t2           # counter++
+  lt   t2 t1        # counter < length
+  jnz  draw_snake_loop
 
-   pop  ra
-   ret
+  pop  ra
+  ret
 
 
 
@@ -274,18 +280,31 @@ render_loop:
 
   lbo  t4 t2 1024
   eqi  t4 1         # value == 1
-  jz increment
+  jz render_increment
 
   sys fbrect
 
-increment:
+render_increment:
 
   inc  t2
   lt   t2 t5
   jnz  render_loop
 
+render_food:
+  li   a0 0b01      # Food color
+  sys  scolor
+
+  lw   a0 food_x
+  lw   a1 food_y
+
+  mul  a0 t3
+  mul  a1 t3
+  
+  sys fbrect
+
   sys  fbflush
 
+  pop  ra
   ret
 
 
@@ -467,3 +486,100 @@ crashed:
   sys wstr
 
   sys exit
+
+
+
+###########################################################
+# Find an empty spot to place food                        #
+###########################################################
+place_food:
+  push ra
+
+place_food_attempt:
+  lw   a0 1         # Screen is surrounded with a wall
+  lw   a1 width
+  dec  a1           # Screen is surrounded with a wall
+
+  sys  rnd
+  mov  t0 rv        # random x coordinate
+
+  lw   a0 1         # Screen is surrounded with a wall
+  lw   a1 height
+  dec  a1           # Screen is surrounded with a wall
+
+  sys  rnd
+  mov  t1 rv        # random y coordinate
+
+place_food_check:
+  lw   t2 width
+  lw   t3 height
+
+  mov  t4 t1        # position = y
+  mul  t4 t2        # position = y * width
+  add  t4 t0        # position = (y * width) + x
+
+  lbo  t5 t4 1024
+  eqi  t5 1         # value == 1
+  jnz  place_food_attempt
+
+  sw   t0 food_x
+  sw   t1 food_y
+
+  pop  ra
+  ret
+
+
+
+###########################################################
+# Check if our snake has touched the food                 #
+###########################################################
+check_food:
+  push ra
+
+  lw   t0 x
+  lw   t1 y
+
+  lw   t2 food_x
+  lw   t3 food_y
+
+  eq   t0 t2            # x == food_x
+  jz   check_food_done
+
+  eq   t1 t3            # y == food_y
+  jz   check_food_done
+  
+check_food_eaten:
+  jal  place_food
+
+  lw   t0 tail_size
+  lw   t1 max_length
+  lt   t0 t1            # tail_size < max_length
+  jz   check_food_done
+
+check_food_extend_tail1:
+  inc  t0
+  sw   t0 tail_size
+
+  lt   t0 t1            # tail_size < max_length
+  jz   check_food_done
+
+check_food_extend_tail2:
+  inc  t0
+  sw   t0 tail_size
+
+  lt   t0 t1            # tail_size < max_length
+  jz   check_food_done
+
+check_food_extend_tail3:
+  inc  t0
+  sw   t0 tail_size
+
+check_food_speed:
+  lw   t0 speed
+  li   t1 25
+  sub  t0 t1
+  sw   t0 speed
+
+check_food_done:
+  pop  ra
+  ret

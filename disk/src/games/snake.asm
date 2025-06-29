@@ -37,15 +37,18 @@
 
     speed:      250
     direction:  0b10000000
+    crash:      0
 
     offset:     0
     length:     1
     max_length: 4
+
     tail_x: "1234"
     tail_y: "1234"
 
   messages:
-    game_over: "You died! Game over, man. Game Over!"
+    separator: "--------------------------------\n"
+    game_over: "         **CRASH**\n  Game over, man. Game Over!\n"
     space: " "
 
 .text
@@ -62,6 +65,7 @@ main_loop:
   jal  render_screen
   jal  poll_controls
   jal  move_snake
+  jal  check_crashed
 
   j main_loop
 
@@ -84,7 +88,6 @@ init_game:
 
   jal  clear_buffer
   jal  draw_walls
-#  jal  render_screen
 
   pop  ra
   ret
@@ -312,11 +315,22 @@ move_save:
   sbo  t0 t2 tail_x 
   sbo  t1 t2 tail_y
 
+move_increment_offset:
   lw   t2 offset
   lw   t3 max_length
   inc  t2
   mod  t2 t3
   sw   t2 offset
+
+move_check_crash:
+  lw   t2 width
+  lw   t3 height
+  mov  t4 t1         # position = y
+  mul  t4 t2         # position = y * width
+  add  t4 t0         # position = (y * width) + x
+  lbo  t5 t4 1024    # mem[1024 + position]
+
+  sw   t5 crash      # If the cell we read is non-zero, crash will be non-zero
 
   pop ra
   ret
@@ -377,3 +391,31 @@ check_timer:
 
   pop  ra
   ret
+
+
+
+###########################################################
+# Check if the player has crashed and end the game        #
+###########################################################
+check_crashed:
+  push ra
+
+  lw   t0 crash
+  eqi  t0 1
+
+  jnz  crashed
+
+  pop ra
+  ret
+
+crashed:
+  li  a0 separator
+  sys wstr
+
+  li  a0 game_over
+  sys wstr
+
+  li  a0 separator
+  sys wstr
+
+  sys exit

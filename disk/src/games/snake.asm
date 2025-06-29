@@ -41,10 +41,11 @@
 
     offset:     0
     length:     1
-    max_length: 4
+    max_length: 8
 
-    tail_x: "1234"
-    tail_y: "1234"
+    tail_size:  3
+    tail_x:     "1234567890"
+    tail_y:     "1234567890"
 
   messages:
     separator: "--------------------------------\n"
@@ -64,6 +65,7 @@ main_loop:
   jal  draw_snake
   jal  render_screen
   jal  poll_controls
+  jal  erase_tail
   jal  move_snake
   jal  check_crashed
 
@@ -194,15 +196,51 @@ draw_snake_loop:
    li   t5 1
    sbo  t5 t4 1024   # store 1 to address 1024 + ((width * y) + x)
 
+draw_snake_increment_offset:
    inc  t0           # offset++
-   inc  t2           # counter++
    mod  t0 t3        # offset = offset % max_length
 
+draw_snake_counter:
+   inc  t2           # counter++
    lt   t2 t1        # counter < length
    jnz  draw_snake_loop
 
    pop  ra
    ret
+
+
+
+#######################################
+# Erase the end of the snake's tail   #
+#######################################
+erase_tail:
+  push ra
+
+erase_tail_check_length:
+  lw   t0 length
+  lw   t1 tail_size
+  lt   t0 t1            # length < tail_size
+  jnz  erase_tail_done  # do not erase tail, let it grow
+
+erase_tail_load:
+  lw   t5 offset
+  lbo  t0 t5 tail_x 
+  lbo  t1 t5 tail_y
+
+erase_tail_location:
+  lw   t2 width
+  lw   t3 height
+  mov  t4 t1         # position = y
+  mul  t4 t2         # position = y * width
+  add  t4 t0         # position = (y * width) + x
+
+  li   t5 0          # Empty cell value
+  sbo  t5 t4 1024    # mem[1024 + position]
+
+erase_tail_done:
+  pop  ra
+  ret
+
 
 
 #######################################
@@ -315,9 +353,19 @@ move_save:
   sbo  t0 t2 tail_x 
   sbo  t1 t2 tail_y
 
+move_extend_tail:
+  lw   t4 tail_size
+  lt   t3 t4        # length < tail_size
+  jz   move_increment_offset
+
+  inc  t3
+  sw   t3 length
+  j    move_check_crash
+
 move_increment_offset:
   lw   t2 offset
   lw   t3 max_length
+
   inc  t2
   mod  t2 t3
   sw   t2 offset

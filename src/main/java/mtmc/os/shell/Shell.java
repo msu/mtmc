@@ -14,6 +14,7 @@ import static mtmc.tokenizer.MTMCToken.TokenType.*;
 
 import mtmc.tokenizer.MTMCTokenizer;
 
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -97,6 +98,8 @@ public class Shell {
                     }
                 }
             }
+        } catch (NoSuchFileException e) {
+            computer.getConsole().println("No such file: " + e.getFile());
         } catch (Exception e) {
             computer.getConsole().println(e.getMessage());
             e.printStackTrace();

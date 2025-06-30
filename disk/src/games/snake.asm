@@ -25,6 +25,9 @@
     left:  0b00100000
     right: 0b00010000
 
+  screen:
+    buffer:     -1
+
   snake:
     start_x:    20
     start_y:    18
@@ -76,7 +79,7 @@ main_loop:
 
   j main_loop
 
-  sys  exit  
+  sys  exit
 
 
 #######################################
@@ -84,6 +87,11 @@ main_loop:
 #######################################
 init_game:
   push ra
+
+  # Allocate screen buffer
+  li  a0 1440
+  jal malloc
+  sw  rv buffer
 
   # Set starting location
   lw  t0 start_x
@@ -101,6 +109,10 @@ init_game:
   ret
 
 
+
+####################################################
+# Clear the screen buffer in preperation for use   #
+####################################################
 clear_buffer:
   push ra
 
@@ -112,11 +124,14 @@ clear_buffer:
   mov  t2 t0
   mul  t2 t1
   li   t3 0         # Counter
-  li   t4 0         # Zero
+  li   t4 0xFF         # Zero
 
 clear_loop:
 
-  sbo  t4 t3 1024
+  lw   t5 buffer
+  add  t5 t3        # position = buffer + counter
+  sbo  t4 t5 0
+
   inc  t3           # counter++
   lt   t3 t2        # counter < (width * height)
   jnz  clear_loop   # loop while previous statement is true
@@ -138,7 +153,9 @@ draw_walls:
   li   t3 0
   li   t4 1         # One for writing walls
 top_wall:
-  sbo  t4 t3 1024
+  lw   t5 buffer
+  add  t5 t3
+  sbo  t4 t5 0
   inc  t3           # counter++
   lt   t3 t0        # counter < width
   jnz  top_wall     # loop while previous statement is true
@@ -147,7 +164,9 @@ top_wall:
   li   t3 0
   li   t4 1         # One for writing walls
 bottom_wall:
-  sbo  t4 t3 2424   # 40 * (height - 1) + 1400
+  lw   t5 buffer
+  add  t5 t3
+  sbo  t4 t5 1400   # buffer + counter + (40 * (height - 1))
   inc  t3           # counter++
   lt   t3 t0        # counter < width
   jnz  bottom_wall     # loop while previous statement is true
@@ -157,7 +176,13 @@ bottom_wall:
   li   t4 1         # One for writing walls
   li   t5 0         # Row offset
 left_wall:
-  sbo  t4 t5 1024
+  lw   t0 buffer
+  add  t0 t5
+  sbo  t4 t0 0
+
+  lw   t0 width
+  lw   t1 height
+
   inc  t3           # counter++
   add  t5 t0        # position += width
   lt   t3 t1        # counter < height
@@ -166,9 +191,15 @@ left_wall:
   # Right line
   li   t3 0
   li   t4 1         # One for writing walls
-  li   t5 0         # Row offset
+  li   t5 39        # Row offset
 right_wall:
-  sbo  t4 t5 1063   # 1024 + 39 = 1063
+  lw   t0 buffer
+  add  t0 t5
+  sbo  t4 t0 0
+
+  lw   t0 width
+  lw   t1 height
+
   inc  t3           # counter++
   add  t5 t0        # position += width
   lt   t3 t1        # counter < height
@@ -199,8 +230,14 @@ draw_snake_loop:
   mul  t4 a1        # position = width * y
   add  t4 a0        # position = (width * y) + x
 
+  push t0
+
+  lw   t0 buffer
+  add  t0 t4
   li   t5 1
-  sbo  t5 t4 1024   # store 1 to address 1024 + ((width * y) + x)
+  sbo  t5 t0 0      # store 1 to address buffer + ((width * y) + x)
+
+  pop  t0
 
 draw_snake_increment_offset:
   inc  t0           # offset++
@@ -240,8 +277,10 @@ erase_tail_location:
   mul  t4 t2         # position = y * width
   add  t4 t0         # position = (y * width) + x
 
+  lw   t0 buffer
+  add  t0 t4
   li   t5 0          # Empty cell value
-  sbo  t5 t4 1024    # mem[1024 + position]
+  sbo  t5 t0 0       # mem[buffer + position]
 
 erase_tail_done:
   pop  ra
@@ -258,6 +297,7 @@ render_screen:
 
   lw   t0 width
   lw   t1 height
+
   li   t2 0         # counter
   li   t3 4         # rectangle size
   li   a2 4         # width
@@ -267,6 +307,8 @@ render_screen:
   mul  t5 t1        # width * height
 
 render_loop:
+
+  lw   t0 width
 
   # Compute X
   mov  a0 t2   
@@ -278,7 +320,9 @@ render_loop:
   div  a1 t0        # counter / width
   mul  a1 t3        # y * 4
 
-  lbo  t4 t2 1024
+  lw   t1 buffer
+  add  t1 t2
+  lbo  t4 t1 0
   eqi  t4 1         # value == 1
   jz render_increment
 
@@ -395,7 +439,10 @@ move_check_crash:
   mov  t4 t1         # position = y
   mul  t4 t2         # position = y * width
   add  t4 t0         # position = (y * width) + x
-  lbo  t5 t4 1024    # mem[1024 + position]
+
+  lw   t1 buffer
+  add  t1 t4
+  lbo  t5 t1 0       # mem[buffer + position]
 
   sw   t5 crash      # If the cell we read is non-zero, crash will be non-zero
 
@@ -512,13 +559,14 @@ place_food_attempt:
 
 place_food_check:
   lw   t2 width
-  lw   t3 height
 
   mov  t4 t1        # position = y
   mul  t4 t2        # position = y * width
   add  t4 t0        # position = (y * width) + x
 
-  lbo  t5 t4 1024
+  lw   t3 buffer
+  add  t3 t4
+  lbo  t5 t3 0
   eqi  t5 1         # value == 1
   jnz  place_food_attempt
 
@@ -583,3 +631,14 @@ check_food_speed:
 check_food_done:
   pop  ra
   ret
+
+
+#############################################################################
+# Allocate the amount of memory specified in a0 and return a pointer in rv  #
+#############################################################################
+malloc:
+
+    mov  rv bp
+    add  bp a0
+
+    ret

@@ -6,20 +6,41 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import mtmc.emulator.MonTanaMiniComputer;
 
 public class FileSystem {
     private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
     private String cwd = "/home";
+    private MonTanaMiniComputer computer;
+    
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
     static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
+    
+    public FileSystem() {
+        this(null);
+    }
+    
+    public FileSystem(MonTanaMiniComputer computer) {
+        this.computer = computer;
+    }
 
-
+    private void notifyOfFileSystemUpdate() {
+        if (this.computer != null) {
+            computer.notifyOfFileSystemUpdate();
+        }
+    }
+    
     public void setCWD(String cwd) {
         this.cwd = resolve(cwd);
+        this.notifyOfFileSystemUpdate();
     }
 
     public String getCWD() {
         return cwd;
+    }
+    
+    public boolean exists(String path) {
+        return new File(DISK_PATH.toFile(), resolve(path)).exists();
     }
 
     public String resolve(String fileName) {

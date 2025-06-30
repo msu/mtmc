@@ -98,6 +98,15 @@ public class MTOS {
             // rnd
             short low = computer.getRegisterValue(A0);
             short high = computer.getRegisterValue(A1);
+            short temp;
+            
+            if(low > high)
+            {
+                temp = low;
+                low = high;
+                high = temp;
+            }
+
             computer.setRegisterValue(RV, random.nextInt(low, high + 1));
         } else if (syscallNumber == SysCall.getValue("sleep")) {
             // sleep
@@ -206,6 +215,41 @@ public class MTOS {
                 computer.setRegisterValue(RV, -1);
             }
 
+        } else if (syscallNumber == SysCall.getValue("cwd")) {
+        
+            String cwd = computer.getFileSystem().getCWD();
+
+            short destination = computer.getRegisterValue(A0);
+            int maxSize = Math.min(computer.getRegisterValue(A1), cwd.length()+1);
+
+            for (int i = 0; i < maxSize-1; i++) {
+                byte aByte = (byte)cwd.charAt(i);
+                computer.writeByteToMemory(destination + i, aByte);
+            }
+            
+            //TODO: Should this return the length with or without the null terminator?
+            computer.writeByteToMemory(destination + maxSize - 1, (byte)0);
+            computer.setRegisterValue(RV, maxSize-1);
+        } else if (syscallNumber == SysCall.getValue("chdir")) {
+
+            short source = computer.getRegisterValue(A0);
+            short maxSize = computer.getRegisterValue(A1);
+            StringBuffer dir = new StringBuffer();
+            
+            for (int i = 0; i < maxSize; i++) {
+                char c = (char)computer.fetchByteFromMemory(source + i);
+                
+                if(c == 0) break;
+                
+                dir.append(c);
+            }
+            
+            if (computer.getFileSystem().exists(dir.toString())) {
+                computer.setRegisterValue(RV, 0);
+                computer.getFileSystem().setCWD(dir.toString());
+            } else {
+                computer.setRegisterValue(RV, 1);
+            }
         }
     }
 

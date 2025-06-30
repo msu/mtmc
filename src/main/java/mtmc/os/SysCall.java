@@ -12,6 +12,8 @@ public enum SysCall {
 
     RFILE(0x10),
     WFILE(0x11),
+    CWD(0x12),
+    CHDIR(0x13),
 
     RND(0x20),
     SLEEP(0x21),
@@ -24,7 +26,7 @@ public enum SysCall {
     FBFLUSH(0x35),
     JOYSTICK(0x3A),
     SCOLOR(0x3B),
-
+    
     MEMCOPY(0x40),
     ERROR(0x0FF);
 

@@ -89,7 +89,22 @@ document.addEventListener("DOMContentLoaded", () => {
     initConsole();
 })
 
-function initJoystick(){
+function initJoystick() {
+    
+    // disable default events for control area to prevent browser from reacting
+    document.getElementById("display-control-wrapper").addEventListener("mousedown", (e)=> {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        return false;
+    });
+    
+    document.getElementById("display-control-wrapper").addEventListener("touchstart", (e)=> {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        return false;
+    });
 
     // key mappings
     virtual_button_mappings = {

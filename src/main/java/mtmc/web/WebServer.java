@@ -9,8 +9,6 @@ import io.javalin.http.sse.SseClient;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -89,7 +87,7 @@ public class WebServer {
                     String speed = ctx.formParam("speed");
                     int speedi = Integer.parseInt(speed);
                     computer.setSpeed(speedi);
-                    ctx.html("");
+                    ctx.html(render("templates/control.html"));
                 })
                 .post("/control/{action}", ctx -> {
                     if (ctx.pathParam("action").equals("reset")) {
@@ -99,10 +97,10 @@ public class WebServer {
                         computer.pause();
                     }
                     if (ctx.pathParam("action").equals("step")) {
-                        computer.setStatus(MonTanaMiniComputer.ComputerStatus.EXECUTING);
                         computer.fetchAndExecute();
                         computer.fetchCurrentInstruction(); // fetch next instruction for display
                     }
+                    ctx.html(render("templates/control.html"));
                 })
                 .post("/io/{button}/{action}", ctx -> {
                     MTMCIO io = computer.getIO();

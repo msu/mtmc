@@ -1,6 +1,11 @@
 // connect to sse endpoint
 const sseSource = new EventSource("/sse", {withCredentials: true});
 
+sseSource.addEventListener("update:execution", (e) => {
+    let element = document.getElementById("controls");
+    element.outerHTML = e.data;
+});
+
 sseSource.addEventListener("update:filesystem", (e) => {
     let element = document.getElementById("fs");
     element.outerHTML = e.data;
@@ -245,6 +250,8 @@ function initConsole() {
             input.scrollIntoView({behavior: "instant"})
         }
         if (e.key === 'ArrowUp') {
+            if (!historyStack.length) return;
+            
             historyIndex++;
             e.preventDefault();
             if (historyIndex >= historyStack.length) {
@@ -256,8 +263,8 @@ function initConsole() {
             historyIndex--;
             e.preventDefault();
             if (historyIndex < 0) {
-                historyIndex = 0;
-                input.value = ""
+                historyIndex = -1;
+                input.value = "";
             } else {
                 input.value = historyStack[historyIndex];
             }

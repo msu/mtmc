@@ -11,6 +11,7 @@ public class WebUIUpdater implements MTMCObserver {
 
     private final WebServer webServer;
     private final Gson json = new Gson();
+    private long lastUpdate = 0;
 
     // UI update infrastructure
     Thread updateThread;
@@ -22,7 +23,8 @@ public class WebUIUpdater implements MTMCObserver {
     int UPDATE_FILESYSTEM_UI = 0x01000;
     int UPDATE_EXECUTION_UI  = 0x10000;
 
-    public static final int UI_UPDATE_INTERVAL = 16; // Approximately 60 FPS
+    public static final int UI_UPDATE_INTERVAL = 100;     // Approximately 10 FPS
+    public static final int DISPLAY_UPDATE_INTERVAL = 16; // Approximately 60 FPS
 
     public WebUIUpdater(WebServer webServer) {
         this.webServer = webServer;
@@ -32,18 +34,24 @@ public class WebUIUpdater implements MTMCObserver {
         updateThread = new Thread(() -> {
             while (true) {
                 try {
-                    Thread.sleep(UI_UPDATE_INTERVAL);
+                    Thread.sleep(DISPLAY_UPDATE_INTERVAL);
                     Map<String, String> uisToUpdate = new HashMap<>();
-                    int updates = updateFlags.getAndUpdate(ignored -> 0); // get and zero out any changes
+                    boolean update = (lastUpdate + UI_UPDATE_INTERVAL) <= System.currentTimeMillis();
+                    int updates = updateFlags.getAndUpdate(value -> update ? 0 : value & (~UPDATE_DISPLAY_UI)); // get and zero out any changes
+
+                    if ((updates & UPDATE_DISPLAY_UI) != 0) {
+                        webServer.sendEvent("update:display", "dummy");
+                        updates &= ~UPDATE_DISPLAY_UI;
+                    }
+                    
+                    if(!update) continue;
+
                     if (updates != 0) {
                         if ((updates & UPDATE_REGISTER_UI) != 0) {
                             webServer.sendEvent("update:registers", webServer.render("templates/registers.html"));
                         }
                         if ((updates & UPDATE_MEMORY_UI) != 0) {
                             webServer.sendEvent("update:memory", webServer.getComputerView().getMemoryTable());
-                        }
-                        if ((updates & UPDATE_DISPLAY_UI) != 0) {
-                            webServer.sendEvent("update:display", "dummy");
                         }
                         if ((updates & UPDATE_FILESYSTEM_UI) != 0) {
                             webServer.sendEvent("update:filesystem", webServer.render("templates/editors.html"));
@@ -52,6 +60,8 @@ public class WebUIUpdater implements MTMCObserver {
                             webServer.sendEvent("update:execution", webServer.render("templates/control.html"));
                         }
                     }
+                    
+                    lastUpdate = System.currentTimeMillis();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

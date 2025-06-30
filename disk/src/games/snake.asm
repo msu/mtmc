@@ -2,7 +2,7 @@
 #                                                                              #
 #   Author:     Jerason Banes                                                  #
 #   Version:    1.0                                                            #
-#   Updated:    2025-07-29                                                     #
+#   Updated:    2025-07-30                                                     #
 #   Clock Rate: 1Mhz or higher                                                 #
 #                                                                              #
 #   A game of snake similar to nibbles.bas and the old Nokia phone game. The   #
@@ -40,11 +40,12 @@
 
     offset:     0
     length:     1
-    max_length: 60
+    max_length: 80
 
+    grow_size:  1
     tail_size:  3
-    tail_x:     "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
-    tail_y:     "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
+    tail_x:     "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
+    tail_y:     "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
 
   food:
     food_x:     0
@@ -600,23 +601,21 @@ check_food_eaten:
   lt   t0 t1            # tail_size < max_length
   jz   check_food_done
 
-check_food_extend_tail1:
-  inc  t0
-  sw   t0 tail_size
-
+  lw   t4 grow_size
+  li   t5 0             # counter
+check_food_extend_tail:
   lt   t0 t1            # tail_size < max_length
-  jz   check_food_done
+  jz   check_food_done  # Tail is as big as it's going to get
 
-check_food_extend_tail2:
-  inc  t0
+  inc  t0               # tail_size = tail_size + 1
   sw   t0 tail_size
 
-  lt   t0 t1            # tail_size < max_length
-  jz   check_food_done
+  inc  t5               # counter++
+  lt   t5 t4            # counter < grow_size
+  jnz  check_food_extend_tail
 
-check_food_extend_tail3:
-  inc  t0
-  sw   t0 tail_size
+  inc  t4               # grow_size++
+  sw   t4 grow_size
 
 check_food_speed:
   lw   t0 speed

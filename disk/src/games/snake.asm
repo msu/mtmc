@@ -6,11 +6,7 @@
 #   Clock Rate: 1Mhz or higher                                                 #
 #                                                                              #
 #   A game of snake similar to nibbles.bas and the old Nokia phone game. The   #
-#   game is somewhat unique because it manually allocates 1440 bytes of memory #
-#   at location 1024 to store the game board.                                  #
-#                                                                              #
-#   This is important to remember as the game grows. If the program takes more #
-#   than 1KB of RAM, it will overflow into the game data.                      #
+#   game allocates 1440 bytes of memory on the heap to store the game board.   #
 #                                                                              #
 #   A 1MHz clock rate is required due to the way in which the screen is        #
 #   rendered. The full loop over the game board (40 x 36) means a few          #
@@ -44,11 +40,11 @@
 
     offset:     0
     length:     1
-    max_length: 20
+    max_length: 60
 
     tail_size:  3
-    tail_x:     "123456789012345678901234567890"
-    tail_y:     "123456789012345678901234567890"
+    tail_x:     "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
+    tail_y:     "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"
 
   food:
     food_x:     0
@@ -624,7 +620,7 @@ check_food_extend_tail3:
 
 check_food_speed:
   lw   t0 speed
-  li   t1 25
+  li   t1 10
   sub  t0 t1
   sw   t0 speed
 

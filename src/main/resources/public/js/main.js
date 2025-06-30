@@ -1,5 +1,6 @@
 // connect to sse endpoint
 const sseSource = new EventSource("/sse", {withCredentials: true});
+let buttons = 0x00;
 
 sseSource.addEventListener("update:execution", (e) => {
     let element = document.getElementById("controls");
@@ -88,129 +89,102 @@ document.addEventListener("DOMContentLoaded", () => {
     initConsole();
 })
 
-function initJoystick(){
+function initJoystick() {
+    
+    // disable default events for control area to prevent browser from reacting
+    document.getElementById("display-control-wrapper").addEventListener("mousedown", (e)=> {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        return false;
+    });
+    
+    document.getElementById("display-control-wrapper").addEventListener("touchstart", (e)=> {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        return false;
+    });
 
-    // buttons
-    let up = document.querySelector(".cross-button.up");
-    up.addEventListener("mousedown", ()=>{
-        fetch("/io/up/pressed", {method: 'POST'})
-    })
-    up.addEventListener("mouseup", ()=>{
-        fetch("/io/up/released", {method: 'POST'})
-    })
+    // key mappings
+    virtual_button_mappings = {
+        ".cross-button.up": 0x80,
+        ".cross-button.down": 0x40,
+        ".cross-button.left": 0x20,
+        ".cross-button.right": 0x10,
+        ".small-button.start": 0x08,
+        ".small-button.select": 0x04,
+        ".big-button.b": 0x02,
+        ".big-button.a": 0x01
+    };
     
-    let down = document.querySelector(".cross-button.down");
-    down.addEventListener("mousedown", ()=>{
-        fetch("/io/down/pressed", {method: 'POST'})
-    })
-    down.addEventListener("mouseup", ()=>{
-        fetch("/io/down/released", {method: 'POST'})
-    })
+    // virtual buttons
+    Object.keys(virtual_button_mappings).forEach(key => {
+        const value = virtual_button_mappings[key];
+        
+        document.querySelector(key).addEventListener("mousedown", (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
+            buttons |= value;
+            fetch("/io/" + buttons.toString(16), {method: 'POST'});
+        });
+        
+        document.querySelector(key).addEventListener("mouseup", (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
+            buttons &= ~value;
+            fetch("/io/" + buttons.toString(16), {method: 'POST'});
+        });
+        
+        document.querySelector(key).addEventListener("touchstart", (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
+            buttons |= value;
+            fetch("/io/" + buttons.toString(16), {method: 'POST'});
+        });
+        
+        document.querySelector(key).addEventListener("touchend", (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
+            buttons &= ~value;
+            fetch("/io/" + buttons.toString(16), {method: 'POST'});
+        });
+    });
     
-    let left = document.querySelector(".cross-button.left");
-    left.addEventListener("mousedown", ()=>{
-        fetch("/io/left/pressed", {method: 'POST'})
-    })
-    left.addEventListener("mouseup", ()=>{
-        fetch("/io/left/released", {method: 'POST'})
-    })
-    
-    let right = document.querySelector(".cross-button.right");
-    right.addEventListener("mousedown", ()=>{
-        fetch("/io/right/pressed", {method: 'POST'})
-    })
-    right.addEventListener("mouseup", ()=>{
-        fetch("/io/right/released", {method: 'POST'})
-    })
-    
-    let select = document.querySelector(".small-button.select");
-    select.addEventListener("mousedown", ()=>{
-        fetch("/io/select/pressed", {method: 'POST'})
-    })
-    select.addEventListener("mouseup", ()=>{
-        fetch("/io/select/released", {method: 'POST'})
-    })
-    
-    let start = document.querySelector(".small-button.start");
-    start.addEventListener("mousedown", ()=>{
-        fetch("/io/start/pressed", {method: 'POST'})
-    })
-    start.addEventListener("mouseup", ()=>{
-        fetch("/io/start/released", {method: 'POST'})
-    })
-    
-    let b = document.querySelector(".big-button.b");
-    b.addEventListener("mousedown", ()=>{
-        fetch("/io/b/pressed", {method: 'POST'})
-    })
-    b.addEventListener("mouseup", ()=>{
-        fetch("/io/b/released", {method: 'POST'})
-    })
-
-    let a = document.querySelector(".big-button.a");
-    a.addEventListener("mousedown", ()=>{
-        fetch("/io/a/pressed", {method: 'POST'})
-    })
-    a.addEventListener("mouseup", ()=>{
-        fetch("/io/a/released", {method: 'POST'})
-    })
+    // key mappings
+    key_mappings = {
+        "ArrowUp": 0x80,
+        "ArrowDown": 0x40,
+        "ArrowLeft": 0x20,
+        "ArrowRight": 0x10,
+        "l": 0x08,
+        " ": 0x04,
+        "a": 0x02,
+        "s": 0x01
+    };
 
     // keys
     let display = document.getElementById('display');
     display.addEventListener("keydown", (e) => {
-        e.preventDefault()
-        if (e.key === "ArrowUp") {
-            fetch("/io/up/pressed", {method: 'POST'})
-        }
-        if (e.key === "ArrowLeft") {
-            fetch("/io/left/pressed", {method: 'POST'})
-        }
-        if (e.key === "ArrowRight") {
-            fetch("/io/right/pressed", {method: 'POST'})
-        }
-        if (e.key === "ArrowDown") {
-            fetch("/io/down/pressed", {method: 'POST'})
-        }
-        if (e.key === "l") {
-            fetch("/io/select/pressed", {method: 'POST'})
-        }
-        if (e.key === " ") {
-            fetch("/io/start/pressed", {method: 'POST'})
-        }
-        if (e.key === "a") {
-            fetch("/io/b/pressed", {method: 'POST'})
-        }
-        if (e.key === "s") {
-            fetch("/io/a/pressed", {method: 'POST'})
-        }
-    })
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!key_mappings[e.key]) return;
+        if (buttons & key_mappings[e.key]) return; // Eliminate key repeat
+        
+        buttons |= key_mappings[e.key];
+        fetch("/io/" + buttons.toString(16), {method: 'POST'});
+    });
+    
     display.addEventListener("keyup", (e) => {
-        e.preventDefault()
-        if (e.key === "ArrowUp") {
-            fetch("/io/up/released", {method: 'POST'})
-        }
-        if (e.key === "ArrowLeft") {
-            fetch("/io/left/released", {method: 'POST'})
-        }
-        if (e.key === "ArrowRight") {
-            fetch("/io/right/released", {method: 'POST'})
-        }
-        if (e.key === "ArrowDown") {
-            fetch("/io/down/released", {method: 'POST'})
-        }
-        if (e.key === "l") {
-            fetch("/io/select/released", {method: 'POST'})
-        }
-        if (e.key === " ") {
-            fetch("/io/start/released", {method: 'POST'})
-        }
-        if (e.key === "a") {
-            fetch("/io/b/released", {method: 'POST'})
-        }
-        if (e.key === "s") {
-            fetch("/io/a/released", {method: 'POST'})
-        }
-    })
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (!key_mappings[e.key]) return;
+        
+        buttons &= ~key_mappings[e.key];
+        fetch("/io/" + buttons.toString(16), {method: 'POST'});
+    });
 }
 
 function initConsole() {

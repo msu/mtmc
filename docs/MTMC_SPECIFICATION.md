@@ -21,7 +21,7 @@ accomplish basic computing tasks.
     - 4096 bytes/addresses
     - 2048 words
 - 16 Registers (see below)
-- 160x140 2-bit green scale display
+- 160x144 2-bit green scale display
     - `00` - `#2a453b` - darkest
     - `01` - `#365d48` - dark
     - `10` - `#577c44` - light
@@ -328,18 +328,17 @@ after itself.
 
 ## MTMC IO - WORK IN PROGRESS
 
-| Name     | Hex | binary | Description                                  |
-|----------|-----|--------|----------------------------------------------|
-| `up`     | `1` | `0001` | the up arrow key was pressed                 |
-| `right`  | `2` | `0010` | the right arrow key was pressed              |
-| `down`   | `B` | `1011` | the mouse was pressed down (but not clicked) |
-| `up`     | `C` | `1100` | the mouse was released                       |
-| `down`   | `3` | `0011` | the down arrow key was pressed               |
-| `left`   | `4` | `0100` | the left arrow key was pressed               |
-| `a`      | `6` | `0110` | the A button was pressed                     |
-| `b`      | `7` | `0111` | the B key was pressed                        |
-| `start`  | `8` | `1000` | the d key was pressed                        |
-| `select` | `9` | `1001` | the f key was pressed                        |
+| Name     | Hex  | binary      | Description                                  |
+|----------|------|-------------|----------------------------------------------|
+| `up`     | `80` | `1000 0000` | the up arrow key was pressed                 |
+| `down`   | `40` | `0100 0000` | the down arrow key was pressed               |
+| `left`   | `20` | `0010 0000` | the left arrow key was pressed               |
+| `right`  | `10` | `0001 0000` | the right arrow key was pressed              |
+| `start`  | `08` | `0000 1000` | the d key was pressed                        |
+| `select` | `04` | `0000 0100` | the f key was pressed                        |
+| `b`      | `02` | `0000 0010` | the B key was pressed                        |
+| `a`      | `01` | `0000 0001` | the A button was pressed                     |
+
 
 #### System Codes
 
@@ -362,4 +361,5 @@ Here are the syscodes supported by MTOS - WORK IN PROGRESS
 | `fbss`    | 0x14 | Draws the sprite found at sprite index `a0` into the framebuffer at location `a1`, `a2`.  If `a3` is `1`, transparency will be respected.             |
 | `fbds`    | 0x14 | Draws the sprite found at sprite index `a0` into the framebuffer at location `a1`, `a2`.  If `a3` is `1`, transparency will be respected.             |
 | `fbsync`  | 0x14 | Synchronizes the frame buffer to the screen                                                                                                           |
-| `error`   | 0xF0 | Aborts the current program execution with an error message, `a0` is a pointer to the error message                                                    |
+| `error`   | 0xF0 | Aborts the current program execution with an error message, `a0` is a pointer to the error message      
+| `timer`   | 0x22 | If `a0` is non-zero, sets a timer to count down the number of milliseconds specified in `a0`. Returns the remaining number of ms in `rv`.             |

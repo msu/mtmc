@@ -17,6 +17,7 @@ public enum SysCall {
 
     RND(0x20),
     SLEEP(0x21),
+    TIMER(0x22),
 
     FBRESET(0x30),
     FBSTAT(0x31),

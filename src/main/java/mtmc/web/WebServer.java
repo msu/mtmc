@@ -102,14 +102,9 @@ public class WebServer {
                     }
                     ctx.html(render("templates/control.html"));
                 })
-                .post("/io/{button}/{action}", ctx -> {
-                    MTMCIO io = computer.getIO();
-                    if (ctx.pathParam("action").equals("pressed")) {
-                        io.keyPressed(ctx.pathParam("button"));
-                    }
-                    if (ctx.pathParam("action").equals("released")) {
-                        io.keyReleased(ctx.pathParam("button"));
-                    }
+                .post("/io/{buttons}", ctx -> {
+                    int buttons = Integer.parseInt(ctx.pathParam("buttons"), 16);
+                    computer.getIO().setValue(buttons);
                 })
                 .post("/memFormat", ctx -> {
                     computerView.toggleMemoryFormat();

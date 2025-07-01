@@ -23,8 +23,8 @@
                 </select>
             </label>
             {% if not computer.executing %}
-            <button fx-action="/control/pause" fx-method="post" fx-swap="none" disabled="disabled">
-                pause
+            <button fx-action="/control/run" fx-method="post" fx-swap="none">
+                run
             </button>
             <button fx-action="/control/step" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
                 step

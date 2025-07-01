@@ -179,9 +179,7 @@ public class Assembler {
         lastLabels = List.of();
         MTMCToken dataToken = tokens.poll();
         Data dataElt = new Data(labelTokens);
-        if (dataToken == null) {
-            dataElt.addError(labelTokens.getLast(), "Expected data");
-        } else {
+        if (dataToken != null) {
             if (dataToken.type() == STRING) {
                 byte[] stringBytes = dataToken.stringValue().getBytes(StandardCharsets.US_ASCII);
                 byte[] nullTerminated = new byte[stringBytes.length + 1];

@@ -188,6 +188,20 @@ public class MTMCDisplay {
         g.dispose();
         return resized;
     }
+    
+    public static BufferedImage convertImage(BufferedImage image) {
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                int rgb = image.getRGB(x, y);
+                int alpha = (rgb >> 24) & 0xff;
+                if (alpha > 0xFF/2) {
+                    DisplayColor displayColor = findClosestColor(rgb);
+                    image.setRGB(x, y, displayColor.intVal);
+                }
+            }
+        }
+        return image;
+    }
 
     private static DisplayColor findClosestColor(int colorVal) {
         int r = colorVal >> 16 & 255;

@@ -1,5 +1,6 @@
 package mtmc.asm;
 
+import java.io.File;
 import mtmc.asm.data.Data;
 import mtmc.asm.instructions.*;
 import mtmc.emulator.DebugInfo;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import mtmc.asm.graphics.Graphic;
 
 import static mtmc.asm.instructions.InstructionType.InstructionClass.*;
 import static mtmc.tokenizer.MTMCToken.TokenType.*;
@@ -25,6 +27,7 @@ public class Assembler {
     List<Instruction> instructions = new ArrayList<>();
     int instructionsSize = 0;
     List<Data> data = new ArrayList<>();
+    List<Graphic> graphics = new ArrayList<>();
     int dataSize = 0;
     HashMap<String, HasLocation> labels;
     DebugInfo debugInfo = new DebugInfo(new ArrayList<>());
@@ -32,6 +35,7 @@ public class Assembler {
     ASMMode mode = ASMMode.TEXT;
     MTMCTokenizer tokenizer;
     private List<MTMCToken> lastLabels = List.of();
+    private String srcName = "disk/file.asm";
 
     public Assembler() {
         labels = new HashMap<>();
@@ -43,14 +47,18 @@ public class Assembler {
         resolveLocations();
         List<ASMError> errors = collectErrors();
         byte[] code = null, data = null;
+        byte[][] graphics = null;
         if (errors.isEmpty()) {
             code = codeGen();
             data = dataGen();
+            graphics = graphicsGen();
         }
-        return new AssemblyResult(code, data, debugInfo, errors, asm);
+        return new AssemblyResult(code, data, graphics, debugInfo, errors, asm);
     }
 
     public Executable assembleExecutable(String srcName, String asm) {
+        this.srcName = "disk/" + srcName; //TODO: The prefix should be replaced with FileSystem access
+        
         var result = assemble(asm);
         if (!result.errors().isEmpty()) {
             throw new RuntimeException("Errors:\n" + result.errors()
@@ -58,11 +66,12 @@ public class Assembler {
                     .map(e -> " - " + e.formattedErrorMessage())
                     .collect(Collectors.joining("\n")));
         }
-
+        
         return new Executable(
                 Executable.Format.Orc1,
                 result.code(),
                 result.data(),
+                result.graphics(),
                 srcName,
                 result.debugInfo()
         );
@@ -90,10 +99,25 @@ public class Assembler {
         return code;
     }
 
+    private byte[][] graphicsGen() {
+        byte[][] graphics = new byte[this.graphics.size()][];
+        int index = 0;
+        for (Graphic graphic : this.graphics) {
+            graphics[index++] = graphic.getImageData();
+        }
+        return graphics;
+    }
+
     private List<ASMError> collectErrors() {
         List<ASMError> errors = new ArrayList<>();
         for (Instruction instruction : instructions) {
             errors.addAll(instruction.getErrors());
+        }
+        for (Data data : this.data) {
+            errors.addAll(data.getErrors());
+        }
+        for (Graphic graphic : this.graphics) {
+            errors.addAll(graphic.getErrors());
         }
         return errors;
     }
@@ -131,6 +155,8 @@ public class Assembler {
         lastLabels = labels;
         if (mode == ASMMode.TEXT) {
             parseInstruction(tokens, labels);
+        } else if (mode == ASMMode.GRAPHICS) {
+            parseGraphics(tokens, labels);
         } else {
             parseData(tokens, labels);
         }
@@ -142,7 +168,8 @@ public class Assembler {
                 && tokens.get(1).type() == IDENTIFIER
                 && tokens.get(0).end() == tokens.get(1).start()
                 && (tokens.get(1).stringValue().equals("data") ||
-                tokens.get(1).stringValue().equals("text"))) {
+                tokens.get(1).stringValue().equals("text") ||
+                tokens.get(1).stringValue().equals("graphics"))) {
             return ASMMode.valueOf(tokens.get(1).stringValue().toUpperCase());
         }
         return null;
@@ -210,6 +237,23 @@ public class Assembler {
             }
         }
         data.add(dataElt);
+    }
+    
+    private void parseGraphics(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
+        lastLabels = List.of();
+        MTMCToken dataToken = tokens.poll();
+        Graphic graphic = new Graphic(labelTokens);
+        if (dataToken == null) {
+            graphic.addError(labelTokens.getLast(), "Expected data");
+        } else {
+            if (dataToken.type() == STRING) {
+                String filename = dataToken.stringValue();
+                graphic.setImage(new File(new File(this.srcName).getParent(), filename).getPath());
+            } else {
+                graphic.addError(dataToken, "Only filenames quoted as strings are allowed");
+            }
+        }
+        graphics.add(graphic);
     }
 
     private void parseInstruction(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
@@ -568,6 +612,7 @@ public class Assembler {
     enum ASMMode {
         DATA,
         TEXT,
+        GRAPHICS
     }
 
 }

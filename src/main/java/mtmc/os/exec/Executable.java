@@ -10,6 +10,7 @@ public record Executable(
         Format format,
         byte[] code,
         byte[] data,
+        byte[][] graphics,
         String sourceName,
         DebugInfo debugInfo) {
     public enum Format {

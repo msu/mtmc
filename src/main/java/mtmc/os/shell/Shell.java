@@ -88,7 +88,7 @@ public class Shell {
                     Path srcPath = Path.of("disk/bin/" + firstTokenStr);
                     if (srcPath.toFile().exists()) {
                         Executable exec = Executable.load(srcPath);
-                        computer.load(exec.code(), exec.data(), exec.debugInfo());
+                        computer.load(exec.code(), exec.data(), exec.graphics(), exec.debugInfo());
                         tokens.consume();
                         String arg = command.substring(firstToken.end()).strip();
                         computer.setArg(arg);

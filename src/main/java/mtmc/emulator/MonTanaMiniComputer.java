@@ -1,5 +1,8 @@
 package mtmc.emulator;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import mtmc.asm.instructions.Instruction;
 import mtmc.os.MTOS;
 import mtmc.os.fs.FileSystem;
@@ -8,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
+import javax.imageio.ImageIO;
 
 import static mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
 import static mtmc.emulator.Register.*;
@@ -22,6 +26,7 @@ public class MonTanaMiniComputer {
     // core model
     short[] registerFile; // 16 user visible + the instruction register
     byte[]  memory;
+    BufferedImage[] graphics;
     private ComputerStatus status = READY;
     private int speed = 1000000;
     private MTMCIO io = new MTMCIO();
@@ -49,8 +54,22 @@ public class MonTanaMiniComputer {
     }
 
     public void load(byte[] code, byte[] data, DebugInfo debugInfo) {
+        load(code, data, new byte[0][0], debugInfo);
+    }
+    
+    private BufferedImage loadImage(byte[] data) {
+        try {
+            return ImageIO.read(new ByteArrayInputStream(data));
+        } catch(IOException e) {
+            e.printStackTrace();
+            throw new IllegalStateException(e);
+        }
+    }
+    
+    public void load(byte[] code, byte[] data, byte[][] graphics, DebugInfo debugInfo) {
 
         this.debugInfo = debugInfo;
+        graphics = (graphics == null ? new byte[0][0] : graphics);
 
         // reset memory
         initMemory();
@@ -63,7 +82,13 @@ public class MonTanaMiniComputer {
         int dataBoundary = codeBoundary + data.length;
         System.arraycopy(data, 0, memory, codeBoundary, data.length);
         setRegisterValue(DB, dataBoundary - 1);
-
+        
+        // load the graphics referenced in the .data section
+        this.graphics = new BufferedImage[graphics.length];
+        for (int i=0; i<graphics.length; i++) {
+            this.graphics[i] = loadImage(graphics[i]);
+        }
+        
         // base pointer starts just past the end of the data boundary
         setRegisterValue(BP, dataBoundary);
 

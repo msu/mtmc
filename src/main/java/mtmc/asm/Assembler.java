@@ -155,8 +155,6 @@ public class Assembler {
         lastLabels = labels;
         if (mode == ASMMode.TEXT) {
             parseInstruction(tokens, labels);
-        } else if (mode == ASMMode.GRAPHICS) {
-            parseGraphics(tokens, labels);
         } else {
             parseData(tokens, labels);
         }
@@ -168,8 +166,7 @@ public class Assembler {
                 && tokens.get(1).type() == IDENTIFIER
                 && tokens.get(0).end() == tokens.get(1).start()
                 && (tokens.get(1).stringValue().equals("data") ||
-                tokens.get(1).stringValue().equals("text") ||
-                tokens.get(1).stringValue().equals("graphics"))) {
+                tokens.get(1).stringValue().equals("text"))) {
             return ASMMode.valueOf(tokens.get(1).stringValue().toUpperCase());
         }
         return null;
@@ -207,8 +204,15 @@ public class Assembler {
                         dataElt.setValue(intToken, new byte[intToken.intValue()]);
                     }
                     requireToken(tokens, RIGHT_BRACE, dataElt);
+                } else if (dataToken.stringValue().equals("image")) {
+                    requireToken(tokens, LEFT_BRACE, dataElt);
+                    MTMCToken stringToken = requireString(tokens, dataElt);
+                    if (stringToken != null) {
+                        loadGraphic(labelTokens, dataElt, stringToken);
+                    }
+                    requireToken(tokens, RIGHT_BRACE, dataElt);
                 } else {
-                    dataElt.addError(dataToken, "only data types are int & byte");
+                    dataElt.addError(dataToken, "only data types are int, byte, and image");
                 }
             } else if (dataToken.type() == MINUS) {
                 MTMCToken nextToken = tokens.poll(); // get next
@@ -237,21 +241,17 @@ public class Assembler {
         data.add(dataElt);
     }
     
-    private void parseGraphics(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
-        lastLabels = List.of();
-        MTMCToken dataToken = tokens.poll();
+    private Graphic loadGraphic(List<MTMCToken> labelTokens, Data data, MTMCToken token) {
         Graphic graphic = new Graphic(labelTokens);
-        if (dataToken == null) {
-            graphic.addError(labelTokens.getLast(), "Expected data");
-        } else {
-            if (dataToken.type() == STRING) {
-                String filename = dataToken.stringValue();
-                graphic.setImage(new File(new File(this.srcName).getParent(), filename).getPath());
-            } else {
-                graphic.addError(dataToken, "Only filenames quoted as strings are allowed");
-            }
-        }
+        String filename = token.stringValue();
+        File file = new File(new File(this.srcName).getParent(), filename);
+        int index = graphics.size();
+        
+        data.setValue(token, new byte[]{ (byte)((index >> 8) & 0xFF), (byte)(index & 0xFF) });
+        graphic.setImage(file.getPath());
         graphics.add(graphic);
+        
+        return graphic;
     }
 
     private void parseInstruction(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
@@ -533,7 +533,7 @@ public class Assembler {
         return nextToken;
     }
 
-    private MTMCToken requireString(LinkedList<MTMCToken> tokens, Instruction instruction) {
+    private MTMCToken requireString(LinkedList<MTMCToken> tokens, ASMElement instruction) {
         MTMCToken nextToken = tokens.poll();
         if (nextToken == null || nextToken.type() != STRING) {
             instruction.addError("String required");
@@ -609,8 +609,7 @@ public class Assembler {
 
     enum ASMMode {
         DATA,
-        TEXT,
-        GRAPHICS
+        TEXT
     }
 
 }

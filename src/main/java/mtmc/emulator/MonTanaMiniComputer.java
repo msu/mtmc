@@ -26,7 +26,6 @@ public class MonTanaMiniComputer {
     // core model
     short[] registerFile; // 16 user visible + the instruction register
     byte[]  memory;
-    BufferedImage[] graphics;
     private ComputerStatus status = READY;
     private int speed = 1000000;
     private MTMCIO io = new MTMCIO();
@@ -57,15 +56,6 @@ public class MonTanaMiniComputer {
         load(code, data, new byte[0][0], debugInfo);
     }
     
-    private BufferedImage loadImage(byte[] data) {
-        try {
-            return ImageIO.read(new ByteArrayInputStream(data));
-        } catch(IOException e) {
-            e.printStackTrace();
-            throw new IllegalStateException(e);
-        }
-    }
-    
     public void load(byte[] code, byte[] data, byte[][] graphics, DebugInfo debugInfo) {
 
         this.debugInfo = debugInfo;
@@ -83,16 +73,11 @@ public class MonTanaMiniComputer {
         System.arraycopy(data, 0, memory, codeBoundary, data.length);
         setRegisterValue(DB, dataBoundary - 1);
         
-        // load the graphics referenced in the .data section
-        this.graphics = new BufferedImage[graphics.length];
-        for (int i=0; i<graphics.length; i++) {
-            this.graphics[i] = loadImage(graphics[i]);
-        }
-        
         // base pointer starts just past the end of the data boundary
         setRegisterValue(BP, dataBoundary);
 
         fetchCurrentInstruction(); // fetch the initial instruction for display purposes
+        display.loadGraphics(graphics); // ready graphics for use
 
         // reset computer status
         setStatus(READY);

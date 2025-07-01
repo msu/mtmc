@@ -29,6 +29,9 @@ public enum SysCall {
     SCOLOR(0x3B),
     
     MEMCOPY(0x40),
+    
+    DRAWIMG(0x50),
+    
     ERROR(0x0FF);
 
     private final byte value;

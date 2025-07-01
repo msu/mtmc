@@ -1,6 +1,7 @@
 package mtmc.web;
 
 import com.google.gson.Gson;
+import java.util.Base64;
 import mtmc.emulator.MTMCObserver;
 
 import java.util.HashMap;
@@ -29,6 +30,21 @@ public class WebUIUpdater implements MTMCObserver {
     public WebUIUpdater(WebServer webServer) {
         this.webServer = webServer;
     }
+    
+    private String getDataURL(byte[] data) {
+        StringBuilder buffer = new StringBuilder("data:image/png;base64,");
+        String base64 = Base64.getEncoder().encodeToString(data);
+        
+        buffer.append(base64);
+        
+        return buffer.toString();
+    }
+    
+    private String getEncodedDisplay() {
+        byte[] data = webServer.getComputerView().getDisplay().toPng();
+        
+        return getDataURL(data);
+    }
 
     public void start() {
         updateThread = new Thread(() -> {
@@ -40,7 +56,7 @@ public class WebUIUpdater implements MTMCObserver {
                     int updates = updateFlags.getAndUpdate(value -> update ? 0 : value & (~UPDATE_DISPLAY_UI)); // get and zero out any changes
 
                     if ((updates & UPDATE_DISPLAY_UI) != 0) {
-                        webServer.sendEvent("update:display", "dummy");
+                        webServer.sendEvent("update:display", getEncodedDisplay());
                         updates &= ~UPDATE_DISPLAY_UI;
                     }
                     

@@ -223,17 +223,18 @@ public class MTMCDisplay {
     }
     
     public static BufferedImage convertImage(BufferedImage image) {
+        var arbg = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
         for (int x = 0; x < image.getWidth(); x++) {
             for (int y = 0; y < image.getHeight(); y++) {
                 int rgb = image.getRGB(x, y);
                 int alpha = (rgb >> 24) & 0xff;
                 if (alpha > 0xFF/2) {
                     DisplayColor displayColor = findClosestColor(rgb);
-                    image.setRGB(x, y, displayColor.intVal);
+                    arbg.setRGB(x, y, displayColor.intVal);
                 }
             }
         }
-        return image;
+        return arbg;
     }
 
     private static DisplayColor findClosestColor(int colorVal) {

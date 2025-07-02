@@ -113,7 +113,7 @@ public class MTOS {
             // sleep
             short millis = computer.getRegisterValue(A0);
             try {
-                Thread.sleep(millis);
+                if(millis > 0) Thread.sleep(millis);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

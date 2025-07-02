@@ -33,7 +33,7 @@ public class LoadCommand extends ShellCommand {
         Path srcPath = getDiskPath(program);
 
         Executable exec = Executable.load(srcPath);
-        computer.load(exec.code(), exec.data(), exec.debugInfo());
+        computer.load(exec.code(), exec.data(), exec.graphics(), exec.debugInfo());
         String source = tokens.getSource();
 
         // set up an argument if given

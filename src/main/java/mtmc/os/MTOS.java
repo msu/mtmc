@@ -113,7 +113,7 @@ public class MTOS {
             // sleep
             short millis = computer.getRegisterValue(A0);
             try {
-                Thread.sleep(millis);
+                if(millis > 0) Thread.sleep(millis);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -257,6 +257,18 @@ public class MTOS {
             if (value > 0) this.timer = System.currentTimeMillis() + value;
             
             computer.setRegisterValue(RV, (int)Math.max(0, this.timer - System.currentTimeMillis()));
+        } else if (syscallNumber == SysCall.getValue("drawimg")) {
+            short image = computer.getRegisterValue(A0);
+            short x = computer.getRegisterValue(A1);
+            short y = computer.getRegisterValue(A2);
+            
+            if (!computer.getDisplay().hasGraphic(image)) {
+                computer.setRegisterValue(RV, 1);
+                return;
+            }
+            
+            computer.getDisplay().drawImage(image, x, y);
+            computer.setRegisterValue(RV, 0);
         }
     }
 

@@ -14,8 +14,9 @@ sseSource.addEventListener("update:filesystem", (e) => {
 
 sseSource.addEventListener("update:display", (e) => {
     let element = document.getElementById("display-img");
-    element.src = "/display?" + Date.now()
-})
+//    element.src = "/display?" + Date.now()
+    element.src = e.data;
+});
 
 sseSource.addEventListener("update:registers", (e) => {
     let element = document.getElementById("register-panel");

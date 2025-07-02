@@ -96,6 +96,9 @@ public class WebServer {
                     if (ctx.pathParam("action").equals("pause")) {
                         computer.pause();
                     }
+                    if (ctx.pathParam("action").equals("run")) {
+                        computer.run();
+                    }
                     if (ctx.pathParam("action").equals("step")) {
                         computer.fetchAndExecute();
                         computer.fetchCurrentInstruction(); // fetch next instruction for display

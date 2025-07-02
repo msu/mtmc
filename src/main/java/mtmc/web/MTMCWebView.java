@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.IntStream;
+import mtmc.emulator.MTMCDisplay;
 
 public class MTMCWebView {
 
@@ -36,6 +37,10 @@ public class MTMCWebView {
 
     public Iterable blinkenIndexes() {
         return () -> IntStream.range(0, 16).iterator();
+    }
+
+    public MTMCDisplay getDisplay() {
+        return computer.getDisplay();
     }
 
     public FileSystem getFileSystem() {

@@ -1,5 +1,8 @@
 package mtmc.emulator;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import mtmc.asm.instructions.Instruction;
 import mtmc.os.MTOS;
 import mtmc.os.fs.FileSystem;
@@ -8,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
+import javax.imageio.ImageIO;
 
 import static mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
 import static mtmc.emulator.Register.*;
@@ -49,8 +53,13 @@ public class MonTanaMiniComputer {
     }
 
     public void load(byte[] code, byte[] data, DebugInfo debugInfo) {
+        load(code, data, new byte[0][0], debugInfo);
+    }
+    
+    public void load(byte[] code, byte[] data, byte[][] graphics, DebugInfo debugInfo) {
 
         this.debugInfo = debugInfo;
+        graphics = (graphics == null ? new byte[0][0] : graphics);
 
         // reset memory
         initMemory();
@@ -63,11 +72,12 @@ public class MonTanaMiniComputer {
         int dataBoundary = codeBoundary + data.length;
         System.arraycopy(data, 0, memory, codeBoundary, data.length);
         setRegisterValue(DB, dataBoundary - 1);
-
+        
         // base pointer starts just past the end of the data boundary
         setRegisterValue(BP, dataBoundary);
 
         fetchCurrentInstruction(); // fetch the initial instruction for display purposes
+        display.loadGraphics(graphics); // ready graphics for use
 
         // reset computer status
         setStatus(READY);
@@ -604,6 +614,7 @@ public class MonTanaMiniComputer {
     private void badInstruction(short instruction) {
         setStatus(PERMANENT_ERROR);
         // TODO implement flags
+        console.println("BAD INSTRUCTION: 0x" + Integer.toHexString(instruction & 0xFFFF));
     }
 
     public void fetchCurrentInstruction() {
@@ -647,6 +658,7 @@ public class MonTanaMiniComputer {
     public byte fetchByteFromMemory(int address) {
         if (address < 0 || address >= memory.length) {
             setStatus(PERMANENT_ERROR);
+            console.println("BAD MEMORY LOCATION ON READ: " + address + " (0x" + Integer.toHexString(address & 0xFFFF) + ")");
             return 0;
         } else {
             return memory[address];
@@ -662,6 +674,7 @@ public class MonTanaMiniComputer {
     public void writeByteToMemory(int address, byte value) {
         if (address < 0 || address >= memory.length) {
             setStatus(PERMANENT_ERROR);
+            console.println("BAD MEMORY LOCATION ON WRITE: " + address + " (0x" + Integer.toHexString(address & 0xFFFF) + ")");
             return;
         }
         memory[address] = value;

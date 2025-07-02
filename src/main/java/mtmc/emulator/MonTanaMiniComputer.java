@@ -614,6 +614,7 @@ public class MonTanaMiniComputer {
     private void badInstruction(short instruction) {
         setStatus(PERMANENT_ERROR);
         // TODO implement flags
+        console.println("BAD INSTRUCTION: 0x" + Integer.toHexString(instruction & 0xFFFF));
     }
 
     public void fetchCurrentInstruction() {
@@ -657,6 +658,7 @@ public class MonTanaMiniComputer {
     public byte fetchByteFromMemory(int address) {
         if (address < 0 || address >= memory.length) {
             setStatus(PERMANENT_ERROR);
+            console.println("BAD MEMORY LOCATION ON READ: " + address + " (0x" + Integer.toHexString(address & 0xFFFF) + ")");
             return 0;
         } else {
             return memory[address];
@@ -672,6 +674,7 @@ public class MonTanaMiniComputer {
     public void writeByteToMemory(int address, byte value) {
         if (address < 0 || address >= memory.length) {
             setStatus(PERMANENT_ERROR);
+            console.println("BAD MEMORY LOCATION ON WRITE: " + address + " (0x" + Integer.toHexString(address & 0xFFFF) + ")");
             return;
         }
         memory[address] = value;

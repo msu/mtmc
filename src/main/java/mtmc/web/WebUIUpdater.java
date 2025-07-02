@@ -16,7 +16,7 @@ public class WebUIUpdater implements MTMCObserver {
 
     // UI update infrastructure
     Thread updateThread;
-    AtomicInteger updateFlags = new AtomicInteger(0);
+    AtomicInteger updateFlags = new AtomicInteger(0xFFFFFFFF); // Force a full update on restart
 
     int UPDATE_REGISTER_UI   = 0x00001;
     int UPDATE_MEMORY_UI     = 0x00100;
@@ -49,6 +49,9 @@ public class WebUIUpdater implements MTMCObserver {
     public void start() {
         updateThread = new Thread(() -> {
             while (true) {
+                
+                if (webServer.sseClients.size() < 1) continue; // Save the update until they reconnect
+                
                 try {
                     Thread.sleep(DISPLAY_UPDATE_INTERVAL);
                     Map<String, String> uisToUpdate = new HashMap<>();

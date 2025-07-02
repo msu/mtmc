@@ -17,8 +17,8 @@
   speed_x: 0
   speed_y: 0
 
-  max_speed: 4
-
+  min_speed: -3
+  max_speed: 3
 
 
 
@@ -134,9 +134,9 @@ draw_fish_image:
 move_fish:
   push ra
 
-  lw   t0 x         # x
-  lw   t1 y         # y
-  lw   t4 direction # direction
+  lw   t0 speed_x     # speed x
+  lw   t1 speed_y     # speed y
+  lw   t4 direction   # direction
 
   sys  joystick     # get the latest IO
   mov  t2 rv
@@ -149,6 +149,7 @@ move_up:
   jz   move_down
 
   dec t1            # y--
+  dec t1            # y--
 
 move_down:
   lw   t3 down
@@ -157,6 +158,7 @@ move_down:
   neqi t3 0
   jz   move_left
 
+  inc  t1            # y++
   inc  t1            # y++
 
 move_left:
@@ -167,6 +169,7 @@ move_left:
   jz   move_right
 
   dec  t0            # x--
+  dec  t0            # x--
   li   t4 0          # direction = left
 
 move_right:
@@ -174,13 +177,52 @@ move_right:
   and  t3 t2
 
   neqi t3 0
-  jz   move_check_left_bound
+  jz   move_max_speed
 
+  inc  t0            # x++
   inc  t0            # x++
   li   t4 1          # direction = right
 
-move_check_left_bound:
+move_max_speed:
+  sw   t0 speed_x    # Save speed x
+  sw   t1 speed_y    # Save speed y
 
+  jal  slow_fish
+
+  lw   t0 speed_x     # speed x
+  lw   t1 speed_y     # speed y
+
+  mov  a0 t0
+  lw   a1 max_speed
+  jal  min_value     # min(speed_x, max_speed)
+  mov  t0 rv
+  
+  mov  a0 t1
+  lw   a1 max_speed
+  jal  min_value     # min(speed_y, max_speed)
+  mov  t1 rv
+
+  mov  a0 t0
+  lw   a1 min_speed
+  jal  max_value     # max(speed_x, min_speed)
+  mov  t0 rv
+
+  mov  a0 t1
+  lw   a1 min_speed
+  jal  max_value     # max(speed_y, min_speed)
+  mov  t1 rv
+
+  sw   t0 speed_x    # Save speed x
+  sw   t1 speed_y    # Save speed y
+
+move_add_speed:
+  lw   t2 x
+  add  t0 t2         # x = speed_x + x
+
+  lw   t2 y
+  add  t1 t2         # y = speed_y + x
+
+move_check_left_bound:
   li   t2 0
   lt   t0 t2         # x < 0
   jz  move_check_right_bound
@@ -201,5 +243,86 @@ move_save:
   sw   t1 y           # Save y 
   sw   t4 direction   # Save direction
 
+  pop  ra
+  ret
+
+
+#######################################
+# Min value                           #
+#######################################
+min_value:
+  lt   a0 a1
+  jnz  min_value_a0
+
+  mov  rv a1
+  ret
+
+min_value_a0:
+  mov  rv a0
+  ret
+
+
+#######################################
+# Max value                           #
+#######################################
+max_value:
+  gt   a0 a1
+  jnz  min_value_a0
+
+  mov  rv a1
+  ret
+
+max_value_a0:
+  mov  rv a0
+  ret
+
+
+#######################################
+# Slow down when keys are released    #
+#######################################
+slow_fish:
+  push ra
+
+slow_fish_check_x:
+  lw   t0 speed_x
+
+  eqi  t0 0
+  jnz  slow_fish_check_y
+
+  lti  t0 0
+  jz   slow_fish_positive_x
+
+slow_fish_negative_x:
+  li   t1 1
+  add  t0 t1
+  sw   t0 speed_x
+  j    slow_fish_check_y
+
+slow_fish_positive_x:
+  li   t1 -1
+  add  t0 t1
+  sw   t0 speed_x
+
+slow_fish_check_y:
+  lw   t0 speed_y
+
+  eqi  t0 0
+  jnz  slow_fish_done
+
+  lti  t0 0
+  jz   slow_fish_positive_y
+
+slow_fish_negative_y:
+  li   t1 1
+  add  t0 t1
+  sw   t0 speed_y
+  j    slow_fish_done
+
+slow_fish_positive_y:
+  li   t1 -1
+  add  t0 t1
+  sw   t0 speed_y
+
+slow_fish_done:
   pop  ra
   ret

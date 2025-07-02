@@ -1,9 +1,15 @@
+
+# This version is a good example of highly "coupled" code. The scrolling 
+# information is scattered throughout the code rather than being centralized
+# and the sprite coordinates translated by a separate scroll x/y position.
+
 .data
 
   graphics:
     background: image { "background.png" }
     fish_left: image { "fish-left.png" }
     fish_right: image { "fish-right.png" }
+    shark_left: image { "shark-left.png" }
 
   directions:
     up:    0b10000000
@@ -11,15 +17,26 @@
     left:  0b00100000
     right: 0b00010000
 
-  x: 400
-  y: 100
-  direction: 1
-  speed_x: 0
-  speed_y: 0
+  states:
+    DEAD:  0
+    ALIVE: 1
+    BLINK: 2
+    DYING: 3
 
-  min_speed: -3
-  max_speed: 3
+  fish:
+    x: 40
+    y: 100
+    direction: 1
+    speed_x: 0
+    speed_y: 0
 
+    min_speed: -3
+    max_speed: 3
+
+  shark:
+    shark_x:   600
+    shark_y:   30
+    shark_dir: 0
 
 
 .text
@@ -31,19 +48,18 @@ main_loop:
   sys  timer        # Set timer for 16 ms
 
   jal  move_fish
+  jal  move_shark
 
   sys  fbreset
 
   jal  draw_background
   jal  draw_fish
+  jal  draw_shark
 
   sys  fbflush
 
   li   a0 0
   sys  timer
-
-  eqi  rv 0
-  jnz  main_loop
 
   mov  a0 rv
   sys  sleep
@@ -341,3 +357,69 @@ slow_fish_positive_y:
 slow_fish_done:
   pop  ra
   ret
+
+
+#######################################
+# Draw the shark                      #
+#######################################
+draw_shark:
+  push ra  
+
+  lw   t0 x             # Fish x for scrolling
+  lw   a0 shark_left
+  lw   a1 shark_x
+  lw   a2 shark_y
+
+draw_shark_check_right:
+  li   t1 419
+  gte  t0 t1
+  jz   draw_shark_check_left  
+
+  # Fixed scroll if we're at the right of the screen
+
+  li   t1 339
+  sub  a1 t1            # shark_x -= 339
+
+  j    draw_shark_done
+
+draw_shark_check_left:
+  li   t1 80
+  lt   t0 t1
+  jnz  draw_shark_done  # Don't scroll, we're at the left of the screen
+
+  li   t1 80
+  sub  a1 t0            # shark_x -= x
+  add  a1 t1            # shark_x += 80
+
+
+draw_shark_done:
+  sys  drawimg
+
+  pop  ra
+  ret
+
+
+
+#######################################
+# Move the shark                      #
+#######################################
+move_shark:
+  push ra  
+
+  lw   t0 shark_x
+
+  dec  t0               # shark_x--
+
+  li   t1 -300
+  lt   t0 t1
+  jz   move_shark_done
+
+  li   t0 600
+  
+move_shark_done:
+  sw   t0 shark_x
+
+  pop  ra
+  ret
+
+

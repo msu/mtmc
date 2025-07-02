@@ -225,7 +225,7 @@ move_add_speed:
 move_check_left_bound:
   li   t2 0
   lt   t0 t2         # x < 0
-  jz  move_check_right_bound
+  jz   move_check_right_bound
 
   mov  t0 t2         # x = 0
 
@@ -233,9 +233,24 @@ move_check_right_bound:
 
   li   t2 484
   gt   t0 t2         # x > 484 (499 - 15)
-  jz  move_save
+  jz   move_check_top_bound
 
   mov  t0 t2         # x = 484
+
+move_check_top_bound:
+  li   t2 -2
+  lt   t1 t2         # y < -2
+  jz   move_check_bottom_bound
+
+  mov  t1 t2         # y = -2
+
+move_check_bottom_bound:
+
+  li   t2 131
+  gt   t1 t2         # y > 131 (144 - 15 + 2)
+  jz   move_save
+
+  mov  t1 t2         # y = 131
 
 move_save:
 

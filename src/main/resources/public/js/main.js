@@ -206,9 +206,12 @@ function initConsole() {
             const line = document.createElement('DIV');
             line.textContent = txt;
             history.appendChild(line);
-        })
-        input.scrollIntoView({behavior: "instant"})
-    })
+            while (history.length > 1000) {
+                history.removeChild(history.firstElementChild);
+            }
+        });
+        input.scrollIntoView({behavior: "instant"});
+    });
 
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {

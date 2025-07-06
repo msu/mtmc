@@ -750,6 +750,14 @@ public class MonTanaMiniComputer {
         this.notifyOfExecutionUpdate();
     }
 
+    public void notifyOfConsoleUpdate() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.consoleUpdated();
+            }
+        }
+    }
+
     public void notifyOfDisplayUpdate() {
         if (observers != null) {
             for (MTMCObserver observer : observers) {

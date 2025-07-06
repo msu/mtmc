@@ -43,6 +43,10 @@ public class MTMCConsole {
         output.append(x);
         if(mode == INTERACTIVE) {
             System.out.print(x);
+        } else {
+            if (x.contains("\n")) { 
+                computer.notifyOfConsoleUpdate();
+            }
         }
     }
 
@@ -75,6 +79,17 @@ public class MTMCConsole {
 
     public String getOutput() {
         return output.toString();
+    }
+    
+    public String consumeLines() {
+        int index = output.lastIndexOf("\n");
+        String text = (index >= 0) ? output.substring(0, index+1) : "";
+        
+        if (index >= 0) {
+            output.delete(0, index+1);
+        }
+        
+        return text;
     }
 
     public void writeInt(short value) {

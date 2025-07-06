@@ -7,6 +7,7 @@ import mtmc.emulator.MTMCObserver;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import mtmc.emulator.MTMCConsole;
 
 public class WebUIUpdater implements MTMCObserver {
 
@@ -18,11 +19,12 @@ public class WebUIUpdater implements MTMCObserver {
     Thread updateThread;
     AtomicInteger updateFlags = new AtomicInteger(0xFFFFFFFF); // Force a full update on restart
 
-    int UPDATE_REGISTER_UI   = 0x00001;
-    int UPDATE_MEMORY_UI     = 0x00100;
-    int UPDATE_DISPLAY_UI    = 0x00010;
-    int UPDATE_FILESYSTEM_UI = 0x01000;
-    int UPDATE_EXECUTION_UI  = 0x10000;
+    int UPDATE_REGISTER_UI   = 0x000001;
+    int UPDATE_MEMORY_UI     = 0x000100;
+    int UPDATE_DISPLAY_UI    = 0x000010;
+    int UPDATE_FILESYSTEM_UI = 0x001000;
+    int UPDATE_EXECUTION_UI  = 0x010000;
+    int UPDATE_CONSOLE_UI    = 0x100000;
 
     public static final int UI_UPDATE_INTERVAL = 100;     // Approximately 10 FPS
     public static final int DISPLAY_UPDATE_INTERVAL = 16; // Approximately 60 FPS
@@ -45,6 +47,15 @@ public class WebUIUpdater implements MTMCObserver {
         
         return getDataURL(data);
     }
+    
+    private String getConsoleOutput() {
+        MTMCConsole console = webServer.getComputerView().getConsole();
+        String output = console.getOutput();
+        
+        console.resetOutput();
+        
+        return output;
+    }
 
     public void start() {
         updateThread = new Thread(() -> {
@@ -56,11 +67,16 @@ public class WebUIUpdater implements MTMCObserver {
                     Thread.sleep(DISPLAY_UPDATE_INTERVAL);
                     Map<String, String> uisToUpdate = new HashMap<>();
                     boolean update = (lastUpdate + UI_UPDATE_INTERVAL) <= System.currentTimeMillis();
-                    int updates = updateFlags.getAndUpdate(value -> update ? 0 : value & (~UPDATE_DISPLAY_UI)); // get and zero out any changes
+                    int updates = updateFlags.getAndUpdate(value -> update ? 0 : value & ~(UPDATE_DISPLAY_UI | UPDATE_CONSOLE_UI)); // get and zero out any changes
 
                     if ((updates & UPDATE_DISPLAY_UI) != 0) {
                         webServer.sendEvent("update:display", getEncodedDisplay());
                         updates &= ~UPDATE_DISPLAY_UI;
+                    }
+                    
+                    if ((updates & UPDATE_CONSOLE_UI) != 0) {
+                        webServer.sendEvent("console-output", getConsoleOutput());
+                        updates &= ~UPDATE_CONSOLE_UI;
                     }
                     
                     if(!update) continue;
@@ -88,6 +104,11 @@ public class WebUIUpdater implements MTMCObserver {
         });
         updateThread.start();
 
+    }
+    
+    @Override
+    public void consoleUpdated() {
+        updateFlags.updateAndGet(operand -> operand | UPDATE_CONSOLE_UI);
     }
     
     @Override

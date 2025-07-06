@@ -196,6 +196,7 @@ function initConsole() {
     
     let historyIndex = -1;
     let historyStack = [];
+    let readChar = false;
     let readString = false;
 
     consolePanel.addEventListener('click', (e) => {
@@ -221,6 +222,7 @@ function initConsole() {
         var text = e.data.trim() || "mtmc$";
         prompt.textContent = text;
         readString = false;
+        readChar = false;
     });
     
     sseSource.addEventListener("console-readstr", (e) => {
@@ -228,8 +230,27 @@ function initConsole() {
         prompt.textContent = text;
         readString = true;
     });
+    
+    sseSource.addEventListener("console-readchar", (e) => {
+        var text = e.data.trim() || ">";
+        prompt.textContent = text;
+        readChar = true;
+console.log("readChar");
+    });
 
     input.addEventListener('keydown', (e) => {
+        
+        if (readChar) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if(e.key.length === 1) {
+                fetch("/readchar", {method: 'POST', body: JSON.stringify({'c': e.key})});
+            }
+
+            return false;
+        } 
+        
         if (e.key === 'Enter') {
             historyIndex = -1;
             e.preventDefault();

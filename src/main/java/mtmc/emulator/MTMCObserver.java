@@ -22,5 +22,7 @@ public interface MTMCObserver {
 
     void computerReset();
     
+    void requestCharacter();
+    
     void requestString();
 }

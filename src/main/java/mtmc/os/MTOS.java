@@ -36,6 +36,12 @@ public class MTOS {
             short value = computer.getRegisterValue(A0);
             computer.getConsole().writeInt(value);
         } else if (syscallNumber == SysCall.getValue("rchr")) {
+            if(!computer.getConsole().hasShortValue()) {
+                computer.notifyOfRequestCharacter();
+            }
+            while(!computer.getConsole().hasShortValue() && computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING) {
+                try { Thread.sleep(10); } catch(InterruptedException e) {}
+            }
             char val = computer.getConsole().readChar();
             computer.setRegisterValue(RV, val);
         } else if (syscallNumber == SysCall.getValue("wchr")) {

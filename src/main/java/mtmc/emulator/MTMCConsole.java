@@ -6,7 +6,6 @@ import static mtmc.emulator.MTMCConsole.Mode.*;
 import mtmc.os.shell.Shell;
 import mtmc.tokenizer.MTMCScanner;
 import mtmc.tokenizer.MTMCToken;
-import mtmc.tokenizer.MTMCTokenizer;
 
 public class MTMCConsole {
 
@@ -16,6 +15,7 @@ public class MTMCConsole {
 
     // non-interactive data
     private StringBuffer output = new StringBuffer();
+    private boolean shortValueSet;
     private short shortValue;
     private String stringValue;
 
@@ -57,6 +57,7 @@ public class MTMCConsole {
             assert token.type() == MTMCToken.TokenType.CHAR;
             return token.charValue();
         } else {
+            this.shortValueSet = false;
             return (char) this.shortValue;
         }
     }
@@ -65,16 +66,23 @@ public class MTMCConsole {
         if (mode == INTERACTIVE) {
             return Short.parseShort(sysConsole.readLine());
         } else {
+            this.shortValueSet = false;
             return shortValue;
         }
+    }
+    
+    public boolean hasShortValue() {
+        return (mode == INTERACTIVE || shortValueSet);
     }
 
     public void setShortValue(short shortValue) {
         this.shortValue = shortValue;
+        this.shortValueSet = true;
     }
 
     public void setCharValue(char charValue) {
         this.shortValue = (short) charValue;
+        this.shortValueSet = true;
     }
 
     public String getOutput() {

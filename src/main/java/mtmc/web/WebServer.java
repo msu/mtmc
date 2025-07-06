@@ -83,6 +83,13 @@ public class WebServer {
                     sendEvent("console-ready", "");
                     ctx.html("");
                 })
+                .post("/readchar", ctx -> {
+                    Map vals = json.fromJson(ctx.body(), Map.class);
+                    String str = (String) vals.get("c");
+                    computer.getConsole().setCharValue(str.charAt(0));
+                    sendEvent("console-ready", "mtmc$");
+                    ctx.html("");
+                })
                 .post("/readstr", ctx -> {
                     Map vals = json.fromJson(ctx.body(), Map.class);
                     String str = (String) vals.get("str");
@@ -102,6 +109,7 @@ public class WebServer {
                     }
                     if (ctx.pathParam("action").equals("pause")) {
                         computer.pause();
+                        sendEvent("console-ready", "mtmc$");
                     }
                     if (ctx.pathParam("action").equals("run")) {
                         computer.run();

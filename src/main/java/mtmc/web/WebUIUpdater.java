@@ -156,6 +156,11 @@ public class WebUIUpdater implements MTMCObserver {
     }
     
     @Override
+    public void requestCharacter() {
+        webServer.sendEvent("console-readchar", ">");
+    }
+    
+    @Override
     public void requestString() {
         webServer.sendEvent("console-readstr", ">");
     }

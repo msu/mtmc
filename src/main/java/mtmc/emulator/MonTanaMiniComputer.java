@@ -782,6 +782,14 @@ public class MonTanaMiniComputer {
         }
     }
 
+    public void notifyOfRequestString() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.requestString();
+            }
+        }
+    }
+    
     public int getIOState() {
         return io.getValue();
     }

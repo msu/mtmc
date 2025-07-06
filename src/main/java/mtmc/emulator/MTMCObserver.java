@@ -21,4 +21,6 @@ public interface MTMCObserver {
     void afterExecution(short instruction);
 
     void computerReset();
+    
+    void requestString();
 }

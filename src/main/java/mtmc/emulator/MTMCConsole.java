@@ -104,10 +104,20 @@ public class MTMCConsole {
         if(mode == INTERACTIVE) {
             return sysConsole.readLine();
         } else {
+            String stringValue = this.stringValue;
+            this.stringValue = null;
             return stringValue;
         }
     }
 
+    public boolean hasReadString() {
+        return (mode == INTERACTIVE || stringValue != null);
+    }
+    
+    public void setReadString(String stringValue) {
+        this.stringValue = stringValue;
+    }
+    
     public void resetOutput() {
         output.delete(0, output.length());
     }

@@ -45,6 +45,12 @@ public class MTOS {
             // rstr
             short pointer = computer.getRegisterValue(A0);
             short maxLen = computer.getRegisterValue(A1);
+            if(!computer.getConsole().hasReadString()) {
+                computer.notifyOfRequestString();
+            }
+            while(!computer.getConsole().hasReadString() && computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING) {
+                try { Thread.sleep(10); } catch(InterruptedException e) {}
+            }
             String string = computer.getConsole().readString();
             byte[] bytes = string.getBytes(Charsets.US_ASCII);
             int bytesToRead = Math.min(bytes.length, maxLen);

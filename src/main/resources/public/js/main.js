@@ -191,15 +191,18 @@ function initJoystick() {
 function initConsole() {
     const history = document.getElementById('console-history');
     const input = document.getElementById('console-input');
+    const prompt = document.getElementById('console-prompt');
     const consolePanel = document.getElementById('console-panel');
+    
     let historyIndex = -1;
     let historyStack = [];
+    let readString = false;
 
     consolePanel.addEventListener('click', (e) => {
         if (!history.contains(e.target)) {
             input.focus();
         }
-    })
+    });
 
     sseSource.addEventListener("console-output", (e) => {
         e.data.split("\n").forEach((txt) => {
@@ -212,6 +215,19 @@ function initConsole() {
         });
         input.scrollIntoView({behavior: "instant"});
     });
+    
+    
+    sseSource.addEventListener("console-ready", (e) => {
+        var text = e.data.trim() || "mtmc$";
+        prompt.textContent = text;
+        readString = false;
+    });
+    
+    sseSource.addEventListener("console-readstr", (e) => {
+        var text = e.data.trim() || ">";
+        prompt.textContent = text;
+        readString = true;
+    });
 
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -220,12 +236,18 @@ function initConsole() {
             const line = document.createElement('DIV');
             let cmd = input.value;
             historyStack.unshift(cmd);
-            line.textContent = `mtmc$ ${cmd}`;
+            line.textContent = `${prompt.textContent} ${cmd}`;
             history.appendChild(line);
-            fetch("/cmd", {method: 'POST', body: JSON.stringify({'cmd': cmd})})
+            
+            if (readString) {
+                fetch("/readstr", {method: 'POST', body: JSON.stringify({'str': cmd})});
+            } else {
+                fetch("/cmd", {method: 'POST', body: JSON.stringify({'cmd': cmd})});
+            }
+            
             input.value = '';
             input.focus();
-            input.scrollIntoView({behavior: "instant"})
+            input.scrollIntoView({behavior: "instant"});
         }
         if (e.key === 'ArrowUp') {
             if (!historyStack.length) return;

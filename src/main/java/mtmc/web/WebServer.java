@@ -80,7 +80,14 @@ public class WebServer {
                     computer.getOS().processCommand(cmd);
                     String output = computer.getConsole().getOutput();
                     sendEvent("console-output", output);
-                    sendEvent("console-ready", "{}");
+                    sendEvent("console-ready", "");
+                    ctx.html("");
+                })
+                .post("/readstr", ctx -> {
+                    Map vals = json.fromJson(ctx.body(), Map.class);
+                    String str = (String) vals.get("str");
+                    computer.getConsole().setReadString(str);
+                    sendEvent("console-ready", "mtmc$");
                     ctx.html("");
                 })
                 .post("/speed", ctx -> {

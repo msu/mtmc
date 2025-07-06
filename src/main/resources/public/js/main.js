@@ -198,9 +198,16 @@ function initConsole() {
     let historyStack = [];
     let readChar = false;
     let readString = false;
+    
+    let startClick = 0;
 
-    consolePanel.addEventListener('click', (e) => {
-        if (!history.contains(e.target)) {
+
+    consolePanel.addEventListener('mousedown', (e) => {
+        startClick = Date.now();
+    });
+
+    consolePanel.addEventListener('mouseup', (e) => {
+        if ((Date.now() - startClick) < 200) {
             input.focus();
         }
     });
@@ -235,7 +242,6 @@ function initConsole() {
         var text = e.data.trim() || ">";
         prompt.textContent = text;
         readChar = true;
-console.log("readChar");
     });
 
     input.addEventListener('keydown', (e) => {

@@ -69,11 +69,11 @@
 
   room_description: "YOU ARE IN ROOM "
   tunnel_description: "TUNNELS LEAD TO "
-  number_of_rooms: "NO. OF ROOMS(1-5)"
-  room_number: "ROOM #"
+  number_of_rooms: "\nNO. OF ROOMS(1-5)\n"
+  room_number: "ROOM #\n"
   
   arrows_fail: "ARROWS AREN'T THAT CROOKED - TRY ANOTHER ROOM\n"
-  missed: "MISSED\n"
+  missed: "\nMISSED\n\n"
   hit: "AHA! YOU GOT THE WUMPUS!\n"
   wounded: "OUCH! ARROW GOT YOU!\n"
   eaten: "TSK TSK TSK- WUMPUS GOT YOU!\n"
@@ -183,6 +183,13 @@
     bats_2: -1
     arrows: 5
     state:  0                   # 0 - Alive, 1 - Win, -1 - Dead
+
+  arrow_path:
+    -1
+    -1
+    -1
+    -1
+    -1
 
 
 .text
@@ -621,7 +628,7 @@ move_or_shoot_move_accept:
 
 move_or_shoot_shoot:
 
-  # TODO
+  jal  shoot_arrow
 
 move_or_shoot_done:
 
@@ -733,5 +740,121 @@ move_wumpus_death:
   sw   t0 state
 
 move_wumpus_done:
+  pop  ra
+  ret
+
+
+
+############################################################
+# Shoot an arrow between 1-5 rooms away                    #
+############################################################
+shoot_arrow:
+  push ra
+
+shoot_arrow_number_of_rooms:
+  li   a0 number_of_rooms
+  sys  wstr
+  sys  rint
+  mov  t0 rv
+
+  # Check if less than 1
+  lti  t0 1
+  jnz  shoot_arrow_number_of_rooms
+
+  # Check if greater than 5
+  gti  t0 5
+  jnz  shoot_arrow_number_of_rooms
+
+
+  li   t5 0                     # counter
+shoot_arrow_room_number:
+  li   a0 room_number
+  sys  wstr
+  sys  rint
+
+  # TODO Check if room != room -2
+shoot_arrow_room_number_error:
+  
+
+shoot_arrow_room_number_continue:
+  swo  rv t5 arrow_path
+  inc  t5                       # counter++
+  lt   t5 t0                    # counter < number_of_rooms
+  jnz  shoot_arrow_room_number
+
+
+  li   t5 0                     # counter
+  lw   t1 you                   # current room
+shoot_arrow_travel:
+  mov  t2 t1
+  dec  t2                       # index--  (make number zero based)
+  li   t3 3
+  mul  t2 t3                    # index *= 3  (connection points per room)
+  li   t3 2
+  mul  t2 t3                    # index *= 2  (2 bytes in a word)
+
+  lwo  t4 t5 arrow_path
+  lwo  t3 t2 cave_data
+  eq   t3 t4                    # arrow_path[counter] == tunnels[0]
+  jnz  shoot_arrow_travel_set_room
+
+  inc t2
+  inc t2
+  lwo  t3 t2 cave_data
+  eq   t3 t4                    # arrow_path[counter] == tunnels[1]
+  jnz  shoot_arrow_travel_set_room
+
+  inc t2
+  inc t2
+  lwo  t3 t2 cave_data
+  eq   t3 t4                    # arrow_path[counter] == tunnels[2]
+  jnz  shoot_arrow_travel_set_room
+  
+shoot_arrow_travel_set_random:
+  mov  t2 t1
+  dec  t2                       # index--  (make number zero based)
+  li   t3 3
+  mul  t2 t3                    # index *= 3  (connection points per room)
+  jal  fnb                      # No tunnel available, randomize arrow path
+  add  t2 rv
+  li   t3 2
+  mul  t2 t3                    # index *= 2  (2 bytes in a word)
+  lwo  t3 t2 cave_data
+
+shoot_arrow_travel_set_room:
+  mov  t1 t3
+
+shoot_arrow_travel_check_wumpus:
+  lw   t3 wumpus
+  eq   t1 t3                    # room == wumpus
+  jz   shoot_arrow_travel_check_self
+
+  li   a0 hit
+  sys  wstr
+  li   t0 1
+  sw   t0 state
+  j    shoot_arrow_done
+
+shoot_arrow_travel_check_self:
+  lw   t3 you
+  eq   t1 t3                    # room == you
+  jz   shoot_arrow_travel_continue
+
+  li   a0 wounded
+  sys  wstr
+  li   t0 -1
+  sw   t0 state
+  j    shoot_arrow_done
+
+shoot_arrow_travel_continue:
+  inc  t5                       # counter++
+  lt   t5 t0                    # counter < number_of_rooms
+  jnz  shoot_arrow_travel
+
+shoot_arrow_travel_check_missed:
+  li   a0 missed
+  sys  wstr
+
+shoot_arrow_done:
   pop  ra
   ret

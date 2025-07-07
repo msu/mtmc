@@ -82,7 +82,7 @@
   not_possible: "NOT POSSIBLE -\n"
   bumped_wumpus: "...OOPS! BUMPED A WUMPUS!\n"
   fell_in_pit: "YYYIIIIEEEE . . . FELL IN PIT\n"
-  bat_snatch: "ZAP--SUPER BAT SNATCH! ELSEWHEREVILLE FOR YOU!\n"
+  bat_snatch: "\nZAP--SUPER BAT SNATCH! ELSEWHEREVILLE FOR YOU!\n\n"
 
   cave_data:
     2               # 1
@@ -174,13 +174,13 @@
     initial_bats_1: -1
     initial_bats_2: -1
 
-  state:
-    you:    0
-    wumpus: 0
-    pit_1:  0
-    pit_2:  0
-    bats_1: 0
-    bats_2: 0
+  current_state:
+    you:    -1
+    wumpus: -1
+    pit_1:  -1
+    pit_2:  -1
+    bats_1: -1
+    bats_2: -1
     arrows: 5
     state:  0                   # 0 - Alive, 1 - Win, -1 - Dead
 
@@ -203,6 +203,7 @@ main:
   sys  wstr
   sys  rchr
 
+  # Print instructions if 'Y' or 'y'
   eq   rv t0
   jnz  main_instructions
   eq   rv t1
@@ -227,8 +228,24 @@ game_loop:
   jal  move_or_shoot
   jal  check_hazards_in_room
 
-  j    game_loop
+  lw   t0 state
+  eqi  t0 0
+  jnz  game_loop
+  lti  t0 0
+  jnz  game_lost
 
+game_won:
+  li   a0 win
+  sys  wstr
+  j    game_end
+
+game_lost:
+  li   a0 lost
+  sys  wstr
+
+game_end:
+  sys fbreset
+  sys fbflush
   sys  exit
 
 
@@ -312,7 +329,7 @@ unique_location_generate:
   mov  t1 rv
   
 unique_location_loop:
-  lwo  t2 t0 state
+  lwo  t2 t0 current_state
   eq   t2 t1
   jnz  unique_location_generate     # Not unique
 
@@ -639,8 +656,8 @@ check_hazards_in_room_pit_1:
   li   a0 fell_in_pit
   sys  wstr
 
-  # TODO check if dead
-  sys exit
+  li   t0 -1
+  sw   t0 state
 
 check_hazards_in_room_pit_2:
   lw   t1 pit_2
@@ -650,8 +667,8 @@ check_hazards_in_room_pit_2:
   li   a0 fell_in_pit
   sys  wstr
 
-  # TODO check if dead
-  sys exit
+  li   t0 -1
+  sw   t0 state
 
 check_hazards_in_room_bats_1:
   lw   t1 bats_1
@@ -661,8 +678,8 @@ check_hazards_in_room_bats_1:
   li   a0 bat_snatch
   sys  wstr
 
-  # TODO move to new location
-  sys exit
+  jal  unique_location
+  sw   rv you
 
 check_hazards_in_room_bats_2:
   lw   t1 bats_2
@@ -672,8 +689,8 @@ check_hazards_in_room_bats_2:
   li   a0 bat_snatch
   sys  wstr
 
-  # TODO move to new location
-  sys exit
+  jal  unique_location
+  sw   rv you
 
 check_hazards_in_room_continue:
   pop  ra
@@ -714,7 +731,6 @@ move_wumpus_death:
 
   li   t0 -1
   sw   t0 state
-sys exit # TODO handle death
 
 move_wumpus_done:
   pop  ra

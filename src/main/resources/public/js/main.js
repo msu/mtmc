@@ -225,7 +225,6 @@ function initConsole() {
         input.scrollIntoView({behavior: "instant"});
     });
     
-    
     sseSource.addEventListener("console-ready", (e) => {
         var text = e.data.trim() || "mtmc$";
         prompt.textContent = text;
@@ -290,7 +289,7 @@ function initConsole() {
         if (readInt) {
             let c = e.key;
             
-            if (c === "Backspace" || c === "Delete") {
+            if (c === "Backspace" || c === "Delete" || (input.value.length < 1 && c === '-')) {
                 return;
             }
             if (c.length !== 1 || c < '0' || c > '9') {

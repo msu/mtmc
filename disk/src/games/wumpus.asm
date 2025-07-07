@@ -673,6 +673,11 @@ move_or_shoot_done:
 check_hazards_in_room:
   push ra
 
+  # Check we're still playing
+  lw   t2 state
+  eqi  t2 0
+  jz   check_hazards_in_room_continue
+
   # Load room position
   lw   t2 you       # index = (room you're in)
 
@@ -744,35 +749,38 @@ move_wumpus:
 
   jal  fnc
   eqi  rv 3
-  jnz  move_wumpus_death
+  jnz  move_wumpus_done     # Wumpus didn't move
 
   # Load room position
-  lw   t0 wumpus    # index = (room wumpus is in)
-  dec  t0           # index--  (make number zero based)
+  lw   t0 wumpus            # index = (room wumpus is in)
+  dec  t0                   # index--  (make number zero based)
   li   t1 3
-  mul  t0 t1        # index *= 3  (connection points per room)
-  add  t0 rv        # index += fnc
+  mul  t0 t1                # index *= 3  (connection points per room)
+  add  t0 rv                # index += fnc
   li   t1 2
-  mul  t0 t1        # index *= 2  (2 bytes in a word)
+  mul  t0 t1                # index *= 2  (2 bytes in a word)
 
   lwo  t2 t0 cave_data
   sw   t2 wumpus
 
-move_wumpus_death:
+move_wumpus_done:
   lw   t0 you
   lw   t1 wumpus
   eq   t0 t1
-  jz   move_wumpus_done         # Not in the same room
+  jnz  move_wumpus_death    # In the same room
 
+  pop  ra
+  ret
+
+move_wumpus_death:
   li   a0 eaten
   sys  wstr
 
   li   t0 -1
   sw   t0 state
 
-move_wumpus_done:
   pop  ra
-  ret
+  ret  
 
 
 
@@ -900,6 +908,8 @@ shoot_arrow_travel_continue:
 shoot_arrow_travel_check_missed:
   li   a0 missed
   sys  wstr
+
+  jal  move_wumpus
 
 shoot_arrow_done:
   lw   t0 arrows

@@ -198,6 +198,7 @@ function initConsole() {
     let historyStack = [];
     let readChar = false;
     let readString = false;
+    let readInt = false;
     
     let startClick = 0;
 
@@ -230,6 +231,7 @@ function initConsole() {
         prompt.textContent = text;
         readString = false;
         readChar = false;
+        readInt = false;
     });
     
     sseSource.addEventListener("console-readstr", (e) => {
@@ -242,6 +244,13 @@ function initConsole() {
         var text = e.data.trim() || ">";
         prompt.textContent = text;
         readChar = true;
+    });
+    
+    sseSource.addEventListener("console-readint", (e) => {
+        var text = e.data.trim() || "#";
+        prompt.textContent = text;
+        readString = true;
+        readInt = true;
     });
 
     input.addEventListener('keydown', (e) => {
@@ -266,7 +275,9 @@ function initConsole() {
             line.textContent = `${prompt.textContent} ${cmd}`;
             history.appendChild(line);
             
-            if (readString) {
+            if (readInt) {
+                fetch("/readint", {method: 'POST', body: JSON.stringify({'str': cmd})});
+            } else if (readString) {
                 fetch("/readstr", {method: 'POST', body: JSON.stringify({'str': cmd})});
             } else {
                 fetch("/cmd", {method: 'POST', body: JSON.stringify({'cmd': cmd})});
@@ -275,6 +286,18 @@ function initConsole() {
             input.value = '';
             input.focus();
             input.scrollIntoView({behavior: "instant"});
+        }
+        if (readInt) {
+            let c = e.key;
+            
+            if (c === "Backspace" || c === "Delete") {
+                return;
+            }
+            if (c.length !== 1 || c < '0' || c > '9') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
         }
         if (e.key === 'ArrowUp') {
             if (!historyStack.length) return;

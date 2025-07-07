@@ -24,5 +24,7 @@ public interface MTMCObserver {
     
     void requestCharacter();
     
+    void requestInteger();
+    
     void requestString();
 }

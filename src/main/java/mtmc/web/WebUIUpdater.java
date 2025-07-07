@@ -161,6 +161,11 @@ public class WebUIUpdater implements MTMCObserver {
     }
     
     @Override
+    public void requestInteger() {
+        webServer.sendEvent("console-readint", "#");
+    }
+    
+    @Override
     public void requestString() {
         webServer.sendEvent("console-readstr", ">");
     }

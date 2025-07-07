@@ -90,6 +90,13 @@ public class WebServer {
                     sendEvent("console-ready", "mtmc$");
                     ctx.html("");
                 })
+                .post("/readint", ctx -> {
+                    Map vals = json.fromJson(ctx.body(), Map.class);
+                    int value = Integer.parseInt((String)vals.get("str"));
+                    computer.getConsole().setShortValue((short)value);
+                    sendEvent("console-ready", "mtmc$");
+                    ctx.html("");
+                })
                 .post("/readstr", ctx -> {
                     Map vals = json.fromJson(ctx.body(), Map.class);
                     String str = (String) vals.get("str");

@@ -270,7 +270,11 @@ function initConsole() {
             e.preventDefault();
             const line = document.createElement('DIV');
             let cmd = input.value;
-            historyStack.unshift(cmd);
+            
+            if (!(readString || readChar)) {
+                historyStack.unshift(cmd);
+            }
+            
             line.textContent = `${prompt.textContent} ${cmd}`;
             history.appendChild(line);
             

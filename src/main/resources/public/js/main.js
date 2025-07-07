@@ -229,6 +229,7 @@ function initConsole() {
     
     sseSource.addEventListener("console-partial", (e) => {
         consolePartial.textContent = e.data;
+        input.scrollIntoView({behavior: "instant"});
     });
     
     sseSource.addEventListener("console-ready", (e) => {

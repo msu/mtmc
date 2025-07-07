@@ -14,6 +14,7 @@ public class WebUIUpdater implements MTMCObserver {
     private final WebServer webServer;
     private final Gson json = new Gson();
     private long lastUpdate = 0;
+    private long lastConsoleUpdate = 0;
 
     // UI update infrastructure
     Thread updateThread;
@@ -49,12 +50,26 @@ public class WebUIUpdater implements MTMCObserver {
     
     private String getConsoleOutput() {
         MTMCConsole console = webServer.getComputerView().getConsole();
+        long time = System.currentTimeMillis();
+        long delta = time - lastConsoleUpdate;
+        
+        if (delta < DISPLAY_UPDATE_INTERVAL) {
+            try { Thread.sleep(DISPLAY_UPDATE_INTERVAL - delta); } catch(InterruptedException e) {}
+        }
+        
+        lastConsoleUpdate = time;
         
         return console.consumeLines();
     }
     
     private String getConsolePartial() {
         MTMCConsole console = webServer.getComputerView().getConsole();
+        long time = System.currentTimeMillis();
+        long delta = time - lastConsoleUpdate;
+        
+        if (delta < DISPLAY_UPDATE_INTERVAL) {
+            try { Thread.sleep(DISPLAY_UPDATE_INTERVAL - delta); } catch(InterruptedException e) {}
+        }
         
         return console.getOutput();
     }

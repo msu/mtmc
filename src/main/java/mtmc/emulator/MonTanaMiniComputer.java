@@ -750,6 +750,22 @@ public class MonTanaMiniComputer {
         this.notifyOfExecutionUpdate();
     }
 
+    public void notifyOfConsoleUpdate() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.consoleUpdated();
+            }
+        }
+    }
+
+    public void notifyOfConsolePrinting() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.consolePrinting();
+            }
+        }
+    }
+
     public void notifyOfDisplayUpdate() {
         if (observers != null) {
             for (MTMCObserver observer : observers) {
@@ -774,6 +790,30 @@ public class MonTanaMiniComputer {
         }
     }
 
+    public void notifyOfRequestString() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.requestString();
+            }
+        }
+    }
+
+    public void notifyOfRequestCharacter() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.requestCharacter();
+            }
+        }
+    }
+
+    public void notifyOfRequestInteger() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.requestInteger();
+            }
+        }
+    }
+    
     public int getIOState() {
         return io.getValue();
     }

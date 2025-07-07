@@ -29,6 +29,12 @@ public class MTOS {
             computer.setStatus(MonTanaMiniComputer.ComputerStatus.FINISHED);
         } else if (syscallNumber == SysCall.getValue("rint")) {
             // rint
+            if(!computer.getConsole().hasShortValue()) {
+                computer.notifyOfRequestInteger();
+            }
+            while(!computer.getConsole().hasShortValue() && computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING) {
+                try { Thread.sleep(10); } catch(InterruptedException e) {}
+            }
             short val = computer.getConsole().readInt();
             computer.setRegisterValue(RV, val);
         } else if (syscallNumber == SysCall.getValue("wint")) {
@@ -36,6 +42,12 @@ public class MTOS {
             short value = computer.getRegisterValue(A0);
             computer.getConsole().writeInt(value);
         } else if (syscallNumber == SysCall.getValue("rchr")) {
+            if(!computer.getConsole().hasShortValue()) {
+                computer.notifyOfRequestCharacter();
+            }
+            while(!computer.getConsole().hasShortValue() && computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING) {
+                try { Thread.sleep(10); } catch(InterruptedException e) {}
+            }
             char val = computer.getConsole().readChar();
             computer.setRegisterValue(RV, val);
         } else if (syscallNumber == SysCall.getValue("wchr")) {
@@ -45,6 +57,12 @@ public class MTOS {
             // rstr
             short pointer = computer.getRegisterValue(A0);
             short maxLen = computer.getRegisterValue(A1);
+            if(!computer.getConsole().hasReadString()) {
+                computer.notifyOfRequestString();
+            }
+            while(!computer.getConsole().hasReadString() && computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING) {
+                try { Thread.sleep(10); } catch(InterruptedException e) {}
+            }
             String string = computer.getConsole().readString();
             byte[] bytes = string.getBytes(Charsets.US_ASCII);
             int bytesToRead = Math.min(bytes.length, maxLen);

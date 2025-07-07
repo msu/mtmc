@@ -2,6 +2,10 @@ package mtmc.emulator;
 
 public interface MTMCObserver {
 
+    void consoleUpdated();
+    
+    void consolePrinting();
+    
     void executionUpdated();
     
     void filesystemUpdated();
@@ -19,4 +23,10 @@ public interface MTMCObserver {
     void afterExecution(short instruction);
 
     void computerReset();
+    
+    void requestCharacter();
+    
+    void requestInteger();
+    
+    void requestString();
 }

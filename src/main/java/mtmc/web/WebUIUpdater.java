@@ -7,22 +7,24 @@ import mtmc.emulator.MTMCObserver;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import mtmc.emulator.MTMCConsole;
 
 public class WebUIUpdater implements MTMCObserver {
 
     private final WebServer webServer;
     private final Gson json = new Gson();
     private long lastUpdate = 0;
+    private long lastConsoleUpdate = 0;
 
     // UI update infrastructure
     Thread updateThread;
     AtomicInteger updateFlags = new AtomicInteger(0xFFFFFFFF); // Force a full update on restart
 
-    int UPDATE_REGISTER_UI   = 0x00001;
-    int UPDATE_MEMORY_UI     = 0x00100;
-    int UPDATE_DISPLAY_UI    = 0x00010;
-    int UPDATE_FILESYSTEM_UI = 0x01000;
-    int UPDATE_EXECUTION_UI  = 0x10000;
+    int UPDATE_REGISTER_UI   = 0x000001;
+    int UPDATE_MEMORY_UI     = 0x000100;
+    int UPDATE_DISPLAY_UI    = 0x000010;
+    int UPDATE_FILESYSTEM_UI = 0x001000;
+    int UPDATE_EXECUTION_UI  = 0x010000;
 
     public static final int UI_UPDATE_INTERVAL = 100;     // Approximately 10 FPS
     public static final int DISPLAY_UPDATE_INTERVAL = 16; // Approximately 60 FPS
@@ -45,6 +47,32 @@ public class WebUIUpdater implements MTMCObserver {
         
         return getDataURL(data);
     }
+    
+    private String getConsoleOutput() {
+        MTMCConsole console = webServer.getComputerView().getConsole();
+        long time = System.currentTimeMillis();
+        long delta = time - lastConsoleUpdate;
+        
+        if (delta < DISPLAY_UPDATE_INTERVAL) {
+            try { Thread.sleep(DISPLAY_UPDATE_INTERVAL - delta); } catch(InterruptedException e) {}
+        }
+        
+        lastConsoleUpdate = time;
+        
+        return console.consumeLines();
+    }
+    
+    private String getConsolePartial() {
+        MTMCConsole console = webServer.getComputerView().getConsole();
+        long time = System.currentTimeMillis();
+        long delta = time - lastConsoleUpdate;
+        
+        if (delta < DISPLAY_UPDATE_INTERVAL) {
+            try { Thread.sleep(DISPLAY_UPDATE_INTERVAL - delta); } catch(InterruptedException e) {}
+        }
+        
+        return console.getOutput();
+    }
 
     public void start() {
         updateThread = new Thread(() -> {
@@ -56,7 +84,7 @@ public class WebUIUpdater implements MTMCObserver {
                     Thread.sleep(DISPLAY_UPDATE_INTERVAL);
                     Map<String, String> uisToUpdate = new HashMap<>();
                     boolean update = (lastUpdate + UI_UPDATE_INTERVAL) <= System.currentTimeMillis();
-                    int updates = updateFlags.getAndUpdate(value -> update ? 0 : value & (~UPDATE_DISPLAY_UI)); // get and zero out any changes
+                    int updates = updateFlags.getAndUpdate(value -> update ? 0 : value & ~(UPDATE_DISPLAY_UI)); // get and zero out any changes
 
                     if ((updates & UPDATE_DISPLAY_UI) != 0) {
                         webServer.sendEvent("update:display", getEncodedDisplay());
@@ -88,6 +116,16 @@ public class WebUIUpdater implements MTMCObserver {
         });
         updateThread.start();
 
+    }
+    
+    @Override
+    public void consoleUpdated() {
+        webServer.sendEvent("console-output", getConsoleOutput());
+    }
+    
+    @Override
+    public void consolePrinting() {
+        webServer.sendEvent("console-partial", getConsolePartial());
     }
     
     @Override
@@ -139,5 +177,19 @@ public class WebUIUpdater implements MTMCObserver {
     public void updateMemoryImmediately() {
         webServer.sendEvent("update:memory-panel", webServer.render("templates/memory.html"));
     }
-
+    
+    @Override
+    public void requestCharacter() {
+        webServer.sendEvent("console-readchar", ">");
+    }
+    
+    @Override
+    public void requestInteger() {
+        webServer.sendEvent("console-readint", "#");
+    }
+    
+    @Override
+    public void requestString() {
+        webServer.sendEvent("console-readstr", ">");
+    }
 }

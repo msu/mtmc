@@ -6,7 +6,6 @@ import static mtmc.emulator.MTMCConsole.Mode.*;
 import mtmc.os.shell.Shell;
 import mtmc.tokenizer.MTMCScanner;
 import mtmc.tokenizer.MTMCToken;
-import mtmc.tokenizer.MTMCTokenizer;
 
 public class MTMCConsole {
 
@@ -16,6 +15,7 @@ public class MTMCConsole {
 
     // non-interactive data
     private StringBuffer output = new StringBuffer();
+    private boolean shortValueSet;
     private short shortValue;
     private String stringValue;
 
@@ -43,6 +43,12 @@ public class MTMCConsole {
         output.append(x);
         if(mode == INTERACTIVE) {
             System.out.print(x);
+        } else {
+            if (x.contains("\n")) { 
+                computer.notifyOfConsoleUpdate();
+            } else {
+                computer.notifyOfConsolePrinting();
+            }
         }
     }
 
@@ -53,6 +59,7 @@ public class MTMCConsole {
             assert token.type() == MTMCToken.TokenType.CHAR;
             return token.charValue();
         } else {
+            this.shortValueSet = false;
             return (char) this.shortValue;
         }
     }
@@ -61,20 +68,38 @@ public class MTMCConsole {
         if (mode == INTERACTIVE) {
             return Short.parseShort(sysConsole.readLine());
         } else {
+            this.shortValueSet = false;
             return shortValue;
         }
+    }
+    
+    public boolean hasShortValue() {
+        return (mode == INTERACTIVE || shortValueSet);
     }
 
     public void setShortValue(short shortValue) {
         this.shortValue = shortValue;
+        this.shortValueSet = true;
     }
 
     public void setCharValue(char charValue) {
         this.shortValue = (short) charValue;
+        this.shortValueSet = true;
     }
 
     public String getOutput() {
         return output.toString();
+    }
+    
+    public String consumeLines() {
+        int index = output.lastIndexOf("\n");
+        String text = (index >= 0) ? output.substring(0, index+1) : "";
+        
+        if (index >= 0) {
+            output.delete(0, index+1);
+        }
+        
+        return text;
     }
 
     public void writeInt(short value) {
@@ -89,10 +114,20 @@ public class MTMCConsole {
         if(mode == INTERACTIVE) {
             return sysConsole.readLine();
         } else {
+            String stringValue = this.stringValue;
+            this.stringValue = null;
             return stringValue;
         }
     }
 
+    public boolean hasReadString() {
+        return (mode == INTERACTIVE || stringValue != null);
+    }
+    
+    public void setReadString(String stringValue) {
+        this.stringValue = stringValue;
+    }
+    
     public void resetOutput() {
         output.delete(0, output.length());
     }

@@ -191,38 +191,123 @@ function initJoystick() {
 function initConsole() {
     const history = document.getElementById('console-history');
     const input = document.getElementById('console-input');
+    const prompt = document.getElementById('console-prompt');
     const consolePanel = document.getElementById('console-panel');
+    const consolePartial = document.getElementById('console-partial');
+    
     let historyIndex = -1;
     let historyStack = [];
+    let readChar = false;
+    let readString = false;
+    let readInt = false;
+    
+    let startClick = 0;
 
-    consolePanel.addEventListener('click', (e) => {
-        if (!history.contains(e.target)) {
+
+    consolePanel.addEventListener('mousedown', (e) => {
+        startClick = Date.now();
+    });
+
+    consolePanel.addEventListener('mouseup', (e) => {
+        if ((Date.now() - startClick) < 200) {
             input.focus();
         }
-    })
+    });
 
     sseSource.addEventListener("console-output", (e) => {
+        consolePartial.textContent = "";
         e.data.split("\n").forEach((txt) => {
             const line = document.createElement('DIV');
             line.textContent = txt;
             history.appendChild(line);
-        })
-        input.scrollIntoView({behavior: "instant"})
-    })
+            while (history.length > 1000) {
+                history.removeChild(history.firstElementChild);
+            }
+        });
+        input.scrollIntoView({behavior: "instant"});
+    });
+    
+    sseSource.addEventListener("console-partial", (e) => {
+        consolePartial.textContent = e.data;
+        input.scrollIntoView({behavior: "instant"});
+    });
+    
+    sseSource.addEventListener("console-ready", (e) => {
+        var text = e.data.trim() || "mtmc$";
+        prompt.textContent = text;
+        readString = false;
+        readChar = false;
+        readInt = false;
+    });
+    
+    sseSource.addEventListener("console-readstr", (e) => {
+        var text = e.data.trim() || ">";
+        prompt.textContent = text;
+        readString = true;
+    });
+    
+    sseSource.addEventListener("console-readchar", (e) => {
+        var text = e.data.trim() || ">";
+        prompt.textContent = text;
+        readChar = true;
+    });
+    
+    sseSource.addEventListener("console-readint", (e) => {
+        var text = e.data.trim() || "#";
+        prompt.textContent = text;
+        readString = true;
+        readInt = true;
+    });
 
     input.addEventListener('keydown', (e) => {
+        
+        if (readChar) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if(e.key.length === 1) {
+                fetch("/readchar", {method: 'POST', body: JSON.stringify({'c': e.key})});
+            }
+
+            return false;
+        } 
+        
         if (e.key === 'Enter') {
             historyIndex = -1;
             e.preventDefault();
             const line = document.createElement('DIV');
             let cmd = input.value;
-            historyStack.unshift(cmd);
-            line.textContent = `mtmc$ ${cmd}`;
+            
+            if (!(readString || readChar)) {
+                historyStack.unshift(cmd);
+            }
+            
+            line.textContent = `${prompt.textContent} ${cmd}`;
             history.appendChild(line);
-            fetch("/cmd", {method: 'POST', body: JSON.stringify({'cmd': cmd})})
+            
+            if (readInt) {
+                fetch("/readint", {method: 'POST', body: JSON.stringify({'str': cmd})});
+            } else if (readString) {
+                fetch("/readstr", {method: 'POST', body: JSON.stringify({'str': cmd})});
+            } else {
+                fetch("/cmd", {method: 'POST', body: JSON.stringify({'cmd': cmd})});
+            }
+            
             input.value = '';
             input.focus();
-            input.scrollIntoView({behavior: "instant"})
+            input.scrollIntoView({behavior: "instant"});
+        }
+        if (readInt) {
+            let c = e.key;
+            
+            if (c === "Backspace" || c === "Delete" || (input.value.length < 1 && c === '-')) {
+                return;
+            }
+            if (c.length !== 1 || c < '0' || c > '9') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
         }
         if (e.key === 'ArrowUp') {
             if (!historyStack.length) return;

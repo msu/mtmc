@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.IntStream;
+import mtmc.emulator.MTMCConsole;
 import mtmc.emulator.MTMCDisplay;
 
 public class MTMCWebView {
@@ -41,6 +42,10 @@ public class MTMCWebView {
 
     public MTMCDisplay getDisplay() {
         return computer.getDisplay();
+    }
+
+    public MTMCConsole getConsole() {
+        return computer.getConsole();
     }
 
     public FileSystem getFileSystem() {

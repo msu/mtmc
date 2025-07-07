@@ -758,6 +758,14 @@ public class MonTanaMiniComputer {
         }
     }
 
+    public void notifyOfConsolePrinting() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.consolePrinting();
+            }
+        }
+    }
+
     public void notifyOfDisplayUpdate() {
         if (observers != null) {
             for (MTMCObserver observer : observers) {

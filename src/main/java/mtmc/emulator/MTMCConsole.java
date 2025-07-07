@@ -46,6 +46,8 @@ public class MTMCConsole {
         } else {
             if (x.contains("\n")) { 
                 computer.notifyOfConsoleUpdate();
+            } else {
+                computer.notifyOfConsolePrinting();
             }
         }
     }

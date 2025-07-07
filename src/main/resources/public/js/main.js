@@ -193,6 +193,7 @@ function initConsole() {
     const input = document.getElementById('console-input');
     const prompt = document.getElementById('console-prompt');
     const consolePanel = document.getElementById('console-panel');
+    const consolePartial = document.getElementById('console-partial');
     
     let historyIndex = -1;
     let historyStack = [];
@@ -214,6 +215,7 @@ function initConsole() {
     });
 
     sseSource.addEventListener("console-output", (e) => {
+        consolePartial.textContent = "";
         e.data.split("\n").forEach((txt) => {
             const line = document.createElement('DIV');
             line.textContent = txt;
@@ -223,6 +225,10 @@ function initConsole() {
             }
         });
         input.scrollIntoView({behavior: "instant"});
+    });
+    
+    sseSource.addEventListener("console-partial", (e) => {
+        consolePartial.textContent = e.data;
     });
     
     sseSource.addEventListener("console-ready", (e) => {

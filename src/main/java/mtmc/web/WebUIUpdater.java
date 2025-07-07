@@ -49,11 +49,14 @@ public class WebUIUpdater implements MTMCObserver {
     
     private String getConsoleOutput() {
         MTMCConsole console = webServer.getComputerView().getConsole();
-        String output = console.getOutput();
         
-        console.resetOutput();
+        return console.consumeLines();
+    }
+    
+    private String getConsolePartial() {
+        MTMCConsole console = webServer.getComputerView().getConsole();
         
-        return output;
+        return console.getOutput();
     }
 
     public void start() {
@@ -103,6 +106,11 @@ public class WebUIUpdater implements MTMCObserver {
     @Override
     public void consoleUpdated() {
         webServer.sendEvent("console-output", getConsoleOutput());
+    }
+    
+    @Override
+    public void consolePrinting() {
+        webServer.sendEvent("console-partial", getConsolePartial());
     }
     
     @Override

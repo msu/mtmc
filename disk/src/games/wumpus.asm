@@ -751,6 +751,11 @@ move_wumpus_done:
 shoot_arrow:
   push ra
 
+shoot_arrow_ammo_update:
+  lw   t0 arrows
+  dec  t0
+  sw   t0 arrows
+
 shoot_arrow_number_of_rooms:
   li   a0 number_of_rooms
   sys  wstr
@@ -856,5 +861,16 @@ shoot_arrow_travel_check_missed:
   sys  wstr
 
 shoot_arrow_done:
+  lw   t0 arrows
+  eqi  t0 0
+  jnz  shoot_arrow_ammo_out
+
+  pop  ra
+  ret
+
+shoot_arrow_ammo_out:
+  li   t0 -1
+  sw   t0 state                 # No ammo left, the hunt has failed!
+
   pop  ra
   ret

@@ -84,6 +84,9 @@
   fell_in_pit: "YYYIIIIEEEE . . . FELL IN PIT\n"
   bat_snatch: "\nZAP--SUPER BAT SNATCH! ELSEWHEREVILLE FOR YOU!\n\n"
 
+  play_again: "\nPLAY AGAIN (Y-N)\n"
+  same_setup: "SAME SET-UP (Y-N)\n"
+
   cave_data:
     2               # 1
     5
@@ -211,14 +214,14 @@ main:
   eq   rv t1
   jnz  main_instructions
 
-  j    start_game
+  j    start_game_with_new_setup
 
 main_instructions:
   jal  print_instructions
   
-start_game:
-  
+start_game_with_new_setup:
   jal  init_game
+start_game:
   jal  reset_game
 
   li   a0 title
@@ -239,11 +242,41 @@ game_loop:
 game_won:
   li   a0 win
   sys  wstr
-  j    game_end
+  j    game_again
 
 game_lost:
   li   a0 lost
   sys  wstr
+
+game_again:
+  li   t0 121                   # ASCII 'y'
+  li   t1 89                    # ASCII 'Y'
+  li   a0 play_again
+  sys  wstr
+  sys  rchr
+  
+  # Play again if 'Y' or 'y'
+  eq   rv t0
+  jnz  game_setup
+  eq   rv t1
+  jnz  game_setup
+
+  j    game_end
+
+game_setup:
+  li   t0 121                   # ASCII 'y'
+  li   t1 89                    # ASCII 'Y'
+  li   a0 same_setup
+  sys  wstr
+  sys  rchr
+  
+  # Play again if 'Y' or 'y'
+  eq   rv t0
+  jnz  start_game
+  eq   rv t1
+  jnz  start_game
+
+  j    start_game_with_new_setup
 
 game_end:
   sys fbreset
@@ -313,6 +346,9 @@ reset_game:
 
   li   t0 5
   sw   t0 arrows
+
+  li   t0 0
+  sw   t0 state
 
   pop  ra
   ret

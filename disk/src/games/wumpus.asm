@@ -184,12 +184,7 @@
     arrows: 5
     state:  0                   # 0 - Alive, 1 - Win, -1 - Dead
 
-  arrow_path:
-    -1
-    -1
-    -1
-    -1
-    -1
+  arrow_path: byte { 5 }
 
 
 .text
@@ -777,12 +772,22 @@ shoot_arrow_room_number:
   sys  wstr
   sys  rint
 
-  # TODO Check if room != room -2
+  lti  t5 2
+  jnz  shoot_arrow_room_number_continue
+
+  li   t1 -2
+  add  t1 t5                    # index = counter - 2
+  lbo  t2 t1 arrow_path
+  eq   t2 rv                    # Check if arrow_path[room] != arrow_path[room-2]
+  jz   shoot_arrow_room_number_continue
+
 shoot_arrow_room_number_error:
-  
+  li   a0 arrows_fail
+  sys  wstr
+  j    shoot_arrow_room_number
 
 shoot_arrow_room_number_continue:
-  swo  rv t5 arrow_path
+  sbo  rv t5 arrow_path
   inc  t5                       # counter++
   lt   t5 t0                    # counter < number_of_rooms
   jnz  shoot_arrow_room_number
@@ -798,7 +803,7 @@ shoot_arrow_travel:
   li   t3 2
   mul  t2 t3                    # index *= 2  (2 bytes in a word)
 
-  lwo  t4 t5 arrow_path
+  lbo  t4 t5 arrow_path
   lwo  t3 t2 cave_data
   eq   t3 t4                    # arrow_path[counter] == tunnels[0]
   jnz  shoot_arrow_travel_set_room

@@ -14,7 +14,6 @@ sseSource.addEventListener("update:filesystem", (e) => {
 
 sseSource.addEventListener("update:display", (e) => {
     let element = document.getElementById("display-img");
-//    element.src = "/display?" + Date.now()
     element.src = e.data;
 });
 
@@ -40,13 +39,9 @@ sseSource.onerror = (err) => {
 document.addEventListener("mouseover", (evt) => {
     if (evt.target.matches && evt.target.matches(".reg-value")) {
         let text = evt.target.innerText;
-        console.log(evt.target);
-        console.log(text);
         try {
             let elementId = "mem_" + text;
-            console.log()
             let elt = document.getElementById(elementId);
-            console.log(elt)
             if (elt) {
                 elt.classList.add("mem-highlight")
             }

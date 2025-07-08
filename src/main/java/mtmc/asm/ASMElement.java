@@ -10,9 +10,11 @@ public abstract class ASMElement implements HasLocation {
     private final List<MTMCToken> labels;
     List<ASMError> errors = new ArrayList<>();
     private int location = -1;
+    private int lineNumber;
 
-    public ASMElement(List<MTMCToken> labels) {
+    public ASMElement(List<MTMCToken> labels, int lineNumber) {
         this.labels = labels;
+        this.lineNumber = lineNumber;
     }
 
     public List<MTMCToken> getLabels() {
@@ -36,4 +38,8 @@ public abstract class ASMElement implements HasLocation {
     }
 
     abstract public void addError(String integerValueRequired);
+
+    public int getLineNumber() {
+        return lineNumber;
+    }
 }

@@ -25,7 +25,7 @@ public abstract class Instruction extends ASMElement {
     }
 
     public Instruction(InstructionType type, List<MTMCToken> labels, MTMCToken instructionToken) {
-        super(labels);
+        super(labels, instructionToken.line());
         this.type = type;
         this.instructionToken = instructionToken;
     }

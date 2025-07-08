@@ -19,8 +19,8 @@ public class Graphic extends ASMElement {
     private String filename;
     private byte[] data;
 
-    public Graphic(List<MTMCToken> labels) {
-        super(labels);
+    public Graphic(List<MTMCToken> labels, int lineNumber) {
+        super(labels, lineNumber);
     }
     
     public void setImage(String filename) {

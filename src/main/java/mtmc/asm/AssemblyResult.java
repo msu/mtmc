@@ -4,7 +4,7 @@ import mtmc.emulator.DebugInfo;
 
 import java.util.List;
 
-public record AssemblyResult(byte[] code, byte[] data, byte[][] graphics, DebugInfo debugInfo, List<ASMError> errors, String source) {
+public record AssemblyResult(byte[] code, byte[] data, byte[][] graphics, DebugInfo debugInfo, List<ASMError> errors, String asmSource, String asmFile, int[] asmLineNumbers) {
     public String printErrors() {
         StringBuilder builder = new StringBuilder("Errors:\n");
         for (ASMError error : errors) {

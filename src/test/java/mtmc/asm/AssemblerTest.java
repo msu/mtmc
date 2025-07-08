@@ -13,7 +13,7 @@ public class AssemblerTest {
 
     @Test
     public void bootstrapAssembly() {
-        MonTanaMiniComputer computer = assemble("sys exit");
+        MonTanaMiniComputer computer = assembleAndLoad("sys exit");
         computer.run();
         assertEquals(computer.getStatus(), MonTanaMiniComputer.ComputerStatus.FINISHED);
     }
@@ -31,7 +31,7 @@ public class AssemblerTest {
 
     @Test
     public void mov() {
-        var computer = assemble("mov t0 t1");
+        var computer = assembleAndLoad("mov t0 t1");
         computer.setRegisterValue(T1, 20);
         assertEquals(computer.getRegisterValue(T0), 0);
         computer.run();
@@ -40,7 +40,7 @@ public class AssemblerTest {
 
     @Test
     public void incNoArg() {
-        var computer = assemble("inc t0");
+        var computer = assembleAndLoad("inc t0");
         assertEquals(computer.getRegisterValue(T0), 0);
         computer.run();
         assertEquals(computer.getRegisterValue(T0), 1);
@@ -48,7 +48,7 @@ public class AssemblerTest {
 
     @Test
     public void incWithArg() {
-        var computer = assemble("inc t0 4");
+        var computer = assembleAndLoad("inc t0 4");
         assertEquals(computer.getRegisterValue(T0), 0);
         computer.run();
         assertEquals(computer.getRegisterValue(T0), 4);
@@ -56,7 +56,7 @@ public class AssemblerTest {
 
     @Test
     public void decNoArg() {
-        var computer = assemble("dec t0");
+        var computer = assembleAndLoad("dec t0");
         assertEquals(computer.getRegisterValue(T0), 0);
         computer.run();
         assertEquals(computer.getRegisterValue(T0), -1);
@@ -64,7 +64,7 @@ public class AssemblerTest {
 
     @Test
     public void decWithArg() {
-        var computer = assemble("dec t0 4");
+        var computer = assembleAndLoad("dec t0 4");
         assertEquals(computer.getRegisterValue(T0), 0);
         computer.run();
         assertEquals(computer.getRegisterValue(T0), -4);
@@ -72,7 +72,7 @@ public class AssemblerTest {
 
     @Test
     public void seti() {
-        var computer = assemble("seti t1 12");
+        var computer = assembleAndLoad("seti t1 12");
         assertEquals(computer.getRegisterValue(T1), 0);
         computer.run();
         assertEquals(computer.getRegisterValue(T1), 12);
@@ -80,7 +80,7 @@ public class AssemblerTest {
 
     @Test
     public void noop() {
-        var computer = assemble("nop");
+        var computer = assembleAndLoad("nop");
         assertEquals(computer.getRegisterValue(T0), 0);
         computer.run();
         assertEquals(computer.getRegisterValue(T0), 0);
@@ -88,7 +88,7 @@ public class AssemblerTest {
 
     @Test
     public void add() {
-        var computer = assemble("add t0 t1");
+        var computer = assembleAndLoad("add t0 t1");
         computer.setRegisterValue(T0, 10);
         computer.setRegisterValue(T1, 20);
         computer.run();
@@ -97,7 +97,7 @@ public class AssemblerTest {
 
     @Test
     public void max() {
-        var computer = assemble("max t0 t1");
+        var computer = assembleAndLoad("max t0 t1");
         computer.setRegisterValue(T0, 10);
         computer.setRegisterValue(T1, 20);
         computer.run();
@@ -106,7 +106,7 @@ public class AssemblerTest {
 
     @Test
     public void mod() {
-        var computer = assemble("mod t0 t1");
+        var computer = assembleAndLoad("mod t0 t1");
         computer.setRegisterValue(T0, 20);
         computer.setRegisterValue(T1, 10);
         computer.run();
@@ -116,7 +116,7 @@ public class AssemblerTest {
 
     @Test
     public void mod2() {
-        var computer = assemble("mod t0 t1");
+        var computer = assembleAndLoad("mod t0 t1");
         computer.setRegisterValue(T0, 20);
         computer.setRegisterValue(T1, 21);
         computer.run();
@@ -126,7 +126,7 @@ public class AssemblerTest {
 
     @Test
     public void neg() {
-        var computer = assemble("neg t0");
+        var computer = assembleAndLoad("neg t0");
         computer.setRegisterValue(T0, 20);
         computer.run();
         assertEquals(computer.getRegisterValue(T0), -20);
@@ -135,7 +135,7 @@ public class AssemblerTest {
 
     @Test
     public void immAdd() {
-        var computer = assemble("imm add t0 10");
+        var computer = assembleAndLoad("imm add t0 10");
         computer.setRegisterValue(T0, 10);
         computer.run();
         assertEquals(computer.getRegisterValue(T0), 20);
@@ -144,7 +144,7 @@ public class AssemblerTest {
 
     @Test
     public void immAddAsVirtualInst() {
-        var computer = assemble("addi t0 10");
+        var computer = assembleAndLoad("addi t0 10");
         computer.setRegisterValue(T0, 10);
         computer.run();
         assertEquals(computer.getRegisterValue(T0), 20);
@@ -153,7 +153,7 @@ public class AssemblerTest {
 
     @Test
     public void pushPop() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 push t0
                 pop t1
                 """);
@@ -164,7 +164,7 @@ public class AssemblerTest {
 
     @Test
     public void pushPopWithCustomStackReg() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 push t0 t5
                 pop t1 t5
                 """);
@@ -176,7 +176,7 @@ public class AssemblerTest {
 
     @Test
     public void pushWithCustomStackReg() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 push t0 t5
                 """);
         computer.setRegisterValue(T0, 20);
@@ -187,7 +187,7 @@ public class AssemblerTest {
 
     @Test
     public void dup() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 push t0
                 dup
                 pop t1
@@ -201,7 +201,7 @@ public class AssemblerTest {
 
     @Test
     public void sop() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 push t0
                 dup
                 sop add
@@ -214,7 +214,7 @@ public class AssemblerTest {
 
     @Test
     public void sadd() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 push t0
                 dup
                 sadd
@@ -227,7 +227,7 @@ public class AssemblerTest {
 
     @Test
     public void pushi() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 pushi 1000
                 pop t1
                 """);
@@ -237,7 +237,7 @@ public class AssemblerTest {
 
     @Test
     public void eq() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 seti t0 1
                 seti t1 2
                 eq t0 t1
@@ -248,7 +248,7 @@ public class AssemblerTest {
 
     @Test
     public void neq() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 seti t0 1
                 seti t1 2
                 neq t0 t1
@@ -259,7 +259,7 @@ public class AssemblerTest {
 
     @Test
     public void eqi() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 seti t0 1
                 eqi t0 1
                 """);
@@ -269,7 +269,7 @@ public class AssemblerTest {
 
     @Test
     public void neqi() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 seti t0 1
                 neqi t0 1
                 """);
@@ -279,7 +279,7 @@ public class AssemblerTest {
 
     @Test
     public void lwr() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 lwr t0 t1 t2
                 """);
         computer.setRegisterValue(T1, 20);
@@ -291,7 +291,7 @@ public class AssemblerTest {
 
     @Test
     public void swr() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 swr t0 t1 t2
                 """);
         computer.setRegisterValue(T0, 100);
@@ -303,7 +303,7 @@ public class AssemblerTest {
 
     @Test
     public void lw() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 .data
                   foo: 100
                 .text
@@ -315,7 +315,7 @@ public class AssemblerTest {
 
     @Test
     public void lwAbsolute() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                   lw t0 20
                 """);
         computer.writeWordToMemory(20, 100);
@@ -325,7 +325,7 @@ public class AssemblerTest {
 
     @Test
     public void lwo() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 .data
                   foo: 100
                   bar: 200
@@ -339,7 +339,7 @@ public class AssemblerTest {
 
     @Test
     public void li() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 li t0 100
                 """);
         computer.run();
@@ -348,7 +348,7 @@ public class AssemblerTest {
 
     @Test
     public void la() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 .data
                 foo: 100
                 .text
@@ -360,7 +360,7 @@ public class AssemblerTest {
 
     @Test
     public void jr() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 seti t0 6 # jump immediately after the jr instruction (exit)
                 jr t0
                 """);
@@ -370,7 +370,7 @@ public class AssemblerTest {
 
     @Test
     public void j() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 j 6
                 """);
         computer.run();
@@ -379,7 +379,7 @@ public class AssemblerTest {
 
     @Test
     public void jWithLabel() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 start: j foo
                 j start
                 foo: sys exit
@@ -390,7 +390,7 @@ public class AssemblerTest {
 
     @Test
     public void jz() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 seti t0 2
                 modi t0 2
                 jz end
@@ -403,7 +403,7 @@ public class AssemblerTest {
 
     @Test
     public void jnz() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 seti t0 2
                 modi t0 2
                 jnz end
@@ -416,7 +416,7 @@ public class AssemblerTest {
 
     @Test
     public void jal() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 nop
                 jal end
                 end: sys exit
@@ -428,7 +428,7 @@ public class AssemblerTest {
 
     @Test
     public void endToEndMax() {
-        var computer = assemble("""
+        var computer = assembleAndLoad("""
                 pushi 1
                 pushi 2
                 smax
@@ -437,6 +437,18 @@ public class AssemblerTest {
         computer.run();
         assertEquals(2, computer.getRegisterValue(T0));
         assertEquals(MonTanaMiniComputer.MEMORY_SIZE, computer.getRegisterValue(SP));
+    }
+
+    @Test
+    public void assemblyLineNumbersAreCorrect() {
+        var result = assemble("""
+                pushi 1
+                pushi 2
+                smax
+                pop t0
+                """);
+        assertEquals(result.code().length, result.asmLineNumbers().length);
+        assertArrayEquals(new int[]{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4}, result.asmLineNumbers());
     }
 
 
@@ -469,15 +481,20 @@ public class AssemblerTest {
     }
 
     @NotNull
-    private static MonTanaMiniComputer assemble(String assembly) {
+    private static MonTanaMiniComputer assembleAndLoad(String assembly) {
+        AssemblyResult result = assemble(assembly);
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        computer.load(result.code(), result.data(), result.debugInfo());
+        return computer;
+    }
+
+    @NotNull
+    private static AssemblyResult assemble(String assembly) {
         Assembler assembler = new Assembler();
         AssemblyResult result = assembler.assemble(assembly);
-        if (result.errors().isEmpty()) {
-            MonTanaMiniComputer computer = new MonTanaMiniComputer();
-            computer.load(result.code(), result.data(), result.debugInfo());
-            return computer;
-        } else {
+        if (!result.errors().isEmpty()) {
             throw new RuntimeException("Assembly errors: \n\n" + result.printErrors());
         }
+        return result;
     }
 }

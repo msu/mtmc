@@ -42,24 +42,30 @@ public class Assembler {
     }
 
     public AssemblyResult assemble(String asm) {
+        return assemble(null, asm);
+    }
+
+    public AssemblyResult assemble(String file, String asm) {
         tokenizer = new MTMCTokenizer(asm, "#");
         parseAssembly();
         resolveLocations();
         List<ASMError> errors = collectErrors();
         byte[] code = null, data = null;
         byte[][] graphics = null;
+        int[] asmLineNumbers = null;
         if (errors.isEmpty()) {
             code = codeGen();
             data = dataGen();
+            asmLineNumbers = asmLineNumbersGen(code.length);
             graphics = graphicsGen();
         }
-        return new AssemblyResult(code, data, graphics, debugInfo, errors, asm);
+        return new AssemblyResult(code, data, graphics, debugInfo, errors, asm, file, asmLineNumbers);
     }
 
     public Executable assembleExecutable(String srcName, String asm) {
         this.srcName = "disk/" + srcName; //TODO: The prefix should be replaced with FileSystem access
         
-        var result = assemble(asm);
+        var result = assemble(srcName, asm);
         if (!result.errors().isEmpty()) {
             throw new RuntimeException("Errors:\n" + result.errors()
                     .stream()
@@ -97,6 +103,19 @@ public class Assembler {
            instruction.genCode(code, this);
         }
         return code;
+    }
+
+    private int[] asmLineNumbersGen(int len) {
+        int[] asmLineNumbers = new int[len];
+        int location = 0;
+        for (Instruction instruction : instructions) {
+            int lineNumber = instruction.getLineNumber();
+            while(location < instruction.getLocation() + instruction.getSizeInBytes()) {
+                asmLineNumbers[location] = lineNumber;
+                location++;
+            }
+        }
+        return asmLineNumbers;
     }
 
     private byte[][] graphicsGen() {
@@ -175,7 +194,7 @@ public class Assembler {
     private void parseData(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
         lastLabels = List.of();
         MTMCToken dataToken = tokens.poll();
-        Data dataElt = new Data(labelTokens);
+        Data dataElt = new Data(labelTokens, dataToken.line());
         if (dataToken != null) {
             if (dataToken.type() == STRING) {
                 byte[] stringBytes = dataToken.stringValue().getBytes(StandardCharsets.US_ASCII);
@@ -242,7 +261,7 @@ public class Assembler {
     }
     
     private Graphic loadGraphic(List<MTMCToken> labelTokens, Data data, MTMCToken token) {
-        Graphic graphic = new Graphic(labelTokens);
+        Graphic graphic = new Graphic(labelTokens, token.line());
         String filename = token.stringValue();
         File file = new File(new File(this.srcName).getParent(), filename);
         int index = graphics.size();

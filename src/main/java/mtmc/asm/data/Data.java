@@ -11,8 +11,8 @@ public class Data extends ASMElement {
     public MTMCToken valueToken;
     private byte[] value;
 
-    public Data(List<MTMCToken> labels) {
-        super(labels);
+    public Data(List<MTMCToken> labels, int lineNumber) {
+        super(labels, lineNumber);
     }
 
 

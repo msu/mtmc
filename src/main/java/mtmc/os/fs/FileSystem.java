@@ -27,6 +27,10 @@ public class FileSystem {
         }
     }
     
+    public String getCWD() {
+        return this.cwd;
+    }
+    
     public void setCWD(String cwd) {
         this.cwd = resolve(cwd);
         this.notifyOfFileSystemUpdate();

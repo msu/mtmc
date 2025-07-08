@@ -108,14 +108,15 @@ main {
     max-height: 100vh;
 }
 
-#right {
+#fs, .site {
     background-color: var(--pdp-white);
-/*    grid-template-rows: 1fr;
-    display: grid;
-    grid-gap: 4px;*/
-    height: 100vh;
-    max-height: 100vh;
+    height: calc(100vh - 10px);
+    max-height: calc(100vh - 10px);
+}
+
+.file-explorer-body {
     overflow: auto;
+    flex-grow: 1;
 }
 
 .panel {
@@ -439,10 +440,24 @@ ul {
     padding-bottom: 2px;
 }
 
-details > summary {
-    list-style-type: "+";
-
+details[open] > summary {
+    margin-left: -1px;
 }
+
+/* Uncomment if you want +/- instead of arrows */
+/*details > summary::before {
+    content: "+";
+    font-family: monospace;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+details[open] > summary::before {
+    content: "-";
+    font-family: monospace;
+    user-select: none;
+    -webkit-user-select: none;
+}*/
 
 .directory-details details.directory-details details.directory-details {
     margin-left: -16px;
@@ -451,7 +466,6 @@ details > summary {
 .site {
     display: flex;
     flex-direction: column;
-    height: 98.90%;
 }
 
 .heading-bar {
@@ -522,15 +536,10 @@ details > summary {
 
 .file-entry {
     margin-top: 1px;
-    position: absolute;
 }
 
 .file-listing {
     margin-top: 1px;
-}
-
-.file-explorer {
-    list-style: none;
 }
 
 .content {
@@ -543,27 +552,12 @@ details > summary {
     height: 98.90%;
 }
 
-#visual-shell {
-    position: relative;
-}
-
 textarea#editor {
     padding: 1em;
     height: 95%;
     width: 100%;
     margin-top: 15px;
 }
-/*#visual-shell {*/
-/*    position: relative;*/
-/*}*/
-/*textarea#editor {*/
-/*    position:absolute;*/
-/*    top:50px;*/
-/*    left:5px;*/
-/*    right:5px;*/
-/*    bottom:5px;*/
-/*    padding:1em */
-/*}*/
 
 @media only screen and (max-width: 768px) {
     
@@ -590,7 +584,7 @@ textarea#editor {
         touch-action: manipulation;
     }
     
-    #left, #center, #right {
+    #left, #center {
         width: 100vw;
         max-width: 100vw;
         height: 100dvh;
@@ -598,7 +592,16 @@ textarea#editor {
         scroll-snap-align: center;
     }
     
+    #fs {
+        width: calc(100vw - 10px);
+        max-width: calc(100vw - 10px);
+        height: calc(100dvh - 10px);
+        max-height: calc(100dvh - 10px);
+        scroll-snap-align: center;
+    }
+    
     #display {
         border: 0;
         padding: 0;
     }
+}

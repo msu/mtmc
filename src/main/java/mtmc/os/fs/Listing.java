@@ -6,8 +6,8 @@ import java.util.*;
 public class Listing {
     public final String path;
     public final String name;
-    public final List<File> listOfFiles;
-    public final LinkedHashMap<String, Listing> subdirectories;
+    public final boolean directory;
+    public final boolean root;
     
     private FileSystem fs;
     private File file;
@@ -21,13 +21,30 @@ public class Listing {
         
         this.path = path.length() > 0 ? path : "/";
         this.name = path.length() > 0 ? file.getName() : "/";
-        this.listOfFiles = Arrays.asList(file.listFiles(child -> !child.isDirectory()));
-        this.subdirectories = new LinkedHashMap<>();
-        
-        for (File child : file.listFiles()) {
-            if(!child.isDirectory()) continue;
-            
-            this.subdirectories.put(child.getName(), new Listing(fs, child));
+        this.directory = file.isDirectory();
+        this.root = this.path.equals("/");
+    }
+    
+    public Listing getParent() {
+        return new Listing(fs, file.getParentFile());
+    }
+    
+    public List<Listing> list() {
+        if (!directory) {
+            return new ArrayList<>();
         }
+        
+        var list = new ArrayList<Listing>();
+        var children = file.listFiles();
+                
+        Arrays.sort(children, (a, b) -> {
+            return a.getName().compareTo(b.getName());
+        });
+        
+        for (File child : children) {
+            list.add(new Listing(fs, child));
+        }
+        
+        return list;
     }
 }

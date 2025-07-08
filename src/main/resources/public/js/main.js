@@ -8,7 +8,7 @@ sseSource.addEventListener("update:execution", (e) => {
 });
 
 sseSource.addEventListener("update:filesystem", (e) => {
-    let element = document.getElementById("fs");
+    let element = document.getElementById("visual-shell");
     element.outerHTML = e.data;
 });
 

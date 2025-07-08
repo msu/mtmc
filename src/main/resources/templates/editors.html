@@ -1,8 +1,7 @@
-<div id="fs"><li class="file-explorer">
-{% macro render_listing(listing) %}
+{% macro render_listing(listing, open) %}
 
 
-        <details class="directory-details"open><summary><a
+        <details class="directory-details" {% if open %}open{% endif %}><summary><a
                 class="directory-entry"
                 fx-swap="outerHTML"
                 fx-target="#visual-shell"
@@ -13,58 +12,69 @@
 
         <div class="content">
             <ul>
-                {% for subdir in listing.subdirectories %}
+                {% for file in listing.list() %}
+                {% if file.directory %}
                     <li>
-                        {{ render_listing(subdir.value) }}
+                        {{ render_listing(file, false) }}
                     </li>
-                {% endfor %}
-                {% for file in listing.listOfFiles %}
+                {% endif %}
+                {% if not file.directory %}
                     <li>
                         <img class="blank-sheet-icon" src="/img/blank-sheet.ico">
                         <a
                                 class="file-entry"
                                 fx-swap="outerHTML"
                                 fx-target="#visual-shell"
-                                fx-action="/fs/open/{{ listing.path + "/" + file.getName() }}"
-                        >{{ file.getName() }}</a>
+                                fx-action="/fs/open/{{ file.path }}"
+                        >{{ file.name }}</a>
                     </li>
+                {% endif %}
                 {% endfor %}
             </ul>
         </div></details>
-    </li>
 {% endmacro %}
 
-<div id="visual-shell" class="panel">
-    {% if computer.currentFileContent != null %}
-        <div>
-            <button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button>
-            <textarea id='editor'> {{ computer.currentFileContent }} </textarea>
+{% if computer.currentFileContent != null %}
+    <div id="visual-shell">
+        <button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button>
+        <textarea id='editor'> {{ computer.currentFileContent }} </textarea>
+    </div>
+{% else %}
+    <div class="site" id="visual-shell">
+        <div class="heading-bar">
+            <img id="search-folder-icon" src="/img/search-folder-icon.ico">
+            <span> Exploring - {{ computer.getFileSystem().getCWD() }}</span>
         </div>
-    {% else %}
-        <div class="site">
-            <div class="heading-bar">
-                <img id="search-folder-icon" src="/img/search-folder-icon.ico">
-                <span> Exploring - {{ computer.getFileSystem().getCWD() }}</span>
-            </div>
 
-            <header class="file-system-nav-bar">
-                <ul class="tray">
-                    <li class="nav-button">File</li>
-                    <li class="nav-button">Edit</li>
-                    <li class="nav-button">View</li>
-                    <li class="nav-button">Tools</li>
-                    <li class="nav-button">Help</li>
-                </ul>
-            </header>
+        <header class="file-system-nav-bar">
+            <ul class="tray">
+                <li class="nav-button">File</li>
+                <li class="nav-button">Edit</li>
+                <li class="nav-button">View</li>
+                <li class="nav-button">Tools</li>
+                <li class="nav-button">Help</li>
+            </ul>
+        </header>
+        <div>
             <form fx-method="POST" fx-action="/fs/cwd/" fx-swap="outerHTML"
                   fx-target="#visual-shell">
                 <input id="cd-search" name="cwd" placeholder="Current Directory" type="text" autocomplete="off"
                        value="{{ computer.getFileSystem().getCWD() }}">
 
             </form>
-            <body class="file-explorer-body">
-            {{ render_listing(computer.getFileSystem().listCWD()) }}
-            </body>
         </div>
-    {% endif %}
-</div></div>
+        <div class="file-explorer-body">
+        {% if computer.getFileSystem().getCWD() != "/" %}
+            <div style="padding-left: 12.5px;">
+                <a class="directory-entry"
+                fx-swap="outerHTML"
+                fx-target="#visual-shell"
+                fx-action="/fs/toggle/{{ computer.getFileSystem().getCWD() }}/..">
+                <img class="folder-icon" src="/img/single-folder-icon.ico">..
+                </a>
+            </div>
+        {% endif %}
+        {{ render_listing(computer.getFileSystem().listCWD(), true) }}
+        </div>
+    </div>
+{% endif %}

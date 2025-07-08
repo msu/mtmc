@@ -17,14 +17,14 @@ public class ListingTest
         
         assertEquals("/", root.name);
         assertEquals("/", root.path);
-        assertEquals(6, root.subdirectories.size());
-
-        assertNotNull(root.subdirectories.get("bin"));
-        assertNotNull(root.subdirectories.get("data"));
-        assertNotNull(root.subdirectories.get("home"));
-        assertNotNull(root.subdirectories.get("img"));
-        assertNotNull(root.subdirectories.get("logs"));
-        assertNotNull(root.subdirectories.get("src"));
+        assertTrue(root.directory);
+        
+        assertEquals("bin", root.list().get(0).name);
+        assertEquals("data", root.list().get(1).name);
+        assertEquals("home", root.list().get(2).name);
+        assertEquals("img", root.list().get(3).name);
+        assertEquals("logs", root.list().get(4).name);
+        assertEquals("src", root.list().get(5).name);
     }
     
     @Test
@@ -35,9 +35,7 @@ public class ListingTest
         
         assertEquals("home", cwd.name);
         assertEquals("/home", cwd.path);
-        assertEquals(1, cwd.subdirectories.size());
-
-        assertNotNull(cwd.subdirectories.get("Justice"));
+        assertEquals("Justice", cwd.list().get(0).name);
     }
     
     @Test
@@ -48,7 +46,6 @@ public class ListingTest
         
         assertEquals("data", cwd.name);
         assertEquals("/data", cwd.path);
-        assertEquals(2, cwd.listOfFiles.size());
-        assertEquals(0, cwd.subdirectories.size());
+        assertEquals(2, cwd.list().size());
     }
 }

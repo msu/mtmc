@@ -236,7 +236,7 @@ public class MTOS {
 
         } else if (syscallNumber == SysCall.getValue("cwd")) {
         
-            String cwd = computer.getFileSystem().getCWD();
+            String cwd = computer.getFileSystem().listCWD().path;
 
             short destination = computer.getRegisterValue(A0);
             int maxSize = Math.min(computer.getRegisterValue(A1), cwd.length()+1);

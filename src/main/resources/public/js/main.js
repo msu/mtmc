@@ -345,12 +345,24 @@ function startMonaco() {
     });
 }
 
-function fullscreen(id) {
+function fullscreen(id, event) {
     document.getElementById(id).classList.add("fullscreen");
+    
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
 }
 
 function restore(id) {
     document.getElementById(id).classList.remove("fullscreen");
+    
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
 }
 
 document.addEventListener("fx:swapped", (evt) => {

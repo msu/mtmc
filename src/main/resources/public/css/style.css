@@ -13,6 +13,7 @@ html {
 
 body {
     margin: 0;
+    overscroll-behavior: none;
 }
 
 #controls {
@@ -96,22 +97,22 @@ main {
     grid-template-rows: auto auto minmax(0, 1fr);
     display: grid;
     grid-gap: 4px;
-    height: 100vh;
-    max-height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
 }
 
 #center {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     grid-gap: 4px;
-    height: 100vh;
-    max-height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
 }
 
 #fs, .site {
     background-color: var(--pdp-white);
-    height: calc(100vh - 10px);
-    max-height: calc(100vh - 10px);
+    height: calc(100dvh - 10px);
+    max-height: calc(100dvh - 10px);
 }
 
 .file-explorer-body {
@@ -440,10 +441,6 @@ ul {
     padding-bottom: 2px;
 }
 
-details[open] > summary {
-    margin-left: -1px;
-}
-
 /* Uncomment if you want +/- instead of arrows */
 /*details > summary::before {
     content: "+";
@@ -459,13 +456,16 @@ details[open] > summary::before {
     -webkit-user-select: none;
 }*/
 
-.directory-details details.directory-details details.directory-details {
+.directory-details details.directory-details {
     margin-left: -16px;
 }
 
 .site {
     display: flex;
     flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .heading-bar {
@@ -480,9 +480,33 @@ details[open] > summary::before {
 }
 
 .file-system-nav-bar {
-    width: 100%;
-    float: left;
     background-color: #3286ce;
+    padding: 4px;
+    text-align: right;
+}
+
+.file-system-nav-bar.editor-buttons {
+    display: flex; 
+    align-items: center;
+}
+
+.file-system-nav-bar .buttons-right {
+    flex-grow: 1;
+}
+
+.file-system-nav-bar button {
+    background-color: #3286ce;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: white;
+}
+
+.file-system-nav-bar button:hover {
+    border: 1px outset #3286ce;
+}
+
+.file-system-nav-bar button:active {
+    border: 1px inset #3286ce;
 }
 
 .tray {
@@ -549,14 +573,14 @@ details[open] > summary::before {
 .site {
     display: flex;
     flex-direction: column;
-    height: 98.90%;
+    height: 100dvh;
 }
 
-textarea#editor {
-    padding: 1em;
-    height: 95%;
-    width: 100%;
-    margin-top: 15px;
+.site #editor {
+    flex-grow: 1;
+    font-family: monospace;
+    resize: none;
+    border: 0px;
 }
 
 @media only screen and (max-width: 768px) {
@@ -566,7 +590,6 @@ textarea#editor {
     }
     
     body {
-        
         width: 100vw;
         max-width: 100vw;
         height: 100dvh;
@@ -597,6 +620,7 @@ textarea#editor {
         max-width: calc(100vw - 10px);
         height: calc(100dvh - 10px);
         max-height: calc(100dvh - 10px);
+        overflow: hidden;
         scroll-snap-align: center;
     }
     

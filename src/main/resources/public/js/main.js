@@ -328,3 +328,39 @@ function initConsole() {
 
     input.focus();
 }
+
+// Monaco editor support tools
+function startMonaco() {
+    var editor_div = document.getElementById('editor');
+    var text = editor_div.textContent;
+    
+    editor_div.replaceChildren();
+    editor_div.style.display = "";
+    
+    var editor = monaco.editor.create(editor_div, {
+        value: text,
+        language: 'mtmc16-asm',
+        theme: 'mtmc16-asm',
+        automaticLayout: true
+    });
+}
+
+function fullscreen(id) {
+    document.getElementById(id).classList.add("fullscreen");
+}
+
+function restore(id) {
+    document.getElementById(id).classList.remove("fullscreen");
+}
+
+document.addEventListener("fx:swapped", (evt) => {
+    if (evt.detail.cfg.action.startsWith("/fs/open/")) {
+        startMonaco();
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    if (document.getElementById("editor")) {
+        startMonaco();
+    }
+});

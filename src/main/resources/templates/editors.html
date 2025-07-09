@@ -39,12 +39,13 @@
         <div class="file-system-nav-bar editor-buttons">
             <div class="buttons-left">
                 <button><img src="/img/floppy-disk-solid.svg" width="16" height="16" alt="Save"></button>
+                <button id="expand" onclick="fullscreen('visual-shell');"><img src="/img/expand.svg" width="16" height="16" alt="Fullscreen"></button>
+                <button id="contract" onclick="restore('visual-shell');"><img src="/img/contract.svg" width="16" height="16" alt="Restore"></button>
             </div>
             <div class="buttons-right">
-                <button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>X</button>
+                <button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'><img src="/img/xmark.svg" width="16" height="16" alt="Close"></button>
             </div>
         </div>
-<!--        <textarea id='editor'> { { computer.currentFileContent } } </textarea>-->
         {% include 'templates/editors-monaco.html' %}
     </div>
 {% else %}

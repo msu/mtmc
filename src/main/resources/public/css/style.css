@@ -99,6 +99,8 @@ main {
     grid-gap: 4px;
     height: 100dvh;
     max-height: 100dvh;
+    min-width: 450px;
+    max-width: 450px;
 }
 
 #center {
@@ -107,12 +109,32 @@ main {
     grid-gap: 4px;
     height: 100dvh;
     max-height: 100dvh;
+    min-width: 450px;
+    max-width: 450px;
+}
+
+#fs {
+    max-width: calc(100dvw - 918px); /* 1 border and 4 padding on each size + 2x 4px gaps */
 }
 
 #fs, .site {
     background-color: var(--pdp-white);
     height: calc(100dvh - 10px);
     max-height: calc(100dvh - 10px);
+}
+
+#fs:has(.fullscreen) {
+    padding: 0px !important;
+}
+
+.fullscreen {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    width: 100dvw;
+    height: 100dvh;
+    margin: 0px;
+    padding: 0px;
 }
 
 .file-explorer-body {
@@ -494,6 +516,22 @@ details[open] > summary::before {
     flex-grow: 1;
 }
 
+#contract {
+    display: none;
+}
+
+#expand {
+    display: inline;
+}
+
+.fullscreen #contract {
+    display: inline;
+}
+
+.fullscreen #expand {
+    display: none;
+}
+
 .file-system-nav-bar button {
     background-color: #3286ce;
     border: 1px solid transparent;
@@ -627,5 +665,9 @@ details[open] > summary::before {
     #display {
         border: 0;
         padding: 0;
+    }
+    
+    #expand, #contract {
+        display: none;
     }
 }

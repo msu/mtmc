@@ -30,31 +30,5 @@
 <script src="/webjars/monaco-editor/0.52.2/min/vs/loader.js"></script>
 <script src="/webjars/monaco-editor/0.52.2/min/vs/editor/editor.main.js"></script>
 <script src="/js/mtmc16-asm.js"></script>
-<script>
-document.addEventListener("fx:swapped", (evt) => {
-    if (evt.detail.cfg.action.startsWith("/fs/open/")) {
-        startMonaco();
-    }
-});    
-
-function startMonaco() {
-    var editor_div = document.getElementById('editor');
-    var text = editor_div.textContent;
-    
-    editor_div.replaceChildren();
-    editor_div.style.display = "";
-    
-    var editor = monaco.editor.create(editor_div, {
-        value: text,
-        language: 'mtmc16-asm',
-        theme: 'mtmc16-asm',
-        automaticLayout: true
-    });
-}
-
-if (document.getElementById("editor")) {
-    startMonaco();
-}
-</script>
 </body>
 </html>

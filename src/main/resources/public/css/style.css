@@ -413,6 +413,7 @@ main {
 #console-panel {
     display: flex;
     overflow: hidden;
+    transform: translateX(0);
 }
 
 #console {
@@ -432,7 +433,7 @@ main {
 #console #expand-console {
     display: block;
     opacity: 0.2;
-    position: absolute;
+    position: fixed;
     right: 8px;
     top: 8px;
     user-drag: none;
@@ -459,7 +460,7 @@ main {
 .fullscreen #console #contract-console {
     display: block;
     opacity: 0.2;
-    position: absolute;
+    position: fixed;
     right: 16px;
     top: 16px;
     user-drag: none;
@@ -670,15 +671,17 @@ details[open] > summary::before {
     border: 0px;
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 768px), screen and (orientation: portrait) {
     
     html {
         overflow: hidden;
     }
     
     body {
-        width: 100vw;
-        max-width: 100vw;
+        min-width: 100dvw;
+        width: 100dvw;
+        max-width: 100dvw;
+        height: 100dvh;
         height: 100dvh;
         max-height: 100dvh;
         overflow: hidden;

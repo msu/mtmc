@@ -44,7 +44,8 @@
                 <button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>X</button>
             </div>
         </div>
-        <textarea id='editor'> {{ computer.currentFileContent }} </textarea>
+<!--        <textarea id='editor'> { { computer.currentFileContent } } </textarea>-->
+        {% include 'templates/editors-monaco.html' %}
     </div>
 {% else %}
     <div class="site" id="visual-shell">

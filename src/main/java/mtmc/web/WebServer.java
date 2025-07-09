@@ -63,6 +63,7 @@ public class WebServer {
         // config
         this.javalinApp = Javalin.create(cfg -> {
             cfg.staticFiles.add("public");
+            cfg.staticFiles.enableWebjars();
         });
         // paths
         javalinApp

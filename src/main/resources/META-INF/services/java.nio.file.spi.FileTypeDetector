@@ -1,1 +1,2 @@
 mtmc.os.fs.ExecutableFileTypeDetector
+mtmc.os.fs.PlainTextFileTypeDetector

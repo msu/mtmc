@@ -346,6 +346,10 @@ async function startMonaco() {
         case "text/x-csrc":
             language = "c";
             break;
+        case "application/json":
+        case "text/mtmc16-bin":
+            language = "json";
+            break;
     }
     
     var editor = monaco.editor.create(editor_div, {

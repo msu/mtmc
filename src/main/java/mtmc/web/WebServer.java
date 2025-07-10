@@ -2,7 +2,6 @@ package mtmc.web;
 
 import com.google.gson.Gson;
 import io.javalin.http.HttpStatus;
-import mtmc.emulator.MTMCIO;
 import mtmc.emulator.MonTanaMiniComputer;
 import io.javalin.Javalin;
 import io.javalin.http.sse.SseClient;
@@ -17,6 +16,7 @@ import java.nio.file.Files;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import mtmc.os.fs.FileSystem;
 
 public class WebServer {
 
@@ -135,6 +135,20 @@ public class WebServer {
                 .post("/memFormat", ctx -> {
                     computerView.toggleMemoryFormat();
                     uiUpdater.updateMemoryImmediately();
+                })
+                .get("/fs/read/*", ctx -> {
+                    String path = ctx.path().substring("/fs/read".length());
+                    FileSystem fs = computerView.getFileSystem();
+
+                    ctx.contentType(fs.getMimeType(path));
+                    ctx.result(fs.openFile(path));
+                })
+                .get("/fs/write/*", ctx -> {
+                    String path = ctx.path().substring("/fs/write".length());
+                    FileSystem fs = computerView.getFileSystem();
+                    
+                    fs.saveFile(path, ctx.bodyInputStream());
+                    ctx.html("");
                 })
                 .get("/fs/toggle/*", ctx -> {
                     String path = ctx.path().substring("/fs/toggle/".length());

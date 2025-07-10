@@ -1,11 +1,13 @@
 package mtmc.os.fs;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
 import mtmc.emulator.MonTanaMiniComputer;
 
 public class FileSystem {
@@ -107,5 +109,34 @@ public class FileSystem {
         Path filePath = getRealPath(path);
         var contents = Files.readString(filePath);
         return contents;
+    }
+    
+    public String getMimeType(String path) throws IOException {
+        var file = getRealPath(path);
+        var name = file.toFile().getName().toLowerCase();
+        
+        if(name.endsWith(".asm")) return "text/x-asm";
+        if(name.endsWith(".c")) return "text/x-csrc";
+        if(name.endsWith(".sea")) return "text/x-csrc";
+        
+        return Files.probeContentType(file);
+    }
+    
+    public InputStream openFile(String path) throws IOException {
+        var file = getRealPath(path).toFile();
+        
+        return new FileInputStream(file);
+    }
+    
+    public void saveFile(String path, InputStream contents) throws IOException {
+        var file = getRealPath(path).toFile();
+        byte[] data = new byte[4096];
+        int count;
+        
+        try(var out = new FileOutputStream(file)) {
+            while((count = contents.read(data)) > 0) {
+                out.write(data, 0, count);
+            }
+        }
     }
 }

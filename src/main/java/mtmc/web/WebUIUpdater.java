@@ -101,7 +101,7 @@ public class WebUIUpdater implements MTMCObserver {
                             webServer.sendEvent("update:memory", webServer.getComputerView().getMemoryTable());
                         }
                         if ((updates & UPDATE_FILESYSTEM_UI) != 0) {
-                            webServer.sendEvent("update:filesystem", webServer.render("templates/editors.html"));
+                            webServer.sendEvent("update:filesystem", webServer.render("templates/filetree.html"));
                         }
                         if ((updates & UPDATE_EXECUTION_UI) != 0) {
                             webServer.sendEvent("update:execution", webServer.render("templates/control.html"));

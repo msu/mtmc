@@ -23,7 +23,11 @@
         {% include 'templates/console.html' %}
     </div>
     <div id="fs" class="panel">
-        {% include 'templates/editors.html' %}
+        {% if computer.currentFilename != null %}
+        {% include computer.selectEditor() %}
+        {% else %}
+        {% include 'templates/filetree.html' %}
+        {% endif %}
     </div>
 </main>
 <!-- MONACO JS -->

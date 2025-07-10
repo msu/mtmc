@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -153,7 +154,7 @@ public class WebServer {
                 .get("/fs/toggle/*", ctx -> {
                     String path = ctx.path().substring("/fs/toggle/".length());
                     computerView.getFileSystem().setCWD(path);
-                    ctx.html(render("templates/editors.html"));
+                    ctx.html(render("templates/filetree.html"));
 
                     //ctx.html(computerView.getVisualShell());
                     // .getVisualShell() is outdated. renderFileTree() is manual input.
@@ -164,16 +165,15 @@ public class WebServer {
                     if (!successfullyOpened) {
                         ctx.status(HttpStatus.NOT_FOUND);
                     }
-                    ctx.html(render("templates/editors.html"));
+                    ctx.html(render(computerView.selectEditor()));
                 })
                 .post("/fs/cwd", ctx -> {
                     computerView.getFileSystem().setCWD(ctx.formParam("cwd"));
-                    ctx.html(render("templates/editors.html"));
-
+                    ctx.html(render("templates/filetree.html"));
                 })
                 .get("/fs/close", ctx -> {
                     computerView.closeFile();
-                    ctx.html(render("templates/editors.html"));
+                    ctx.html(render("templates/filetree.html"));
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();

@@ -330,17 +330,28 @@ function initConsole() {
 }
 
 // Monaco editor support tools
-function startMonaco() {
+async function startMonaco() {
     var editor_div = document.getElementById('editor');
-    var text = editor_div.textContent;
+    var response = await fetch("/fs/read" + editor_div.dataset.filename);
+    var text = await response.text();
     
-    editor_div.replaceChildren();
-    editor_div.style.display = "";
+    var theme = "vs";
+    var language = "plaintext";
+    
+    switch(editor_div.dataset.mime) {
+        case "text/x-asm":
+            language = "mtmc16-asm";
+            theme = "mtmc16-asm";
+            break;
+        case "text/x-csrc":
+            language = "c";
+            break;
+    }
     
     var editor = monaco.editor.create(editor_div, {
         value: text,
-        language: 'mtmc16-asm',
-        theme: 'mtmc16-asm',
+        language: language,
+        theme: theme,
         automaticLayout: true
     });
 }

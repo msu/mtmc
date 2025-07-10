@@ -4,13 +4,11 @@ import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import mtmc.os.fs.FileSystem;
-import mtmc.os.fs.Listing;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -26,7 +24,8 @@ public class MTMCWebView {
     private DisplayFormat memoryDisplayFormat = DisplayFormat.DYN;
 
     private Set<String> expandedPaths = new HashSet<>();
-    private String currentFileContent = null;
+    private String currentFile;
+    private String currentFileMime;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -125,21 +124,24 @@ public class MTMCWebView {
         return blinken.toString();
     }
 
-    public String getCurrentFileContent() {
-        return currentFileContent;
+    public String getCurrentFilename() {
+        return currentFile;
     }
 
-    @NotNull
-    private String renderFileTree() {
-        File rootFile = computer.getOS().loadFile("/");
-        var sb = new StringBuilder();
-        sb.append("<ul><li><code>/</code><ul>");
-
-        for (File file : rootFile.listFiles()) {
-            appendContentForFile(file, sb);
+    public String getCurrentFileMime() {
+        return currentFileMime;
+    }
+    
+    public String selectEditor() {
+        if (currentFileMime.startsWith("text/")) {
+            return "templates/editors/monaco.html";
         }
-        sb.append("</ul></li></ul>");
-        return sb.toString();
+        
+        if (currentFileMime.startsWith("image/")) {
+            return "templates/editors/image.html";
+        }
+        
+        return "templates/editors/noeditor.html";
     }
 
     private void appendContentForFile(File file, StringBuilder sb) {
@@ -161,11 +163,6 @@ public class MTMCWebView {
         sb.append(file.getName());
         sb.append("</a>");
         sb.append("</li>");
-    }
-
-    private void appendListingContent(Listing listing) {
-
-        return;
     }
 
     private void appendDirectoryContent(File file, StringBuilder sb) {
@@ -354,22 +351,19 @@ public class MTMCWebView {
         }
     }
 
-    public boolean openFile(String fileToOpen) {
+    public boolean openFile(String fileToOpen) throws IOException {
         File file = computer.getOS().loadFile(fileToOpen);
-        if (file.exists() && file.isFile()) {
-            try {
-                currentFileContent = Files.readString(file.toPath());
-                return true;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            return false;
-        }
+        
+        if (!file.exists() || !file.isFile()) return false;
+
+        this.currentFile = fileToOpen;
+        this.currentFileMime = computer.getFileSystem().getMimeType(fileToOpen);
+        
+        return true;
     }
 
     public void closeFile() {
-        currentFileContent = null;
+        currentFile = null;
     }
 
     enum DisplayFormat {

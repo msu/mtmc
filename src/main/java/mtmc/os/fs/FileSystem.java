@@ -114,12 +114,14 @@ public class FileSystem {
     public String getMimeType(String path) throws IOException {
         var file = getRealPath(path);
         var name = file.toFile().getName().toLowerCase();
+        var probed = Files.probeContentType(file);
         
         if(name.endsWith(".asm")) return "text/x-asm";
         if(name.endsWith(".c")) return "text/x-csrc";
         if(name.endsWith(".sea")) return "text/x-csrc";
+        if(probed != null) return probed;
         
-        return Files.probeContentType(file);
+        return "application/octet-stream";
     }
     
     public InputStream openFile(String path) throws IOException {

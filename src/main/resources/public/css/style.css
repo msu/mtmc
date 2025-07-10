@@ -133,7 +133,11 @@ main {
     left: 0px;
     right: 0px;
     width: 100dvw;
+    min-width: 100dvw;
+    max-width: 100dvw;
     height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
     margin: 0px;
     padding: 0px;
     z-index: 101;

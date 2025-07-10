@@ -144,7 +144,7 @@ public class WebServer {
                     ctx.contentType(fs.getMimeType(path));
                     ctx.result(fs.openFile(path));
                 })
-                .get("/fs/write/*", ctx -> {
+                .post("/fs/write/*", ctx -> {
                     String path = ctx.path().substring("/fs/write".length());
                     FileSystem fs = computerView.getFileSystem();
                     

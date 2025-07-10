@@ -332,6 +332,7 @@ function initConsole() {
 // Monaco editor support tools
 async function startMonaco() {
     var editor_div = document.getElementById('editor');
+    var editor_save = document.getElementById('editor-save');
     var response = await fetch("/fs/read" + editor_div.dataset.filename);
     var text = await response.text();
     
@@ -358,6 +359,10 @@ async function startMonaco() {
         theme: theme,
         automaticLayout: true
     });
+    
+    editor_save.onclick = function() {
+        fetch("/fs/write" + editor_div.dataset.filename, {method: 'POST', body: editor.getValue()});
+    };
 }
 
 function fullscreen(id, event) {

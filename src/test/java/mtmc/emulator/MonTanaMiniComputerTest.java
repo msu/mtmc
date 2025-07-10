@@ -13,10 +13,10 @@ public class MonTanaMiniComputerTest {
     @Test
     void testSysCall() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        assertEquals(computer.status, MonTanaMiniComputer.ComputerStatus.READY);
+        assertEquals(computer.getStatus(), MonTanaMiniComputer.ComputerStatus.READY);
         short haltInst = 0b0000_0000_0000_0000; // sys halt
         computer.execInstruction(haltInst);
-        assertEquals(computer.status, MonTanaMiniComputer.ComputerStatus.FINISHED);
+        assertEquals(computer.getStatus(), MonTanaMiniComputer.ComputerStatus.FINISHED);
     }
 
     @Test

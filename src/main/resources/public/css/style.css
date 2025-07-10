@@ -1,15 +1,26 @@
 
 :root {
     --pdp-blue: #243571;
-    --pdp-light-blue: #3286CE;
+    --pdp-light-blue: #3286ce;
     --pdp-beige: #fdfddc;
     --pdp-white: #f1f1f6;
     --pdp-off-white: #F0EBCD;
 }
 
+html {
+    overscroll-behavior: none;
+}
+
+body {
+    margin: 0;
+}
+
 #controls {
     padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
 }
+
 #controls > * > * {
     margin: 4px;
 }
@@ -54,12 +65,15 @@
 .px.d {
     background-color: #2a453b;
 }
+
 .px.m {
     background-color: #365d48;
 }
+
 .px.l {
     background-color: #577c44;
 }
+
 .px.w {
     background-color: #7f860f;
 }
@@ -82,22 +96,26 @@ main {
     grid-template-rows: auto auto minmax(0, 1fr);
     display: grid;
     grid-gap: 4px;
-    height: 98vh;
-    max-height: 98vh;
+    height: 100vh;
+    max-height: 100vh;
 }
 
 #center {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     grid-gap: 4px;
-    max-height: 98vh;
+    height: 100vh;
+    max-height: 100vh;
 }
 
 #right {
-    grid-template-rows: 1fr;
+    background-color: var(--pdp-white);
+/*    grid-template-rows: 1fr;
     display: grid;
-    grid-gap: 4px;
-    max-height: 98vh;
+    grid-gap: 4px;*/
+    height: 100vh;
+    max-height: 100vh;
+    overflow: auto;
 }
 
 .panel {
@@ -119,15 +137,17 @@ main {
     height: 95%;
 }
 
-#memory {
+/*#memory {
     font-family: monospace;
     height: 90%;
     overflow-y: scroll;
-}
+}*/
 
 #display {
     background-color: #c7c3c0;
     padding: 8px;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 #display-wrapper {
@@ -142,6 +162,10 @@ main {
 #display-wrapper img {
     border: 1px solid dimgray;
     border-radius: 2px;
+}
+
+#display-img {
+    width: 340px;
 }
 
 #display-control-wrapper {
@@ -169,7 +193,7 @@ main {
 
 .cross-button {
     background-color: #232426;
-    background-image: repeating-linear-gradient(36deg, rgba(255,255,255, 0.1), rgba(255,255,255, 0.1) 1px, transparent 0px, transparent 2px);
+    background-image: repeating-linear-gradient(36deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1) 1px, transparent 0px, transparent 2px);
     text-align: center;
     vertical-align: center
 }
@@ -179,9 +203,21 @@ main {
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
 }
 
+.cross-button.down:active {
+    transform: scaleY(0.95);
+    transform-origin: top;
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
 .cross-button.right {
     border-radius: 0 4px 4px 0;
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.cross-button.right:active {
+    transform: scaleX(0.95);
+    transform-origin: left;
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
 }
 
 .cross-button.left {
@@ -189,9 +225,21 @@ main {
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
 }
 
+.cross-button.left:active {
+    transform: scaleX(0.95);
+    transform-origin: right;
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
 .cross-button.up {
     border-radius: 4px 4px 0 0;
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
+}
+
+.cross-button.up:active {
+    transform: scaleY(0.95);
+    transform-origin: bottom;
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
 }
 
 .big-button {
@@ -205,15 +253,35 @@ main {
     box-shadow: rgb(0, 0, 0, .2) 1px 1px 1px 1px;
 }
 
+.big-button.a:active {
+    transform: scale(0.95);
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
+.big-button.b:active {
+    transform: scale(0.95);
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
 .small-button {
     transform: rotate(-25deg) translateY(20px) translateX(-20px);
     margin: 2px;
-    width:50px;
+    width: 50px;
     background-color: #7e777b;
     border: 1px solid dimgray;
     border-radius: 8px;
     color: whitesmoke;
     box-shadow: rgb(0, 0, 0, .2) 2px 2px 1px 1px;
+}
+
+.small-button.select:active {
+    transform: rotate(-25deg) translateY(20px) translateX(-20px) scale(0.95);
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
+}
+
+.small-button.start:active {
+    transform: rotate(-25deg) translateY(20px) translateX(-20px) scale(0.95);
+    box-shadow: 3px 2px 22px 1px rgba(0, 0, 0, 0.24);
 }
 
 .buff {
@@ -242,6 +310,7 @@ main {
 
 .memory {
     font-family: monospace;
+    overflow: auto;
 }
 
 .memory td {
@@ -249,11 +318,16 @@ main {
     overflow: hidden;
 }
 
+#memory-panel {
+    display: flex;
+    flex-direction: column;
+}
+
 #memory-header {
     font-family: monospace;
     font-weight: bold;
     font-size: 16px;
-    overflow: auto;
+/*    overflow: auto;*/
     padding: 4px;
 }
 
@@ -290,6 +364,7 @@ main {
     background-color: black;
     color: var(--pdp-off-white);
 }
+
 #register-table td {
     text-align: right;
     white-space: nowrap;
@@ -297,7 +372,6 @@ main {
     text-overflow: ellipsis;
     padding: 0;
 }
-
 
 
 .mem-highlight {
@@ -311,17 +385,13 @@ main {
 }
 
 #console-panel {
-    display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: 445px;
+    display: flex;
     overflow: hidden;
 }
 
 #console {
-    width: 99%;
     background: var(--console-background);
     color: var(--console-primary);
-    box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: auto;
     word-break: break-all;
@@ -329,31 +399,206 @@ main {
     padding: 8px;
     font-family: monospace;
     font-weight: bold;
+    flex-grow: 1;
+}
+
+#console-input-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
 }
 
 #console-input {
-    display: inline;
     outline: none;
     visibility: visible;
     caret: var(--console-primary) block;
     background-color: var(--console-background);
     font-family: monospace;
     font-weight: bold;
+    font-size: 13px;
     color: var(--console-primary);
     border: none;
+    /*width: 370px;*/
+    margin: 0;
+    padding: 0;
+    flex-grow: 1;
 }
 
 #console-history div {
-    white-space: pre;
+    white-space: pre-wrap;
+    min-height: calc(1lh - 2px);
+}
+
+ul {
+    list-style: none;
+    margin-top: 7px;
+}
+
+.li {
+    list-style: none;
+    padding-bottom: 2px;
+}
+
+details > summary {
+    list-style-type: "+";
+
+}
+
+.directory-details details.directory-details details.directory-details {
+    margin-left: -16px;
+}
+
+.site {
+    display: flex;
+    flex-direction: column;
+    height: 98.90%;
+}
+
+.heading-bar {
+    width: 100%;
+
+    color: white;
+    background-color: #243571;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+
+}
+
+.file-system-nav-bar {
+    width: 100%;
+    float: left;
+    background-color: #3286ce;
+}
+
+.tray {
+    list-style: none;
+    margin-block: 0;
+    padding-inline: 0;
+}
+
+.nav-button {
+    float: left;
+    display: block;
+    color: black;
+    text-align: center;
+    padding: 5px 3px;
+    text-decoration: none;
+}
+
+#cd-search {
+    width: calc(100% - 8px);
+}
+
+.directory-entry {
+    padding: 3px;
+    position: relative;
+    bottom: 0;
+}
+
+#search-folder-icon {
+    position: relative;
+    height: 18px;
+    width: 18px;
+    padding-top: 1.25px;
+    padding-left: 2px;
+    margin: 2px;
+}
+
+.folder-icon {
+    position: relative;
+    height: 20px;
+    width: 20px;
+    margin-right: 0.5em;
+    top: 3px;
+}
+
+.blank-sheet-icon {
+    position: relative;
+    height: 18px;
+    width: 18px;
+    margin-right: 0.35em;
+}
+
+.file-entry {
+    margin-top: 1px;
+    position: absolute;
+}
+
+.file-listing {
+    margin-top: 1px;
+}
+
+.file-explorer {
+    list-style: none;
+}
+
+.content {
+    transition: max-height 0.2s ease-out;
+}
+
+.site {
+    display: flex;
+    flex-direction: column;
+    height: 98.90%;
 }
 
 #visual-shell {
     position: relative;
 }
+
 textarea#editor {
-    position:absolute;
-    top:50px;
-    left:5px;
-    right:5px;
-    bottom:5px;
-    padding:1em }
+    padding: 1em;
+    height: 95%;
+    width: 100%;
+    margin-top: 15px;
+}
+/*#visual-shell {*/
+/*    position: relative;*/
+/*}*/
+/*textarea#editor {*/
+/*    position:absolute;*/
+/*    top:50px;*/
+/*    left:5px;*/
+/*    right:5px;*/
+/*    bottom:5px;*/
+/*    padding:1em */
+/*}*/
+
+@media only screen and (max-width: 768px) {
+    
+    html {
+        overflow: hidden;
+    }
+    
+    body {
+        
+        width: 100vw;
+        max-width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow: hidden;
+    }
+    
+    main {
+        grid-template-columns: 100vw 100vw 100vw;
+        grid-gap: 0px;
+        overflow: auto;
+        scroll-snap-type: x mandatory;
+        width: 100vw;
+        height: 100dvh;
+        touch-action: manipulation;
+    }
+    
+    #left, #center, #right {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        scroll-snap-align: center;
+    }
+    
+    #display {
+        border: 0;
+        padding: 0;
+    }

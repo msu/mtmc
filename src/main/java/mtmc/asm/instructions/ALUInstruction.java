@@ -35,7 +35,7 @@ public class ALUInstruction extends Instruction {
         this.immediateOp = immediateOp;
     }
 
-    public boolean isImmediatOp() {
+    public boolean isImmediateOp() {
         return this.getType() == InstructionType.IMM;
     }
 
@@ -54,7 +54,7 @@ public class ALUInstruction extends Instruction {
         output[getLocation()] = (byte) (0b0001_0000 | opCode);
         if (isBinaryOp()) {
             output[getLocation() + 1] = (byte) (to << 4 | from);
-        } else if (isImmediatOp()) {
+        } else if (isImmediateOp()) {
             int immediateValue = value.intValue();
             int immediateOpValue = ALUOp.toInteger(immediateOp.stringValue());
             output[getLocation() + 1] = (byte) (to << 4 | immediateOpValue);

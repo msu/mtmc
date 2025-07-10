@@ -17,6 +17,7 @@ import static mtmc.emulator.Register.*;
 public class MTOS {
 
     private final MonTanaMiniComputer computer;
+    private long timer = 0;
     Random random = new Random();
 
     public MTOS(MonTanaMiniComputer computer) {
@@ -28,6 +29,12 @@ public class MTOS {
             computer.setStatus(MonTanaMiniComputer.ComputerStatus.FINISHED);
         } else if (syscallNumber == SysCall.getValue("rint")) {
             // rint
+            if(!computer.getConsole().hasShortValue()) {
+                computer.notifyOfRequestInteger();
+            }
+            while(!computer.getConsole().hasShortValue() && computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING) {
+                try { Thread.sleep(10); } catch(InterruptedException e) {}
+            }
             short val = computer.getConsole().readInt();
             computer.setRegisterValue(RV, val);
         } else if (syscallNumber == SysCall.getValue("wint")) {
@@ -35,6 +42,12 @@ public class MTOS {
             short value = computer.getRegisterValue(A0);
             computer.getConsole().writeInt(value);
         } else if (syscallNumber == SysCall.getValue("rchr")) {
+            if(!computer.getConsole().hasShortValue()) {
+                computer.notifyOfRequestCharacter();
+            }
+            while(!computer.getConsole().hasShortValue() && computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING) {
+                try { Thread.sleep(10); } catch(InterruptedException e) {}
+            }
             char val = computer.getConsole().readChar();
             computer.setRegisterValue(RV, val);
         } else if (syscallNumber == SysCall.getValue("wchr")) {
@@ -44,6 +57,12 @@ public class MTOS {
             // rstr
             short pointer = computer.getRegisterValue(A0);
             short maxLen = computer.getRegisterValue(A1);
+            if(!computer.getConsole().hasReadString()) {
+                computer.notifyOfRequestString();
+            }
+            while(!computer.getConsole().hasReadString() && computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING) {
+                try { Thread.sleep(10); } catch(InterruptedException e) {}
+            }
             String string = computer.getConsole().readString();
             byte[] bytes = string.getBytes(Charsets.US_ASCII);
             int bytesToRead = Math.min(bytes.length, maxLen);
@@ -98,12 +117,21 @@ public class MTOS {
             // rnd
             short low = computer.getRegisterValue(A0);
             short high = computer.getRegisterValue(A1);
+            short temp;
+            
+            if(low > high)
+            {
+                temp = low;
+                low = high;
+                high = temp;
+            }
+
             computer.setRegisterValue(RV, random.nextInt(low, high + 1));
         } else if (syscallNumber == SysCall.getValue("sleep")) {
             // sleep
             short millis = computer.getRegisterValue(A0);
             try {
-                Thread.sleep(millis);
+                if(millis > 0) Thread.sleep(millis);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -166,8 +194,8 @@ public class MTOS {
             String fileType = fileName.substring(fileName.lastIndexOf('.') + 1);
 
             try {
-                // special handling for game-of-life files
-                if ("gol".equals(fileType)) {
+                // special handling for game-of-life cell files
+                if ("cells".equals(fileType)) {
 
                     String str = Files.readString(file.toPath());
                     List<String> lines = Arrays
@@ -206,6 +234,59 @@ public class MTOS {
                 computer.setRegisterValue(RV, -1);
             }
 
+        } else if (syscallNumber == SysCall.getValue("cwd")) {
+        
+            String cwd = computer.getFileSystem().getCWD();
+
+            short destination = computer.getRegisterValue(A0);
+            int maxSize = Math.min(computer.getRegisterValue(A1), cwd.length()+1);
+
+            for (int i = 0; i < maxSize-1; i++) {
+                byte aByte = (byte)cwd.charAt(i);
+                computer.writeByteToMemory(destination + i, aByte);
+            }
+            
+            //TODO: Should this return the length with or without the null terminator?
+            computer.writeByteToMemory(destination + maxSize - 1, (byte)0);
+            computer.setRegisterValue(RV, maxSize-1);
+        } else if (syscallNumber == SysCall.getValue("chdir")) {
+
+            short source = computer.getRegisterValue(A0);
+            short maxSize = computer.getRegisterValue(A1);
+            StringBuffer dir = new StringBuffer();
+            
+            for (int i = 0; i < maxSize; i++) {
+                char c = (char)computer.fetchByteFromMemory(source + i);
+                
+                if(c == 0) break;
+                
+                dir.append(c);
+            }
+            
+            if (computer.getFileSystem().exists(dir.toString())) {
+                computer.setRegisterValue(RV, 0);
+                computer.getFileSystem().setCWD(dir.toString());
+            } else {
+                computer.setRegisterValue(RV, 1);
+            }
+        } else if (syscallNumber == SysCall.getValue("timer")) {
+            short value = computer.getRegisterValue(A0);
+            
+            if (value > 0) this.timer = System.currentTimeMillis() + value;
+            
+            computer.setRegisterValue(RV, (int)Math.max(0, this.timer - System.currentTimeMillis()));
+        } else if (syscallNumber == SysCall.getValue("drawimg")) {
+            short image = computer.getRegisterValue(A0);
+            short x = computer.getRegisterValue(A1);
+            short y = computer.getRegisterValue(A2);
+            
+            if (!computer.getDisplay().hasGraphic(image)) {
+                computer.setRegisterValue(RV, 1);
+                return;
+            }
+            
+            computer.getDisplay().drawImage(image, x, y);
+            computer.setRegisterValue(RV, 0);
         }
     }
 
@@ -231,7 +312,8 @@ public class MTOS {
     }
 
     public File loadFile(String path) {
-        File file = new File("disk/" + path);
+        var fs = computer.getFileSystem();
+        File file = fs.getRealPath(path).toFile();
         return file;
     }
 }

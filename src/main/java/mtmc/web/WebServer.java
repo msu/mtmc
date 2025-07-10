@@ -9,8 +9,6 @@ import io.javalin.http.sse.SseClient;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,7 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class WebServer {
 
-    public static final int PORT = 8082;
+    public static final int PORT = 8081;
     public static final String SERVER_URL = "http://localhost:" + PORT;
     private static WebServer instance;
 
@@ -82,14 +80,35 @@ public class WebServer {
                     computer.getOS().processCommand(cmd);
                     String output = computer.getConsole().getOutput();
                     sendEvent("console-output", output);
-                    sendEvent("console-ready", "{}");
+                    sendEvent("console-ready", "");
+                    ctx.html("");
+                })
+                .post("/readchar", ctx -> {
+                    Map vals = json.fromJson(ctx.body(), Map.class);
+                    String str = (String) vals.get("c");
+                    computer.getConsole().setCharValue(str.charAt(0));
+                    sendEvent("console-ready", "mtmc$");
+                    ctx.html("");
+                })
+                .post("/readint", ctx -> {
+                    Map vals = json.fromJson(ctx.body(), Map.class);
+                    int value = Integer.parseInt((String)vals.get("str"));
+                    computer.getConsole().setShortValue((short)value);
+                    sendEvent("console-ready", "mtmc$");
+                    ctx.html("");
+                })
+                .post("/readstr", ctx -> {
+                    Map vals = json.fromJson(ctx.body(), Map.class);
+                    String str = (String) vals.get("str");
+                    computer.getConsole().setReadString(str);
+                    sendEvent("console-ready", "mtmc$");
                     ctx.html("");
                 })
                 .post("/speed", ctx -> {
                     String speed = ctx.formParam("speed");
                     int speedi = Integer.parseInt(speed);
                     computer.setSpeed(speedi);
-                    ctx.html("");
+                    ctx.html(render("templates/control.html"));
                 })
                 .post("/control/{action}", ctx -> {
                     if (ctx.pathParam("action").equals("reset")) {
@@ -97,46 +116,49 @@ public class WebServer {
                     }
                     if (ctx.pathParam("action").equals("pause")) {
                         computer.pause();
+                        sendEvent("console-ready", "mtmc$");
+                    }
+                    if (ctx.pathParam("action").equals("run")) {
+                        computer.run();
                     }
                     if (ctx.pathParam("action").equals("step")) {
-                        computer.setStatus(MonTanaMiniComputer.ComputerStatus.EXECUTING);
                         computer.fetchAndExecute();
                         computer.fetchCurrentInstruction(); // fetch next instruction for display
                     }
+                    ctx.html(render("templates/control.html"));
                 })
-                .post("/io/{button}/{action}", ctx -> {
-                    MTMCIO io = computer.getIO();
-                    if(ctx.pathParam("action").equals("pressed")) {
-                        io.keyPressed(ctx.pathParam("button"));
-                    }
-                    if(ctx.pathParam("action").equals("released")) {
-                        io.keyReleased(ctx.pathParam("button"));
-                    }
+                .post("/io/{buttons}", ctx -> {
+                    int buttons = Integer.parseInt(ctx.pathParam("buttons"), 16);
+                    computer.getIO().setValue(buttons);
                 })
                 .post("/memFormat", ctx -> {
                     computerView.toggleMemoryFormat();
                     uiUpdater.updateMemoryImmediately();
                 })
                 .get("/fs/toggle/*", ctx -> {
-                    String path = ctx.path();
-                    String pathToToggle = path.substring("/fs/toggle/".length());
-                    computerView.togglePath(pathToToggle);
-                    ctx.html(computerView.getVisualShell());
+                    String path = ctx.path().substring("/fs/toggle/".length());
+                    computerView.getFileSystem().setCWD(path);
+                    ctx.html(render("templates/editors.html"));
+
+                    //ctx.html(computerView.getVisualShell());
+                    // .getVisualShell() is outdated. renderFileTree() is manual input.
                 })
                 .get("/fs/open/*", ctx -> {
-                    String path = ctx.path();
-                    String fileToOpen = path.substring("/fs/open/disk/".length());
-                    boolean successfullyOpened = computerView.openFile(fileToOpen);
-                    if(successfullyOpened) {
-                        ctx.html(computerView.getVisualShell());
-                    } else {
+                    String path = ctx.path().substring("/fs/open/".length());
+                    boolean successfullyOpened = computerView.openFile(path);
+                    if (!successfullyOpened) {
                         ctx.status(HttpStatus.NOT_FOUND);
-                        ctx.html("");
                     }
+                    ctx.html(render("templates/editors.html"));
+                })
+                .post("/fs/cwd", ctx -> {
+                    computerView.getFileSystem().setCWD(ctx.formParam("cwd"));
+                    ctx.html(render("templates/editors.html"));
+
                 })
                 .get("/fs/close", ctx -> {
                     computerView.closeFile();
-                    ctx.html(computerView.getVisualShell());
+                    ctx.html(render("templates/editors.html"));
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();

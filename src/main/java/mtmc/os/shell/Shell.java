@@ -14,6 +14,7 @@ import static mtmc.tokenizer.MTMCToken.TokenType.*;
 
 import mtmc.tokenizer.MTMCTokenizer;
 
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -87,7 +88,7 @@ public class Shell {
                     Path srcPath = Path.of("disk/bin/" + firstTokenStr);
                     if (srcPath.toFile().exists()) {
                         Executable exec = Executable.load(srcPath);
-                        computer.load(exec.code(), exec.data(), exec.debugInfo());
+                        computer.load(exec.code(), exec.data(), exec.graphics(), exec.debugInfo());
                         tokens.consume();
                         String arg = command.substring(firstToken.end()).strip();
                         computer.setArg(arg);
@@ -97,8 +98,11 @@ public class Shell {
                     }
                 }
             }
+        } catch (NoSuchFileException e) {
+            computer.getConsole().println("No such file: " + e.getFile());
         } catch (Exception e) {
             computer.getConsole().println(e.getMessage());
+            e.printStackTrace();
         }
     }
 

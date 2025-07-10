@@ -1,5 +1,8 @@
 package mtmc.emulator;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import mtmc.asm.instructions.Instruction;
 import mtmc.os.MTOS;
 import mtmc.os.fs.FileSystem;
@@ -8,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
+import javax.imageio.ImageIO;
 
 import static mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
 import static mtmc.emulator.Register.*;
@@ -22,15 +26,16 @@ public class MonTanaMiniComputer {
     // core model
     short[] registerFile; // 16 user visible + the instruction register
     byte[]  memory;
-    ComputerStatus status = READY;
-    private int speed = 0;
+    private ComputerStatus status = READY;
+    private int speed = 1000000;
     private MTMCIO io = new MTMCIO();
 
     // helpers
     MTOS os = new MTOS(this);
     MTMCConsole console = new MTMCConsole(this);
     MTMCDisplay display = new MTMCDisplay(this);
-    FileSystem fileSystem = new FileSystem();
+    MTMCClock clock = new MTMCClock(this);
+    FileSystem fileSystem = new FileSystem(this);
 
     // listeners
     private List<MTMCObserver> observers = new ArrayList<>();
@@ -48,8 +53,13 @@ public class MonTanaMiniComputer {
     }
 
     public void load(byte[] code, byte[] data, DebugInfo debugInfo) {
+        load(code, data, new byte[0][0], debugInfo);
+    }
+    
+    public void load(byte[] code, byte[] data, byte[][] graphics, DebugInfo debugInfo) {
 
         this.debugInfo = debugInfo;
+        graphics = (graphics == null ? new byte[0][0] : graphics);
 
         // reset memory
         initMemory();
@@ -62,42 +72,37 @@ public class MonTanaMiniComputer {
         int dataBoundary = codeBoundary + data.length;
         System.arraycopy(data, 0, memory, codeBoundary, data.length);
         setRegisterValue(DB, dataBoundary - 1);
-
+        
         // base pointer starts just past the end of the data boundary
         setRegisterValue(BP, dataBoundary);
 
         fetchCurrentInstruction(); // fetch the initial instruction for display purposes
+        display.loadGraphics(graphics); // ready graphics for use
 
         // reset computer status
-        status = READY;
+        setStatus(READY);
+    }
+    
+    public long pulse(long instructions)
+    {
+        long count = 0;
+        
+        for (long i=0; i<instructions && status == EXECUTING; i++) {
+            fetchAndExecute();
+            count++;
+        }
+        
+        return count;
     }
 
     public void run() {
-        status = EXECUTING;
-        while (status == EXECUTING) {
-            long startTime = 0;
-            if (speed > 0) {
-                startTime = System.currentTimeMillis();
-            }
-            fetchAndExecute();
-            if (speed > 0) {
-                int delay = 1000 / speed;
-                long endTime = System.currentTimeMillis();
-                long instructionTime = endTime - startTime;
-                long delta = delay - instructionTime;
-                if (delta > 0) {
-                    try {
-                        Thread.sleep(delta);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
+        setStatus(EXECUTING);
+        clock.run();
     }
 
     public void setStatus(ComputerStatus status) {
         this.status = status;
+        this.notifyOfExecutionUpdate();
     }
 
     public ComputerStatus getStatus() {
@@ -619,8 +624,9 @@ public class MonTanaMiniComputer {
     }
 
     private void badInstruction(short instruction) {
-        status = PERMANENT_ERROR;
+        setStatus(PERMANENT_ERROR);
         // TODO implement flags
+        console.println("BAD INSTRUCTION: 0x" + Integer.toHexString(instruction & 0xFFFF));
     }
 
     public void fetchCurrentInstruction() {
@@ -668,6 +674,7 @@ public class MonTanaMiniComputer {
     public byte fetchByteFromMemory(int address) {
         if (address < 0 || address >= memory.length) {
             setStatus(PERMANENT_ERROR);
+            console.println("BAD MEMORY LOCATION ON READ: " + address + " (0x" + Integer.toHexString(address & 0xFFFF) + ")");
             return 0;
         } else {
             return memory[address];
@@ -683,6 +690,7 @@ public class MonTanaMiniComputer {
     public void writeByteToMemory(int address, byte value) {
         if (address < 0 || address >= memory.length) {
             setStatus(PERMANENT_ERROR);
+            console.println("BAD MEMORY LOCATION ON WRITE: " + address + " (0x" + Integer.toHexString(address & 0xFFFF) + ")");
             return;
         }
         memory[address] = value;
@@ -746,11 +754,32 @@ public class MonTanaMiniComputer {
     }
 
     public void pause() {
-        status = READY;
+        setStatus(READY);
     }
 
+    public int getSpeed() {
+        return speed;
+    }
+    
     public void setSpeed(int speed) {
         this.speed = speed;
+        this.notifyOfExecutionUpdate();
+    }
+
+    public void notifyOfConsoleUpdate() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.consoleUpdated();
+            }
+        }
+    }
+
+    public void notifyOfConsolePrinting() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.consolePrinting();
+            }
+        }
     }
 
     public void notifyOfDisplayUpdate() {
@@ -761,6 +790,46 @@ public class MonTanaMiniComputer {
         }
     }
 
+    public void notifyOfFileSystemUpdate() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.filesystemUpdated();
+            }
+        }
+    }
+
+    public void notifyOfExecutionUpdate() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.executionUpdated();
+            }
+        }
+    }
+
+    public void notifyOfRequestString() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.requestString();
+            }
+        }
+    }
+
+    public void notifyOfRequestCharacter() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.requestCharacter();
+            }
+        }
+    }
+
+    public void notifyOfRequestInteger() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.requestInteger();
+            }
+        }
+    }
+    
     public int getIOState() {
         return io.getValue();
     }

@@ -12,9 +12,12 @@ public enum SysCall {
 
     RFILE(0x10),
     WFILE(0x11),
+    CWD(0x12),
+    CHDIR(0x13),
 
     RND(0x20),
     SLEEP(0x21),
+    TIMER(0x22),
 
     FBRESET(0x30),
     FBSTAT(0x31),
@@ -26,6 +29,9 @@ public enum SysCall {
     SCOLOR(0x3B),
 
     MEMCPY(0x40),
+
+    DRAWIMG(0x50),
+
     ERROR(0x0FF);
 
     private final byte value;

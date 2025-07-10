@@ -44,7 +44,7 @@ main:
     l6:
 
     modi t0 160
-    modi t1 140
+    modi t1 144
 
     sys fbreset   # reset the frame buffer
 

@@ -8,20 +8,36 @@
         </div>
         <div id="control-buttons">
             <label>
-                <select style="font-family: monospace;background-color: black;color: #ffcc00" name="speed" fx-action="/speed" fx-method="post" fx-swap="none">
-                    <option value="1">1 Hz</option>
-                    <option value="10">10 Hz</option>
-                    <option value="100">100 Hz</option>
-                    <option value="1000">1 Khz</option>
+                <select style="font-family: monospace;background-color: black;color: #ffcc00" name="speed" fx-action="/speed" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
+                    <option value="1" {% if computer.speed == 1 %}selected{% endif %}>1 Hz</option>
+                    <option value="10" {% if computer.speed == 10 %}selected{% endif %}>10 Hz</option>
+                    <option value="100" {% if computer.speed == 100 %}selected{% endif %}>100 Hz</option>
+                    <option value="1000" {% if computer.speed == 1000 %}selected{% endif %}>1 Khz</option>
+                    {% if computer.speed == 10000 %}
+                    <option value="1000000" selected>10 Khz</option>
+                    {% endif %}
+                    <option value="1000000" {% if computer.speed == 1000000 %}selected{% endif %}>1 Mhz</option>
+                    {% if computer.speed == 0 %}
+                    <option value="0" selected>Max</option>
+                    {% endif %}
                 </select>
             </label>
-            <button fx-action="/control/pause" fx-method="post" fx-swap="none">
-                pause
+            {% if not computer.executing %}
+            <button fx-action="/control/run" fx-method="post" fx-swap="none">
+                run
             </button>
-            <button fx-action="/control/step" fx-method="post" fx-swap="none">
+            <button fx-action="/control/step" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
                 step
             </button>
-            <button fx-action="/control/reset" fx-method="post" fx-swap="none">
+            {% else %}
+            <button fx-action="/control/pause" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
+                pause
+            </button>
+            <button fx-action="/control/step" fx-method="post" fx-swap="none" disabled="disabled">
+                step
+            </button>
+            {% endif %}
+            <button fx-action="/control/reset" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
                 reset
             </button>
         </div>

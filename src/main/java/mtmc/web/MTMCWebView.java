@@ -3,6 +3,7 @@ package mtmc.web;
 import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
+import mtmc.os.fs.FileSystem;
 import mtmc.os.fs.Listing;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,6 +14,8 @@ import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.IntStream;
+import mtmc.emulator.MTMCConsole;
+import mtmc.emulator.MTMCDisplay;
 
 public class MTMCWebView {
 
@@ -29,12 +32,32 @@ public class MTMCWebView {
         this.computer = computer;
     }
 
-    public Iterable getMemoryAddresses(){
+    public Iterable getMemoryAddresses() {
         return computer.getMemoryAddresses();
     }
 
     public Iterable blinkenIndexes() {
         return () -> IntStream.range(0, 16).iterator();
+    }
+
+    public MTMCDisplay getDisplay() {
+        return computer.getDisplay();
+    }
+
+    public MTMCConsole getConsole() {
+        return computer.getConsole();
+    }
+
+    public FileSystem getFileSystem() {
+        return computer.getFileSystem();
+    }
+
+    public boolean isExecuting() {
+        return (computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING);
+    }
+    
+    public int getSpeed() {
+        return computer.getSpeed();
     }
 
     public String blinken(int bit, int register) {
@@ -60,7 +83,6 @@ public class MTMCWebView {
             return "No such register: " + reg;
         }
     }
-
 
 
     @NotNull
@@ -103,17 +125,8 @@ public class MTMCWebView {
         return blinken.toString();
     }
 
-    public String getVisualShell(){
-        if(currentFileContent != null){
-            return renderEditor();
-        } else {
-            return renderFileTree();
-        }
-    }
-
-    private String renderEditor() {
-        return "<div><button fx-swap='innerHTML' fx-target='#visual-shell' fx-action='/fs/close/'>close</button></div>" +
-                "<textarea id='editor'>" + currentFileContent + "</textarea>";
+    public String getCurrentFileContent() {
+        return currentFileContent;
     }
 
     @NotNull
@@ -121,19 +134,10 @@ public class MTMCWebView {
         File rootFile = computer.getOS().loadFile("/");
         var sb = new StringBuilder();
         sb.append("<ul><li><code>/</code><ul>");
-        var fs = computer.getFileSystem();
-        // TODO: Nav through listing{listOfFiles = [], subdirectories = [] }
 
-        // TODO: Implement appendListingContent(Listing listing){
-        //  for (File file: listing.listOfFiles){
-        //      appendContentForFile(file, sb);
-        //  }
-        //  }
-
-
-//        for (File file : rootFile.listFiles()) {
-//            appendContentForFile(file, sb);
-//        }
+        for (File file : rootFile.listFiles()) {
+            appendContentForFile(file, sb);
+        }
         sb.append("</ul></li></ul>");
         return sb.toString();
     }
@@ -172,7 +176,7 @@ public class MTMCWebView {
                 .append("'>");
         sb.append(file.getName());
         sb.append("</a>");
-        if(expandedPaths.contains(path)) {
+        if (expandedPaths.contains(path)) {
             sb.append("<ul>");
             for (File child : file.listFiles()) {
                 appendContentForFile(child, sb);
@@ -182,7 +186,7 @@ public class MTMCWebView {
         sb.append("</li>");
     }
 
-    public String getMemoryTable(){
+    public String getMemoryTable() {
         StringBuilder builder = new StringBuilder("<table id='memory-table' style='width:100%; table-layout:fixed'>");
         byte[] memory = computer.getMemory();
         short previousValue = 0;
@@ -198,7 +202,9 @@ public class MTMCWebView {
 
             short val = (short) (memory[i] & 0xFF);
             int originalPos = i;
-            if (cols == 2) {
+            boolean twoCols = false;
+            if (cols == 2 && i % 2 == 0) {
+                twoCols = true;
                 i++; // consuming a word for this cell
                 val = (short) (val << 8);
                 val = (short) (val | (memory[i] & 0xFF));
@@ -214,9 +220,9 @@ public class MTMCWebView {
             builder.append("' class='");
             builder.append(memoryClass);
             builder.append("'");
-            if (cols > 1) {
+            if (twoCols) {
                 builder.append(" colspan='");
-                builder.append(cols);
+                builder.append(2);
                 builder.append("'");
             }
             builder.append(">");
@@ -240,10 +246,10 @@ public class MTMCWebView {
     }
 
     private DisplayFormat computeMemoryFormat(String memoryClass) {
-        if(memoryDisplayFormat == DisplayFormat.DYN) {
+        if (memoryDisplayFormat == DisplayFormat.DYN) {
             return switch (memoryClass) {
                 case "sta" -> DisplayFormat.DEC;
-                case "code" -> DisplayFormat.INS;
+                case "code", "curr" -> DisplayFormat.INS;
                 case "data", "heap" -> DisplayFormat.STR;
                 default -> DisplayFormat.HEX;
             };
@@ -325,7 +331,7 @@ public class MTMCWebView {
         } else if (valueFor == 3) {
             return "w";
         }
-        throw new IllegalStateException("Bad display value: "  + valueFor);
+        throw new IllegalStateException("Bad display value: " + valueFor);
     }
 
 
@@ -341,7 +347,7 @@ public class MTMCWebView {
     }
 
     public void togglePath(String pathToToggle) {
-        if(expandedPaths.contains(pathToToggle)) {
+        if (expandedPaths.contains(pathToToggle)) {
             expandedPaths.remove(pathToToggle);
         } else {
             expandedPaths.add(pathToToggle);
@@ -350,7 +356,7 @@ public class MTMCWebView {
 
     public boolean openFile(String fileToOpen) {
         File file = computer.getOS().loadFile(fileToOpen);
-        if(file.exists() && file.isFile()) {
+        if (file.exists() && file.isFile()) {
             try {
                 currentFileContent = Files.readString(file.toPath());
                 return true;

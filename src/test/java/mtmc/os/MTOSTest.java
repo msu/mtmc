@@ -14,7 +14,7 @@ public class MTOSTest {
     public void testReadInt() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.getConsole().setShortValue((short) 10);
-        short inst = 0b0000_1111_0000_0001; // sys rint
+        short inst = 0b0000_0000_0000_0001; // sys rint
         computer.execInstruction(inst);
         assertEquals(10, computer.getRegisterValue(RV));
     }
@@ -23,7 +23,7 @@ public class MTOSTest {
     public void testWriteInt() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(A0, 10);
-        short inst = 0b0000_1111_0000_0010; // sys wint
+        short inst = 0b0000_0000_0000_0010; // sys wint
         computer.execInstruction(inst);
         assertEquals("10", computer.getConsole().getOutput());
     }
@@ -34,7 +34,7 @@ public class MTOSTest {
         computer.setRegisterValue(A0, 10);
         computer.setRegisterValue(A1, 10);
         computer.getConsole().setStringValue("hello");
-        short inst = 0b0000_1111_0000_0011; // sys rstr
+        short inst = 0b0000_0000_0000_0011; // sys rstr
         computer.execInstruction(inst);
 
         byte[] bytes = computer.getBytesFromMemory(10, 5);
@@ -53,7 +53,7 @@ public class MTOSTest {
             computer.writeByteToMemory(address + i, bytes[i]);
         }
         computer.setRegisterValue(A0, address);
-        short inst = 0b0000_1111_0000_0100; // sys wstr
+        short inst = 0b0000_0000_0000_0110; // sys wstr
         computer.execInstruction(inst);
         assertEquals("Hello world!", computer.getConsole().getOutput());
     }
@@ -63,7 +63,7 @@ public class MTOSTest {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(A0, 10);
         computer.setRegisterValue(A1, 20);
-        short inst = 0b0000_1111_0000_0111; // sys rnd
+        short inst = 0b0000_0000_0010_0000; // sys rnd
         computer.execInstruction(inst);
         short returnVal = computer.getRegisterValue(RV);
         assertTrue(10 <= returnVal && returnVal <= 20);
@@ -74,11 +74,33 @@ public class MTOSTest {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
         computer.setRegisterValue(A0, 100);
         long start = System.currentTimeMillis();
-        short inst = 0b0000_1111_0000_1000; // sys sleep
+        short inst = 0b0000_0000_0010_0001; // sys sleep
         computer.execInstruction(inst);
         long end = System.currentTimeMillis();
         long duration = end - start;
         assertTrue(duration > 100, "Duration should be greater than 100 : " + duration);
+    }
+
+    @Test
+    public void testTimer() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        short inst = 0b0000_0000_0010_0010; // sys timer
+        
+        computer.setRegisterValue(A0, 10);
+        computer.execInstruction(inst);
+        
+        assertEquals(10, computer.getRegisterValue(RV));
+        
+        computer.setRegisterValue(A0, 0);
+        computer.execInstruction(inst);
+        
+        // The time may tick by a ms by the time we run the check. So checking both 9 and 10
+        assertTrue(computer.getRegisterValue(RV) == 10 || computer.getRegisterValue(RV) == 9);
+        
+        try { Thread.sleep(10); } catch(InterruptedException e) {}
+        
+        computer.execInstruction(inst);
+        assertEquals(0, computer.getRegisterValue(RV)); // Timer exhausted
     }
 
 }

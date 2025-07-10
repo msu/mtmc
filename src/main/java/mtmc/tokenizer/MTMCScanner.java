@@ -259,6 +259,8 @@ public class MTMCScanner {
             tokens.add(makeToken(STAR, "*", start));
         } else if(consumeIf('/')) {
             tokens.add(makeToken(SLASH, "/", start));
+        } else if(consumeIf('@')) {
+            tokens.add(makeToken(AT, "@", start));
         } else if(consumeIf('!')) {
             if (consumeIf('=')) {
                 tokens.add(makeToken(BANG_EQUAL, "!=", start));

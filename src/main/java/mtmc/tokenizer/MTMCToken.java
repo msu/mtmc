@@ -70,6 +70,7 @@ public record MTMCToken(
         MINUS,
         PLUS,
         SLASH,
+        AT,
         STAR,
         QUESTION_MARK,
         BANG,

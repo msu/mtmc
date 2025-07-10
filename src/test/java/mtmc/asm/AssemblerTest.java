@@ -1,5 +1,6 @@
 package mtmc.asm;
 
+import mtmc.emulator.DebugInfo;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.os.SysCall;
 import mtmc.util.BinaryUtils;
@@ -447,8 +448,108 @@ public class AssemblerTest {
                 smax
                 pop t0
                 """);
-        assertEquals(result.code().length, result.asmLineNumbers().length);
-        assertArrayEquals(new int[]{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4}, result.asmLineNumbers());
+        int[] asmLineNums = result.debugInfo().assemblyLineNumbers();
+        assertEquals(result.code().length, asmLineNums.length);
+        assertArrayEquals(new int[]{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4}, asmLineNums);
+    }
+
+    @Test
+    public void originalFileIsCorrect() {
+        var result = assemble("""
+                @file "foo.sea"
+                pushi 1
+                pushi 2
+                smax
+                pop t0
+                """);
+        assertEquals("foo.sea", result.debugInfo().originalFile());
+    }
+
+    @Test
+    public void originalLineNumbersAreCorrect() {
+        var result = assemble("""
+                @file "foo.sea"
+                pop t0
+                @line 1
+                pop t0
+                @line 2
+                pop t0
+                @line 1
+                pop t0
+                @line 0
+                pop t0
+                """);
+        int[] originalLineNumbers = result.debugInfo().originalLineNumbers();
+        assertEquals(result.code().length, originalLineNumbers.length);
+        assertArrayEquals(new int[]{0, 0, 1, 1, 2, 2, 1, 1, 0, 0}, originalLineNumbers);
+    }
+
+    @Test
+    public void globalsInfoIsCorrect() {
+        var result = assemble("""
+                @file "foo.sea"
+                pushi 1
+                @global "foo" 22 "char*"
+                pushi 2
+                smax
+                @global "baz" 11 "int"
+                pop t0
+                """);
+        var globals = result.debugInfo().globals();
+        assertEquals(2, globals.length);
+
+        assertEquals("foo", globals[0].name());
+        assertEquals(22, globals[0].location());
+        assertEquals("char*", globals[0].type());
+
+        assertEquals("baz", globals[1].name());
+        assertEquals(11, globals[1].location());
+        assertEquals("int", globals[1].type());
+
+    }
+
+    @Test
+    public void localsInfoIsCorrect() {
+        var result = assemble("""
+                @file "foo.sea"
+                pop t0
+                @local "foo" 0 "char*"
+                pop t0
+                @local "baz" 1 "int"
+                pop t0
+                @endlocal "foo"
+                pop t0
+                """);
+        var locals = result.debugInfo().locals();
+        assertEquals(8, locals.length);
+
+        assertEquals(0, locals[0].length);
+        assertEquals(0, locals[1].length);
+
+        assertEquals(1, locals[2].length);
+        assertEquals(1, locals[3].length);
+
+        assertEquals("foo", locals[2][0].name());
+        assertEquals(0, locals[2][0].offset());
+        assertEquals("char*", locals[2][0].type());
+
+        assertEquals(2, locals[4].length);
+        assertEquals(2, locals[5].length);
+
+        assertEquals("baz", locals[4][0].name());
+        assertEquals(1, locals[4][0].offset());
+        assertEquals("int", locals[4][0].type());
+        assertEquals("foo", locals[4][1].name());
+        assertEquals(0, locals[4][1].offset());
+        assertEquals("char*", locals[4][1].type());
+
+        assertEquals(1, locals[6].length);
+        assertEquals(1, locals[7].length);
+
+        assertEquals("baz", locals[6][0].name());
+        assertEquals(1, locals[6][0].offset());
+        assertEquals("int", locals[6][0].type());
+
     }
 
 

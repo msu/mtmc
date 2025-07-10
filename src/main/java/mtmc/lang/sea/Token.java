@@ -24,6 +24,7 @@ public record Token(
         LIT_CHAR(null),
         LIT_IDENT(null),
         KW_TYPEDEF("typedef"),
+        KW_STRUCT("struct"),
         KW_IF("if"),
         KW_ELSE("else"),
         KW_FOR("for"),
@@ -274,7 +275,7 @@ public record Token(
         } else if (Character.isLetter(c) || c == '_') {
             do {
                 offset += Character.charCount(src.charAt(offset));
-            } while (offset < src.length() && Character.isLetter(src.charAt(offset)));
+            } while (offset < src.length() && (Character.isLetter(src.charAt(offset)) || Character.isDigit(src.charAt(offset)) || src.charAt(offset) == '_'));
             content = src.substring(start, offset);
             type = Type.LIT_IDENT;
             for (var ty : Type.KEYWORDS) {

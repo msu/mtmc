@@ -135,12 +135,120 @@ public class SeaParser {
         return typedef;
     }
 
+    public DeclarationStruct parseDeclarationStruct() throws ParseException {
+        if (!take(KW_STRUCT)) return null;
+        var start = lastToken();
+
+        if (!take(LIT_IDENT)) {
+            throw new ParseException(new Message(start, "expected type name after 'struct'"));
+        }
+        var name = lastToken();
+
+        if (!take(LEFT_BRACE)) {
+            throw new ParseException(new Message(start, "expected '{' after struct name"));
+        }
+
+        var fieldNames = new HashSet<String>();
+        var fields = new ArrayList<DeclarationStruct.Field>();
+        while (hasMoreTokens() && !match(RIGHT_BRACE)) {
+            var fieldType = parseSimpleType();
+
+            if (!take(LIT_IDENT)) {
+                throw new ParseException(new Message(lastToken(), "expected field name after field type"));
+            }
+            var fieldName = lastToken();
+
+            if (!take(SEMICOLON)) {
+                throw new ParseException(new Message(lastToken(), "expected ';' after struct field"));
+            }
+
+            if (!fieldNames.add(fieldName.content())) {
+                throw new ParseException(new Message(fieldName, "duplicate field '" + fieldName.content() + "'"));
+            }
+
+            if (typeIsRecursive(name.content(), fieldType)) {
+                throw new ParseException(new Message(fieldName, "infinitely sized field type '" + fieldName.content() + "'"));
+            }
+
+            fields.add(new DeclarationStruct.Field(fieldType, fieldName));
+        }
+
+        if (!take(RIGHT_BRACE)) {
+            throw new ParseException(new Message(start, "expected '}' after struct field list"));
+        }
+        var end = lastToken();
+
+        if (!take(SEMICOLON)) {
+            throw new ParseException(new Message(lastToken(), "expected ';' after struct definition"));
+        }
+
+        var struct = new DeclarationStruct(start, name, fields, end);
+        symbols.put(name.content(), new Symbol(name, struct));
+        return struct;
+    }
+
+    boolean typeIsRecursive(LinkedHashSet<String> parentChain, HashSet<String> checkedStructs, SeaType type) {
+        return switch (type) {
+            case SeaType.Func func -> false;
+            case SeaType.Pointer pointer -> false;
+            case SeaType.Primitive primitive -> false;
+            case SeaType.Struct struct -> {
+                if (checkedStructs.contains(struct.name())) yield false;
+                if (!parentChain.add(struct.name())) yield true;
+                checkedStructs.add(struct.name());
+
+                for (SeaType ty : struct.fields().values()) {
+                    if (typeIsRecursive(parentChain, checkedStructs, ty)) {
+                        yield true;
+                    }
+                }
+
+                parentChain.remove(struct.name());
+                yield false;
+            }
+            case SeaType.Initializer initializer -> {
+                throw new UnsupportedOperationException("cannot recursive check blob types!");
+            }
+        };
+    }
+
+    boolean typeIsRecursive(String parentName, SeaType fieldType) {
+        return switch (fieldType) {
+            case SeaType.Func ignored -> false;
+            case SeaType.Pointer ignored -> false;
+            case SeaType.Primitive ignored -> false;
+            case SeaType.Struct struct -> {
+                var parentChain = new LinkedHashSet<String>();
+                parentChain.add(parentName);
+                var checked = new HashSet<String>();
+                yield typeIsRecursive(parentChain, checked, struct);
+            }
+            case SeaType.Initializer initializer -> {
+                throw new UnsupportedOperationException("cannot recursive check blob types!");
+            }
+        };
+    }
+
+    boolean typeIsRecursive(String parentName, TypeExpr fieldType) {
+        return switch (fieldType) {
+            case TypeExprArray array -> typeIsRecursive(parentName, array.inner);
+            case TypeExprRef ref -> typeIsRecursive(parentName, ref.type());
+            case TypeExprVoid ignored -> false;
+            case TypeExprChar ignored -> false;
+            case TypeExprInt ignored -> false;
+            case TypePointer ignored -> false;
+        };
+    }
+
     Token bodyBrace = null;
 
     @NotNull
     public Declaration parseDeclaration() throws ParseException {
         var typedef = parseDeclarationTypedef();
         if (typedef != null) return typedef;
+
+        var struct = parseDeclarationStruct();
+        if (struct != null) return struct;
 
         TypeExpr type;
         final var t2 = peekToken2();
@@ -392,8 +500,7 @@ public class SeaParser {
             throw new ParseException(new Message(peekToken(), "expected ';' after for initializer"));
         }
 
-        @Nullable
-        Expression condition = parseExpression();
+        @Nullable Expression condition = parseExpression();
 
         if (!take(SEMICOLON)) throw new ParseException(new Message(peekToken(), "expected ';' after for condition"));
         Expression incr = parseExpression();
@@ -419,9 +526,11 @@ public class SeaParser {
     }
 
     Symbol resolveSymbol(String name) {
-        for (var frame : scope) {
-            if (frame.containsKey(name)) {
-                return frame.get(name);
+        if (scope != null) {
+            for (var frame : scope) {
+                if (frame.containsKey(name)) {
+                    return frame.get(name);
+                }
             }
         }
         if (symbols.containsKey(name)) {
@@ -449,8 +558,12 @@ public class SeaParser {
             if (value == null) {
                 throw new ParseException(new Message(lastToken(), "expected initializer value after '='"));
             }
-            if (!value.type().isConvertibleTo(type.type())) {
-                value = new ExpressionTypeError(value, "cannot assign " + value.type().repr() + " to " + type.type().repr());
+
+            try {
+                value.type().checkConversionTo(type.type());
+            } catch (SeaType.ConversionError error) {
+                value = new ExpressionTypeError(value, "cannot assign " + value.type().repr() + " to "
+                        + type.type().repr() + ": " + error.getMessage());
             }
         }
 
@@ -542,6 +655,7 @@ public class SeaParser {
         while (hasMoreTokens()) {
             if (match(RIGHT_BRACE, SEMICOLON)) return;
             if (match(KW_IF, KW_FOR, KW_DO, KW_WHILE, KW_CONTINUE, KW_BREAK, KW_RETURN, KW_GOTO)) return;
+            consume();
         }
     }
 
@@ -582,8 +696,7 @@ public class SeaParser {
         var expr = parseTernaryExpression();
         if (expr == null) return null;
 
-        Token.Type[] types = { EQUAL, STAR_EQ, SLASH_EQ, PERCENT_EQ, PLUS_EQ, DASH_EQ, LEFT_ARROW2_EQ, RIGHT_ARROW2_EQ,
-                AMPERSAND_EQ, BAR_EQ };
+        Token.Type[] types = {EQUAL, STAR_EQ, SLASH_EQ, PERCENT_EQ, PLUS_EQ, DASH_EQ, LEFT_ARROW2_EQ, RIGHT_ARROW2_EQ, AMPERSAND_EQ, BAR_EQ};
 
         if (take(types)) {
             var op = lastToken();
@@ -595,8 +708,10 @@ public class SeaParser {
             if (expr.valueKind() != Expression.ValueKind.LValue) {
                 expr = new ExpressionTypeError(expr, "cannot assign to rvalue");
             }
-            if (!rhs.type().isConvertibleTo(expr.type())) {
-                rhs = new ExpressionTypeError(rhs, "cannot assign " + rhs.type().repr() + " to " + expr.type().repr());
+            try {
+                rhs.type().checkConversionTo(expr.type());
+            } catch (SeaType.ConversionError error) {
+                rhs = new ExpressionTypeError(rhs, "cannot assign " + rhs.type().repr() + " to " + expr.type().repr() + ": " + error.getMessage());
             }
 
             expr = new ExpressionBin(expr, op, rhs, SeaType.VOID);
@@ -644,8 +759,10 @@ public class SeaParser {
                 otherwise = new ExpressionTypeError(otherwise, "ternary branch cannot yield void");
             }
 
-            if (!otherType.isConvertibleTo(thenType)) {
-                otherwise = new ExpressionTypeError(otherwise, "the ternary branches disagree, " + otherType.repr() + " is not assignable to " + then.type());
+            try {
+                otherType.checkConversionTo(thenType);
+            } catch (SeaType.ConversionError error) {
+                otherwise = new ExpressionTypeError(otherwise, "the ternary branches disagree, " + otherType.repr() + " is not assignable to " + then.type() + ": " + error.getMessage());
             }
 
             expr = new ExpressionTernary(expr, then, otherwise, thenType);
@@ -998,8 +1115,7 @@ public class SeaParser {
             var type = switch (op.content()) {
                 case "++", "--" -> {
                     if (!exprTy.isIntegral()) {
-                        expr = new ExpressionTypeError(expr, "prefix operator '" + op.content() +
-                                "' is undefined on the type " + exprTy.repr());
+                        expr = new ExpressionTypeError(expr, "prefix operator '" + op.content() + "' is undefined on the type " + exprTy.repr());
                         yield SeaType.INT;
                     }
                     if (expr.valueKind() != Expression.ValueKind.LValue) {
@@ -1009,8 +1125,7 @@ public class SeaParser {
                 }
                 case "-", "~", "!" -> {
                     if (!exprTy.isArithmetic()) {
-                        expr = new ExpressionTypeError(expr, "prefix operator '" + op.content() +
-                                "' is undefined on the type " + exprTy.repr());
+                        expr = new ExpressionTypeError(expr, "prefix operator '" + op.content() + "' is undefined on the type " + exprTy.repr());
                         yield SeaType.INT;
                     }
 
@@ -1062,17 +1177,17 @@ public class SeaParser {
                 if (!take(LIT_IDENT)) {
                     return new ExpressionSyntaxError(lastToken(), "expected property name after accessor");
                 }
-                // TODO: access
                 var prop = new ExpressionIdent(lastToken(), SeaType.INT);
 
+                SeaType type = SeaType.INT;
                 var parentTy = expr.type();
-                if (!(parentTy instanceof SeaType.Struct(String ignored, Map<String, SeaType> fields))) {
+                if (!(parentTy instanceof SeaType.Struct structType)) {
                     expr = new ExpressionTypeError(expr, "cannot access non-structure types");
-                } else if (!fields.containsKey(prop.name())) {
+                } else if (!structType.fields().containsKey(prop.name())) {
                     expr = new ExpressionTypeError(prop, "the struct " + parentTy.repr() + " has no field '" + prop.name() + "'");
+                } else {
+                    type = structType.field(prop.name());
                 }
-                // TODO: fields
-                var type = SeaType.INT;
 
                 expr = new ExpressionAccess(expr, access, prop, type);
             } else if (take(LEFT_PAREN)) {
@@ -1123,8 +1238,10 @@ public class SeaParser {
                     for (int i = 0; i < params.size(); i++) {
                         var paramTy = params.get(i);
                         var argTy = args.get(i).type();
-                        if (argTy.isConvertibleTo(paramTy)) {
+                        try {
+                            argTy.checkConversionTo(paramTy);
                             continue;
+                        } catch (SeaType.ConversionError ignored) {
                         }
 
                         String s = "argument of type " + argTy.repr() + " is not convertible to " + paramTy.repr();
@@ -1192,7 +1309,25 @@ public class SeaParser {
                 return new ExpressionSyntaxError(lastToken(), "expected ')' after grouped expression");
             return new ExpressionParens(start, inner, lastToken());
         } else if (match(LEFT_BRACE)) {
-            throw new RuntimeException("unimplemented: INITIALIZER_LIST");
+            var start = consume();
+            var values = new ArrayList<Expression>();
+
+            while (hasMoreTokens() && !match(RIGHT_BRACE)) {
+                var value = parseExpression();
+                if (value == null) {
+                    return new ExpressionSyntaxError(peekToken(), "expected initializer value");
+                }
+                values.add(value);
+
+                if (!take(COMMA)) {
+                    break;
+                }
+            }
+
+            if (!take(RIGHT_BRACE)) return new ExpressionSyntaxError(lastToken(), "expected '}' after initializer");
+            var end = lastToken();
+
+            return new ExpressionInitializer(start, values, end);
         } else {
             return null;
         }

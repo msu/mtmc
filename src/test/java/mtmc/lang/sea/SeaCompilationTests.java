@@ -9,7 +9,8 @@ import mtmc.lang.sea.ast.Unit;
 import mtmc.os.exec.Executable;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SeaCompilationTests {
     Executable compile(String src) {
@@ -327,7 +328,7 @@ public class SeaCompilationTests {
                 int main() {
                     int x = 13;
                     int y = 42;
-               
+                
                     if (x > y || y / x == 3) {
                         printf("yo!\\n");
                     }
@@ -447,9 +448,36 @@ public class SeaCompilationTests {
 
     @Test
     public void scanfMe() {
-
         var output = compileAndRun("""
                 
                 """);
+    }
+
+    @Test
+    public void structures() {
+        var output = compileAndRun("""
+                int printf(char *s, ...);
+                
+                struct Point {
+                    int x;
+                    int y;
+                };
+                
+                int main() {
+                    Point pt = {100, 10};
+                    printf("Hello from %d, %d\\n", pt.x, pt.y);
+                
+                    Point p2 = {50, 50};
+                    printf("Hello to %d, %d\\n", p2.x, p2.y);
+                
+                    int dy = p2.y - pt.y;
+                    int dx = p2.x - pt.x;
+                    printf("slope between points is %d/%d\\n", dy, dx);
+                
+                    return 0;
+                }
+                
+                """);
+        assertEquals("Hello from 100, 10\nHello to 50, 50\nslope between points is 40/-50\n", output);
     }
 }

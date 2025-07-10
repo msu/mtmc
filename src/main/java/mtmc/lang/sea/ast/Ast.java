@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Expression, Statement, TypeExpr, Unit {
+public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, DeclarationStruct.Field, Expression, Statement, TypeExpr, Unit {
     public final Token start, end;
 
     public Ast(Token start, Token end) {
@@ -38,6 +38,8 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
                 }
                 yield out;
             }
+            case DeclarationStruct struct -> struct.fields.stream().map(x -> x);
+            case DeclarationStruct.Field field -> Stream.of(field.type);
             case DeclarationFunc.Param param -> Stream.of(param.type);
             case ExpressionAccess expressionAccess -> Stream.of(expressionAccess.value);
             case ExpressionBin expressionBin -> Stream.of(expressionBin.lhs, expressionBin.rhs);
@@ -46,6 +48,7 @@ public sealed abstract class Ast permits Declaration, DeclarationFunc.Param, Exp
                 out = Stream.concat(out, expressionCall.args.stream());
                 yield out;
             }
+            case ExpressionInitializer init -> init.values.stream().map(x -> x);
             case ExpressionCast expressionCast -> Stream.of(expressionCast.type, expressionCast.value);
             case ExpressionChar ignored -> Stream.empty();
             case ExpressionIdent ignored -> Stream.empty();

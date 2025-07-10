@@ -25,7 +25,7 @@ public enum SysCall {
     JOYSTICK(0x3A),
     SCOLOR(0x3B),
 
-    MEMCOPY(0x40),
+    MEMCPY(0x40),
     ERROR(0x0FF);
 
     private final byte value;

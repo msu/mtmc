@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public sealed abstract class Expression extends Ast permits ExpressionAccess, ExpressionBin, ExpressionCall, ExpressionCast, ExpressionChar, ExpressionIdent, ExpressionIndex, ExpressionInteger, ExpressionParens, ExpressionPostfix, ExpressionPrefix, ExpressionString, ExpressionSyntaxError, ExpressionTernary, ExpressionTypeError {
+public sealed abstract class Expression extends Ast permits ExpressionAccess, ExpressionBin, ExpressionCall, ExpressionCast, ExpressionChar, ExpressionIdent, ExpressionIndex, ExpressionInitializer, ExpressionInteger, ExpressionParens, ExpressionPostfix, ExpressionPrefix, ExpressionString, ExpressionSyntaxError, ExpressionTernary, ExpressionTypeError {
     private final SeaType type;
     public Expression(Token start, Token end, SeaType type) {
         super(start, end);
@@ -31,6 +31,7 @@ public sealed abstract class Expression extends Ast permits ExpressionAccess, Ex
             case ExpressionCast ignored -> ValueKind.RValue;
             case ExpressionChar ignored -> ValueKind.RValue;
             case ExpressionIdent ignored -> ValueKind.LValue;
+            case ExpressionInitializer ignored -> ValueKind.RValue;
             case ExpressionIndex ignored -> ValueKind.LValue;
             case ExpressionInteger ignored -> ValueKind.RValue;
             case ExpressionParens expressionParens -> expressionParens.inner.valueKind();

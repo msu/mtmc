@@ -255,6 +255,13 @@ public class Assembler {
                 miscInst.setTo(toRegister);
                 MTMCToken value = requireIntegerToken(tokens, miscInst, 15);
                 miscInst.setValue(value);
+            } else if (type == InstructionType.MCP) {
+                MTMCToken fromRegister = requireWriteableRegister(tokens, miscInst);
+                miscInst.setFrom(fromRegister);
+                MTMCToken toRegister = requireWriteableRegister(tokens, miscInst);
+                miscInst.setTo(toRegister);
+                MTMCToken value = requireIntegerToken(tokens, miscInst, Short.MAX_VALUE);
+                miscInst.setValue(value);
             } else if (type == InstructionType.DEBUG) {
                 MTMCToken debugString = requireString(tokens, miscInst);
                 // create a dummy int token representing the offset of the debug string

@@ -67,6 +67,14 @@ public class MiscInstruction extends Instruction {
             int to = Register.toInteger(toRegister.stringValue());
             int immediateVal = value.intValue();
             output[getLocation() + 1] = (byte) (to << 4 | immediateVal);
+        } else if (getType() == InstructionType.MCP) {
+            output[getLocation()] = 0b000_0101;
+            int from = Register.toInteger(fromRegister.stringValue());
+            int to = Register.toInteger(toRegister.stringValue());
+            int value = this.value.intValue();
+            output[getLocation() + 1] = (byte) (from << 4 | to);
+            output[getLocation() + 2] = (byte) (value << 8);
+            output[getLocation() + 3] = (byte) (value & 0xFF);
         } else if (getType() == InstructionType.DEBUG) {
             output[getLocation()] = 0b0000_1000;
             output[getLocation() + 1] = value.intValue().byteValue();
@@ -118,6 +126,12 @@ public class MiscInstruction extends Instruction {
                 builder.append(toName).append(" ");
                 builder.append(amount);
                 return builder.toString();
+            } else if (topNibble == 0b0101) {
+                short from = getBits(8, 4, instruction);
+                String fromName = Register.fromInteger(from);
+                short to = getBits(4, 4, instruction);
+                String toName = Register.fromInteger(to);
+                return "mcp " + fromName + " " + toName;
             } else if (topNibble == 0b1000) {
                 StringBuilder builder = new StringBuilder("debug ");
                 short stringIndex = getBits(8, 8, instruction);

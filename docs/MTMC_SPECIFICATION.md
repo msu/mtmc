@@ -97,15 +97,16 @@ Instruction types can be determined by looking at the four high-order bits (nibb
 
 Misc (miscellaneous) instructions start with the nibble `0000`.
 
-| Instruction | Form                  | Description                                                 | Example        |
-|-------------|-----------------------|-------------------------------------------------------------|----------------|
-| `sys`       | `0000 0000 vvvv vvvv` | Issues syscall `vvvv vvvv`                                  | `sys wstr`     |
-| `mov`       | `0000 0001 rrrr ssss` | Moves the value in register `ssss` to `rrrr`                | `mov a0 t0`    |
-| `inc`       | `0000 0010 rrrr vvvv` | Increments the value in register `rrrr` by the value `vvvv` | `inc t0`       |
-| `dec`       | `0000 0011 rrrr vvvv` | Decrements the value in register `rrrr` by the value `vvvv` | `dec t0 2`     |
-| `seti`      | `0000 0100 rrrr vvvv` | Sets the value in register `rrrr` to the value `vvvv`       | `seti t0 2`    |
-| `debug`     | `0000 1000 vvvv vvvv` | Prints the associated debug string to the console           | `debug "Here"` |
-| `nop`       | `0000 1111 1111 1111` | A no-op instruction                                         | `nop`          |
+| Instruction | Form                  | Description                                                                         | Example        |
+|-------------|-----------------------|-------------------------------------------------------------------------------------|----------------|
+| `sys`       | `0000 0000 vvvv vvvv` | Issues syscall `vvvv vvvv`                                                          | `sys wstr`     |
+| `mov`       | `0000 0001 rrrr ssss` | Moves the value in register `ssss` to `rrrr`                                        | `mov a0 t0`    |
+| `inc`       | `0000 0010 rrrr vvvv` | Increments the value in register `rrrr` by the value `vvvv`                         | `inc t0`       |
+| `dec`       | `0000 0011 rrrr vvvv` | Decrements the value in register `rrrr` by the value `vvvv`                         | `dec t0 2`     |
+| `seti`      | `0000 0100 rrrr vvvv` | Sets the value in register `rrrr` to the value `vvvv`                               | `seti t0 2`    |
+| `mcp`       | `0000 0101 rrrr ssss` | Copy a value of (size) from the ptr `rrrr` to the ptr `ssss`, size is a double-word | `mcp t1 t0 16` |
+| `debug`     | `0000 1000 vvvv vvvv` | Prints the associated debug string to the console                                   | `debug "Here"` |
+| `nop`       | `0000 1111 1111 1111` | A no-op instruction                                                                 | `nop`          |
 
 ### ALU
 

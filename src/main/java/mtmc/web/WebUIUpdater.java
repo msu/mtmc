@@ -171,6 +171,10 @@ public class WebUIUpdater implements MTMCObserver {
 
     @Override
     public void stepExecution() {
+        if (!webServer.getComputerView().hasDebugInfo()) {
+            return;
+        }
+        
         var program = webServer.getComputerView().getProgram();
         var asm = webServer.getComputerView().getAssemblyLine();
         var step = new ExecutionStep(program, asm, -1);

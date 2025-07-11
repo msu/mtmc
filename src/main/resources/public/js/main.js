@@ -34,7 +34,9 @@ sseSource.addEventListener("update:memory-panel", (e) => {
 
 sseSource.addEventListener("update:step-execution", (e) => {
     let step = JSON.parse(e.data);
-    //TODO: Integrate with editor
+    if (window.stepExecution) {
+        window.stepExecution(step);
+    }
 });
 
 sseSource.onerror = (err) => {
@@ -339,8 +341,11 @@ async function startMonaco() {
     var editor_div = document.getElementById('editor');
     var editor_save = document.getElementById('editor-save');
     var editor_close = document.getElementById('editor-close');
-    var response = await fetch("/fs/read" + editor_div.dataset.filename);
+    
+    var filename = editor_div.dataset.filename;
+    var response = await fetch("/fs/read" + filename);
     var text = await response.text();
+    var stepHighlight = [];
     
     var theme = "vs";
     var language = "plaintext";
@@ -394,6 +399,18 @@ async function startMonaco() {
             evt.detail.cfg.confirm = () => confirm(message);
         }
     });
+    
+    window.stepExecution = function(step) {
+        if (step.program !== filename) return;
+        if (step.asm < 1) return;
+        
+        var model = editor.getModel();
+        var range = new monaco.Range(step.asm, 1, step.asm, model.getLineMaxColumn(step.asm));
+        var options = { isWholeLine: true, inlineClassName: 'step-highlight' };
+        var decoration = {range: range, options: options};
+        
+        stepHighlight = model.deltaDecorations(stepHighlight, [decoration]);
+    };
 }
 
 function fullscreen(id, event) {

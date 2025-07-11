@@ -451,7 +451,15 @@ public class MTMCWebView {
         currentError = null;
     }
     
+    public boolean hasDebugInfo() {
+        return (computer.getDebugInfo() != null);
+    }
+    
     public String getProgram() {
+        if (computer.getDebugInfo() == null) {
+            return "";
+        }
+        
         String original = computer.getDebugInfo().originalFile();
         String assembly = computer.getDebugInfo().assemblyFile();
         
@@ -459,6 +467,10 @@ public class MTMCWebView {
     }
     
     public int getAssemblyLine() {
+        if (computer.getDebugInfo() == null) {
+            return -1;
+        }
+        
         var ir = computer.getRegisterValue(Register.PC);
         var debug = computer.getDebugInfo().assemblyLineNumbers();
         

@@ -333,6 +333,7 @@ function initConsole() {
 async function startMonaco() {
     var editor_div = document.getElementById('editor');
     var editor_save = document.getElementById('editor-save');
+    var editor_close = document.getElementById('editor-close');
     var response = await fetch("/fs/read" + editor_div.dataset.filename);
     var text = await response.text();
     
@@ -380,6 +381,13 @@ async function startMonaco() {
     
     editor.getModel().onDidChangeContent(function(event) {
         editor_save.removeAttribute("disabled");
+    });
+    
+    editor_close.addEventListener("fx:config", (evt) => {
+        var message = "You have unsaved work. Are you sure you want to close?";
+        if (!editor_save.hasAttribute("disabled")) {
+            evt.detail.cfg.confirm = () => confirm(message);
+        }
     });
 }
 

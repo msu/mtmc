@@ -9,7 +9,7 @@
             <button id="expand" onclick="fullscreen('visual-shell');"><img src="/img/expand.svg" width="16" height="16" alt="Fullscreen"></button>
             <button id="contract" onclick="restore('visual-shell');"><img src="/img/contract.svg" width="16" height="16" alt="Restore"></button>
             <div class="divider"></div>
-            <button fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'><img src="/img/xmark.svg" width="16" height="16" alt="Close"></button>
+            <button id="editor-close" fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'><img src="/img/xmark.svg" width="16" height="16" alt="Close"></button>
         </div>
     </div>
     <div id="editor" data-filename="{{computer.currentFilename}}" data-mime="{{computer.currentFileMime}}"></div>

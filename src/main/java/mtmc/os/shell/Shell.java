@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import mtmc.os.fs.FileSystem;
 
 public class Shell {
     private static final Map<String, ShellCommand> COMMANDS = new LinkedHashMap<>();
@@ -40,18 +41,45 @@ public class Shell {
     }
 
     public static boolean isCommand(String cmd) {
-        return COMMANDS.containsKey(cmd);
+        return COMMANDS.containsKey(cmd.toLowerCase());
     }
-
+    
+    private static boolean findExecutable(String path, FileSystem fs) {
+        if (path == null || path.equals("")) return false;
+        if (fs.exists(path) && !fs.listFiles(path).directory) return true;
+        if (fs.exists("/bin/" + path) && !fs.listFiles("/bin/" + path).directory) return true;
+        
+        return false;
+    }
+    
+    private static void runExecutable(String file, String command, MTMCTokenizer tokens, MonTanaMiniComputer computer) throws Exception {
+        FileSystem fs = computer.getFileSystem();
+        Path srcPath = Path.of("disk/" + fs.resolve(file));
+        if(!srcPath.toFile().exists()) {
+            srcPath = Path.of("disk" + fs.resolve("/bin/" + file));
+        }
+        Executable exec = Executable.load(srcPath);
+        computer.load(exec.code(), exec.data(), exec.graphics(), exec.debugInfo());
+        tokens.consume();
+        String arg = command.substring(file.length()).strip();
+        computer.setArg(arg);
+        computer.run();
+    }
+    
     public static void execCommand(String command, MonTanaMiniComputer computer) {
         MTMCTokenizer tokens = new MTMCTokenizer(command, "#");
         try {
             MTMCToken identifier = tokens.matchAndConsume(IDENTIFIER);
             String cmd;
             if (identifier == null) {
+                MTMCToken question = tokens.matchAndConsume(QUESTION_MARK);
+                String executable = tokens.collapseTokensAsString();
+                
                 // alias ? to help
-                if (tokens.matchAndConsume(QUESTION_MARK) != null) {
+                if (question != null) {
                     cmd = "help";
+                } else if (findExecutable(executable, computer.getFileSystem())) {
+                    cmd = executable;
                 } else {
                     printShellHelp(computer);
                     return;
@@ -60,7 +88,7 @@ public class Shell {
                 cmd = identifier.stringValue();
             }
             if (isCommand(cmd)) {
-                COMMANDS.get(cmd).exec(tokens, computer);
+                COMMANDS.get(cmd.toLowerCase()).exec(tokens, computer);
             } else {
                 tokens.reset();
                 LinkedList<MTMCToken> asm = new LinkedList<>(tokens.stream().toList());
@@ -85,14 +113,8 @@ public class Shell {
                         computer.getConsole().println(result.printErrors());
                     }
                 } else {
-                    Path srcPath = Path.of("disk/bin/" + firstTokenStr);
-                    if (srcPath.toFile().exists()) {
-                        Executable exec = Executable.load(srcPath);
-                        computer.load(exec.code(), exec.data(), exec.graphics(), exec.debugInfo());
-                        tokens.consume();
-                        String arg = command.substring(firstToken.end()).strip();
-                        computer.setArg(arg);
-                        computer.run();
+                    if (findExecutable(cmd, computer.getFileSystem())) {
+                        runExecutable(cmd, command, tokens, computer);
                     } else {
                         printShellHelp(computer);
                     }

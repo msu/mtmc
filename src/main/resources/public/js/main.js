@@ -401,10 +401,13 @@ async function startMonaco() {
     });
     
     window.stepExecution = function(step) {
-        if (step.program !== filename) return;
-        if (step.asm < 1) return;
-        
         var model = editor.getModel();
+        
+        if (step.program !== filename || step.asm < 1) {
+            stepHighlight = model.deltaDecorations(stepHighlight, []);
+            return;
+        }
+        
         var range = new monaco.Range(step.asm, 1, step.asm, model.getLineMaxColumn(step.asm));
         var options = { isWholeLine: true, inlineClassName: 'step-highlight' };
         var decoration = {range: range, options: options};

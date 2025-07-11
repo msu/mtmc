@@ -356,6 +356,10 @@ public class MTMCWebView {
         }
     }
     
+    public boolean hasFileOpen() {
+        return this.currentFile != null;
+    }
+    
     public boolean createFile(String filename, String mime) throws IOException {
         FileSystem fs = computer.getFileSystem();
         
@@ -471,14 +475,14 @@ public class MTMCWebView {
             return -1;
         }
         
-        var ir = computer.getRegisterValue(Register.PC);
+        var pc = computer.getRegisterValue(Register.PC);
         var debug = computer.getDebugInfo().assemblyLineNumbers();
         
-        if (debug.length <= ir) {
+        if (debug == null || debug.length <= pc) {
             return -1;
         }
         
-        return debug[ir];
+        return debug[pc];
     }
 
     enum DisplayFormat {

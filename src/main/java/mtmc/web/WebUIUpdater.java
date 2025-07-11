@@ -135,6 +135,9 @@ public class WebUIUpdater implements MTMCObserver {
     
     @Override
     public void filesystemUpdated() {
+        if (webServer.getComputerView().hasFileOpen()) {
+            return; // Don't update the file tree if an editor is open
+        }
         updateFlags.updateAndGet(operand -> operand | UPDATE_FILESYSTEM_UI);
     }
 

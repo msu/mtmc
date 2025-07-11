@@ -360,9 +360,19 @@ async function startMonaco() {
         automaticLayout: true
     });
     
-    editor_save.onclick = function() {
+    function save() {
         fetch("/fs/write" + editor_div.dataset.filename, {method: 'POST', body: editor.getValue()});
     };
+    
+    editor_save.onclick = save;
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, save); // Not working for some reason
+    editor_div.addEventListener("keydown", function(e) {  // fallback
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            e.stopPropagation();
+            save();
+        }
+    });
 }
 
 function fullscreen(id, event) {

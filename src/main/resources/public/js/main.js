@@ -413,6 +413,8 @@ async function startMonaco() {
         var decoration = {range: range, options: options};
         
         stepHighlight = model.deltaDecorations(stepHighlight, [decoration]);
+        
+        editor.revealLineInCenter(step.asm);
     };
 }
 

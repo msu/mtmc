@@ -566,12 +566,41 @@ details[open] > summary::before {
     align-items: center;
 }
 
+.file-system-nav-bar.editor-buttons .divider {
+    display: inline-block; 
+    border: 1px inset #3286ce; 
+    height: 0.8lh;
+}
+
+.file-system-nav-bar.editor-buttons .title {
+    color: white;
+    display: inline-block;
+    font-family: sans-serif;
+    max-width: calc(100% - 50px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 4px;
+    padding-top: 4px;
+    white-space: nowrap;
+    vertical-align: top;
+}
+
 .file-system-nav-bar.editor-buttons #editor-save[disabled] {
     filter: brightness(75%);
 }
 
-.file-system-nav-bar .buttons-right {
+.file-system-nav-bar .buttons-left {
+    max-width: calc(100% - 74px);
     flex-grow: 1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.file-system-nav-bar .buttons-right {
+    width: 74px;
+    max-width: 74px;
+    text-align: right;
+    white-space: nowrap;
 }
 
 #contract {

@@ -43,7 +43,23 @@ public class FileSystem {
     }
     
     public boolean mkdir(String path) {
-        return new File(DISK_PATH.toFile(), resolve(path)).mkdir();
+        boolean success = new File(DISK_PATH.toFile(), resolve(path)).mkdir();
+        
+        if (success) {
+            computer.notifyOfFileSystemUpdate();
+        }
+        
+        return success;
+    }
+    
+    public boolean delete(String path) {
+        boolean success = new File(DISK_PATH.toFile(), resolve(path)).delete();
+        
+        if (success) {
+            computer.notifyOfFileSystemUpdate();
+        }
+        
+        return success;
     }
 
     public String resolve(String filename) {

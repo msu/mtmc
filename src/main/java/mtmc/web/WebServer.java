@@ -175,6 +175,16 @@ public class WebServer {
                     computerView.closeFile();
                     ctx.html(render("templates/filetree.html"));
                 })
+                .get("/fs/new", ctx -> {
+                    ctx.html(render("templates/newfile.html"));
+                })
+                .post("/fs/create", ctx -> {
+                    if (computerView.createFile(ctx.formParam("filename"), ctx.formParam("mime"))) {
+                        ctx.html(render(computerView.selectEditor()));
+                    } else {
+                        ctx.html(render("templates/newfile.html"));
+                    }
+                })
                 .sse("/sse", client -> {
                     client.keepAlive();
                     client.onClose(() -> sseClients.remove(client));

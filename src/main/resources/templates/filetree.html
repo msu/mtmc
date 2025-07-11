@@ -39,13 +39,12 @@
     </div>
 
     <header class="file-system-nav-bar">
-        <ul class="tray">
-            <li class="nav-button">File</li>
-            <li class="nav-button">Edit</li>
-            <li class="nav-button">View</li>
-            <li class="nav-button">Tools</li>
-            <li class="nav-button">Help</li>
-        </ul>
+        <div class="tray">
+            <button class="nav-button" fx-method="GET" fx-action="/fs/new" fx-swap="outerHTML" fx-target="#visual-shell">
+                <img src="/img/new-file.svg" width="16" height="16"> 
+                <span class="label">New File</span>
+            </button>
+        </div>
     </header>
     <div>
         <form fx-method="POST" fx-action="/fs/cwd/" fx-swap="outerHTML"

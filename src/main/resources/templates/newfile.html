@@ -1,0 +1,38 @@
+<div class="site" id="visual-shell">
+    <div class="heading-bar">
+        <img id="search-folder-icon" src="/img/search-folder-icon.ico">
+        <span> Exploring - {{ computer.getFileSystem().getCWD() }}</span>
+    </div>
+
+    <header class="file-system-nav-bar">
+        <div class="tray" style="padding: 4px">Create New File</div>
+    </header>
+    <form fx-method="POST" fx-action="/fs/create" fx-swap="outerHTML" fx-target="#visual-shell">
+        <div>
+            <input id="cd-search" name="cwd" placeholder="Current Directory" type="text" autocomplete="off"
+                   value="{{ computer.getFileSystem().getCWD() }}" disabled="disabled">
+        </div>
+        <div class="new-file">
+            <div class="label">File Type:</div>
+            <div>
+                <select name="mime">
+                    <option value="text/x-asm" {% if computer.currentFileMime == "text/x-asm" %}selected{% endif %}>Assembly Language</option>
+                    <option value="text/x-csrc" {% if computer.currentFileMime == "text/x-csrc" %}selected{% endif %}>C Language</option>
+                    <option value="text/plain" {% if computer.currentFileMime == "text/plain" %}selected{% endif %}>Plain Text / Other</option>
+                </select>
+            </div>
+            <div class="label">
+                Name:
+            </div>
+            <div>
+                <input id="new-filename" name="filename" type="text" autocomplete="off" value="{{computer.currentFilename}}">
+            </div>
+            <div class="save-cancel-buttons">
+                <button>Save</button>
+                <button fx-action="/fs/close" fx-swap="outerHTML" fx-target="#visual-shell">Cancel</button>
+            </div>
+            <div style="margin-top: 2rem; color: red;">{{computer.currentError}}</div>
+        </div>
+    </form>
+</div>
+    

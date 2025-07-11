@@ -412,7 +412,9 @@ function restore(id) {
 }
 
 document.addEventListener("fx:swapped", (evt) => {
-    if (evt.detail.cfg.action.startsWith("/fs/open/")) {
+    var action = evt.detail.cfg.action;
+
+    if (action.startsWith("/fs/open/") || action.startsWith("/fs/create")) {
         startMonaco();
     }
 });

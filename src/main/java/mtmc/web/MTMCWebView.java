@@ -26,6 +26,7 @@ public class MTMCWebView {
     private Set<String> expandedPaths = new HashSet<>();
     private String currentFile;
     private String currentFileMime;
+    private String currentError;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -130,6 +131,10 @@ public class MTMCWebView {
 
     public String getCurrentFileMime() {
         return currentFileMime;
+    }
+
+    public String getCurrentError() {
+        return currentError;
     }
     
     public String selectEditor() {
@@ -350,6 +355,46 @@ public class MTMCWebView {
             expandedPaths.add(pathToToggle);
         }
     }
+    
+    public boolean createFile(String filename, String mime) throws IOException {
+        FileSystem fs = computer.getFileSystem();
+        
+        this.currentFile = filename;
+        this.currentFileMime = mime;
+        
+        if (filename.length() < 1) {
+            this.currentError = "File name is required";
+            return false;
+        }
+        
+        if (!filename.contains(".")) {
+            switch(mime) {
+                case "text/x-asm":
+                    filename += ".asm";
+                    break;
+                case "text/x-csrc":
+                    filename += ".c";
+                    break;
+            }
+        }
+        
+        if (filename.contains("/")) {
+            this.currentError = "File name cannot contain '/'";
+            return false;
+        }
+        
+        if (fs.exists(filename)) {
+            this.currentError = "'" + filename + "' already exists";
+            return false;
+        }
+        
+        computer.getFileSystem().writeFile(filename, "");
+        
+        this.currentFile = computer.getFileSystem().getCWD() + "/" + filename;
+        this.currentFileMime = mime;
+        
+        return true;
+    }
 
     public boolean openFile(String fileToOpen) throws IOException {
         File file = computer.getOS().loadFile(fileToOpen);
@@ -364,6 +409,8 @@ public class MTMCWebView {
 
     public void closeFile() {
         currentFile = null;
+        currentFileMime = null;
+        currentError = null;
     }
 
     enum DisplayFormat {

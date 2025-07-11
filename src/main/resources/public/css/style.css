@@ -635,9 +635,12 @@ details[open] > summary::before {
 }
 
 .tray {
+    color: white;
+    font-family: sans-serif;
     list-style: none;
     margin-block: 0;
     padding-inline: 0;
+    text-align: left;
 }
 
 .nav-button {
@@ -647,6 +650,51 @@ details[open] > summary::before {
     text-align: center;
     padding: 5px 3px;
     text-decoration: none;
+}
+
+.file-system-nav-bar button.nav-button {
+    background-color: #3286ce;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: white;
+    padding: 2px 6px;
+}
+
+.file-system-nav-bar button.nav-button .label {
+    display: inline-block; 
+    position: relative; 
+    top: -3px; 
+    padding-left: 2px;
+    padding-right: 4px;
+}
+
+.file-system-nav-bar button.nav-button:hover {
+    border: 1px outset #3286ce;
+}
+
+.file-system-nav-bar button.nav-button:active {
+    border: 1px inset #3286ce;
+}
+
+.new-file {
+    padding: 1rem;
+}
+
+.new-file .label {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.new-file select, .new-file input {
+    width: 80%;
+    font-size: 16px;
+}
+
+.save-cancel-buttons {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    gap: 0.75rem;
+    margin-top: 2rem;
 }
 
 #cd-search {

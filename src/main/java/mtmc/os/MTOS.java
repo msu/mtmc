@@ -236,7 +236,7 @@ public class MTOS {
 
         } else if (syscallNumber == SysCall.getValue("cwd")) {
         
-            String cwd = computer.getFileSystem().getCWD();
+            String cwd = computer.getFileSystem().listCWD().path;
 
             short destination = computer.getRegisterValue(A0);
             int maxSize = Math.min(computer.getRegisterValue(A1), cwd.length()+1);
@@ -287,6 +287,75 @@ public class MTOS {
             
             computer.getDisplay().drawImage(image, x, y);
             computer.setRegisterValue(RV, 0);
+        } else if (syscallNumber == SysCall.getValue("dirent")) {
+            short dirent = computer.getRegisterValue(A0);
+            short command = computer.getRegisterValue(A1);
+            short offset = computer.getRegisterValue(A2);
+            short destination = computer.getRegisterValue(A3);
+            
+            short maxSize = computer.fetchWordFromMemory(dirent + 2);
+            short maxSizeOut = computer.fetchWordFromMemory(destination + 2);
+            
+            StringBuilder dir = new StringBuilder();
+            File[] list;
+            
+            for (int i = 0; i < maxSize; i++) {
+                char c = (char)computer.fetchByteFromMemory(dirent + 4 + i);
+                
+                if(c == 0) break;
+                
+                dir.append(c);
+            }
+
+            if (!computer.getFileSystem().exists(dir.toString())) {
+                computer.setRegisterValue(RV, -1);
+                return;
+            }
+            
+            list = computer.getFileSystem().getFileList(dir.toString());
+            
+            if (command == 0) { // Count of files in the directory
+                computer.setRegisterValue(RV, list.length);
+            } if (command == 1) {
+
+                if (offset < 0 || offset >= list.length) {
+                    computer.setRegisterValue(RV, -2);
+                    return;
+                }
+                
+                File file = list[offset];
+                String name = file.getName();
+                int size = Math.min(maxSizeOut-1, name.length());
+
+                computer.writeWordToMemory(destination, file.isDirectory() ? 1 : 0);
+                
+                for (int i = 0; i < size; i++) {
+                    byte aByte = (byte)name.charAt(i);
+                    computer.writeByteToMemory(destination + 4 + i, aByte);
+                }
+
+                //TODO: Should this return the length with or without the null terminator?
+                computer.writeByteToMemory(destination + 4 + size, (byte)0);
+                computer.setRegisterValue(RV, Math.min(maxSizeOut, name.length())-1);
+            }
+        } else if (syscallNumber == SysCall.getValue("dfile")) {
+            short source = computer.getRegisterValue(A0);
+            short maxSize = computer.getRegisterValue(A1);
+            StringBuffer path = new StringBuffer();
+            
+            for (int i = 0; i < maxSize; i++) {
+                char c = (char)computer.fetchByteFromMemory(source + i);
+                
+                if(c == 0) break;
+                
+                path.append(c);
+            }
+            
+            if (computer.getFileSystem().delete(path.toString())) {
+                computer.setRegisterValue(RV, 0);
+            } else {
+                computer.setRegisterValue(RV, 1);
+            }
         }
     }
 

@@ -14,6 +14,8 @@ public enum SysCall {
     WFILE(0x11),
     CWD(0x12),
     CHDIR(0x13),
+    DIRENT(0x14),
+    DFILE(0x15),
 
     RND(0x20),
     SLEEP(0x21),

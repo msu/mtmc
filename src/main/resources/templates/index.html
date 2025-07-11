@@ -2,7 +2,10 @@
 <html>
 <head>
     <meta name="viewport" content="minimal-ui, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="webjars/monaco-editor/0.52.2/min/vs/editor/editor.main.css">
     <script src="/js/fixi-0.9.0.js"></script>
     <script src="/js/main.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js" integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -19,9 +22,19 @@
         {% include 'templates/display.html' %}
         {% include 'templates/console.html' %}
     </div>
-    <div id="right">
-        {% include 'templates/editors.html' %}
+    <div id="fs" class="panel">
+        {% if computer.currentFilename != null %}
+        {% include computer.selectEditor() %}
+        {% else %}
+        {% include 'templates/filetree.html' %}
+        {% endif %}
     </div>
 </main>
+<!-- MONACO JS -->
+<script>var require = { paths: { 'vs': '/webjars/monaco-editor/0.52.2/min/vs' } };</script>
+
+<script src="/webjars/monaco-editor/0.52.2/min/vs/loader.js"></script>
+<script src="/webjars/monaco-editor/0.52.2/min/vs/editor/editor.main.js"></script>
+<script src="/js/mtmc16-asm.js"></script>
 </body>
 </html>

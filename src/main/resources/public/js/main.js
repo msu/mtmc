@@ -8,7 +8,7 @@ sseSource.addEventListener("update:execution", (e) => {
 });
 
 sseSource.addEventListener("update:filesystem", (e) => {
-    let element = document.getElementById("fs");
+    let element = document.getElementById("visual-shell");
     element.outerHTML = e.data;
 });
 
@@ -328,3 +328,99 @@ function initConsole() {
 
     input.focus();
 }
+
+// Monaco editor support tools
+async function startMonaco() {
+    var editor_div = document.getElementById('editor');
+    var editor_save = document.getElementById('editor-save');
+    var editor_close = document.getElementById('editor-close');
+    var response = await fetch("/fs/read" + editor_div.dataset.filename);
+    var text = await response.text();
+    
+    var theme = "vs";
+    var language = "plaintext";
+    
+    switch(editor_div.dataset.mime) {
+        case "text/x-asm":
+            language = "mtmc16-asm";
+            theme = "mtmc16-asm";
+            break;
+        case "text/x-csrc":
+            language = "c";
+            break;
+        case "application/json":
+        case "text/mtmc16-bin":
+            language = "json";
+            break;
+    }
+    
+    var editor = monaco.editor.create(editor_div, {
+        value: text,
+        language: language,
+        theme: theme,
+        automaticLayout: true
+    });
+    
+    function save() {
+        if (editor_save.hasAttribute("disabled")) {
+            return;
+        }
+        fetch("/fs/write" + editor_div.dataset.filename, {method: 'POST', body: editor.getValue()});
+        editor_save.setAttribute("disabled", "disabled");
+    };
+    
+    editor_save.onclick = save;
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, save); // Not working for some reason
+    editor_div.addEventListener("keydown", function(e) {  // fallback
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            e.stopPropagation();
+            save();
+        }
+    });
+    
+    editor.getModel().onDidChangeContent(function(event) {
+        editor_save.removeAttribute("disabled");
+    });
+    
+    editor_close.addEventListener("fx:config", (evt) => {
+        var message = "You have unsaved work. Are you sure you want to close?";
+        if (!editor_save.hasAttribute("disabled")) {
+            evt.detail.cfg.confirm = () => confirm(message);
+        }
+    });
+}
+
+function fullscreen(id, event) {
+    document.getElementById(id).classList.add("fullscreen");
+    
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+}
+
+function restore(id) {
+    document.getElementById(id).classList.remove("fullscreen");
+    
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+}
+
+document.addEventListener("fx:swapped", (evt) => {
+    var action = evt.detail.cfg.action;
+
+    if (action.startsWith("/fs/open/") || action.startsWith("/fs/create")) {
+        startMonaco();
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    if (document.getElementById("editor")) {
+        startMonaco();
+    }
+});

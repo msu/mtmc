@@ -1,0 +1,74 @@
+{% macro render_listing(listing, open) %}
+    <details class="directory-details" {% if open %}open{% endif %}><summary><a
+            class="directory-entry"
+            fx-swap="outerHTML"
+            fx-target="#visual-shell"
+            fx-action="/fs/toggle/{{ listing.path }}"
+    >
+        {% if listing.name == "disk" %} <img class="folder-icon" src="/img/disk-icon.ico">/ {% else %}
+            <img class="folder-icon" src="/img/single-folder-icon.ico">{{ listing.name }} {% endif %}</a></summary>
+
+    <div class="content">
+        <ul>
+            {% for file in listing.list() %}
+            {% if file.directory %}
+                <li>
+                    {{ render_listing(file, false) }}
+                </li>
+            {% endif %}
+            {% if not file.directory %}
+                <li>
+                    <img class="blank-sheet-icon" src="/img/blank-sheet.ico">
+                    <a
+                            class="file-entry"
+                            fx-swap="outerHTML"
+                            fx-target="#visual-shell"
+                            fx-action="/fs/open/{{ file.path }}"
+                    >{{ file.name }}</a>
+                </li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+    </div></details>
+{% endmacro %}
+
+<div class="site" id="visual-shell">
+    <div class="heading-bar">
+        <img id="search-folder-icon" src="/img/search-folder-icon.ico">
+        <span> Exploring - {{ computer.getFileSystem().getCWD() }}</span>
+    </div>
+
+    <header class="file-system-nav-bar">
+        <div class="tray">
+            <button class="nav-button" fx-method="GET" fx-action="/fs/new/file" fx-swap="outerHTML" fx-target="#visual-shell">
+                <img src="/img/new-file.svg" width="16" height="16"> 
+                <span class="label">New File</span>
+            </button>
+            <button class="nav-button" fx-method="GET" fx-action="/fs/new/dir" fx-swap="outerHTML" fx-target="#visual-shell">
+                <img src="/img/new-directory.svg" width="16" height="16"> 
+                <span class="label">New Directory</span>
+            </button>
+        </div>
+    </header>
+    <div>
+        <form fx-method="POST" fx-action="/fs/cwd/" fx-swap="outerHTML"
+              fx-target="#visual-shell">
+            <input id="cd-search" name="cwd" placeholder="Current Directory" type="text" autocomplete="off"
+                   value="{{ computer.getFileSystem().getCWD() }}">
+
+        </form>
+    </div>
+    <div class="file-explorer-body">
+    {% if computer.getFileSystem().getCWD() != "/" %}
+        <div style="padding-left: 12.5px;">
+            <a class="directory-entry"
+            fx-swap="outerHTML"
+            fx-target="#visual-shell"
+            fx-action="/fs/toggle/{{ computer.getFileSystem().getCWD() }}/..">
+            <img class="folder-icon" src="/img/single-folder-icon.ico">..
+            </a>
+        </div>
+    {% endif %}
+    {{ render_listing(computer.getFileSystem().listCWD(), true) }}
+    </div>
+</div>

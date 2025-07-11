@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import mtmc.emulator.MonTanaMiniComputer;
 
 public class FileSystem {
@@ -21,8 +23,43 @@ public class FileSystem {
     
     public FileSystem(MonTanaMiniComputer computer) {
         this.computer = computer;
+        
+        initFileSystem();
     }
 
+    private void initFileSystem() {
+        if (DISK_PATH.toFile().exists()) return;
+        
+        // Make the disk/ directory
+        DISK_PATH.toFile().mkdirs();
+        
+        try (var in = new ZipInputStream(getClass().getResourceAsStream("/disk.zip"))) {
+            ZipEntry entry;
+            File file;
+            
+            byte[] data = new byte[4096];
+            int count;
+
+            while ((entry = in.getNextEntry()) != null) {
+                file = new File(entry.getName());
+                
+                if (entry.isDirectory()) {
+                    file.mkdirs();
+                } else {
+                    file.getParentFile().mkdirs();
+                    
+                    try (var out = new FileOutputStream(file)) {
+                        while((count = in.read(data)) > 0) {
+                            out.write(data, 0, count);
+                        }
+                    }
+                }
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
     private void notifyOfFileSystemUpdate() {
         if (this.computer != null) {
             computer.notifyOfFileSystemUpdate();

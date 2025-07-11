@@ -124,8 +124,7 @@ public class WebServer {
                         computer.run();
                     }
                     if (ctx.pathParam("action").equals("step")) {
-                        computer.fetchAndExecute();
-                        computer.fetchCurrentInstruction(); // fetch next instruction for display
+                        computer.step();
                     }
                     ctx.html(render("templates/control.html"));
                 })

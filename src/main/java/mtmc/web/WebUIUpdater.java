@@ -170,6 +170,15 @@ public class WebUIUpdater implements MTMCObserver {
     }
 
     @Override
+    public void stepExecution() {
+        var program = webServer.getComputerView().getProgram();
+        var asm = webServer.getComputerView().getAssemblyLine();
+        var step = new ExecutionStep(program, asm, -1);
+                
+        webServer.sendEvent("update:step-execution", json.toJson(step));
+    }
+
+    @Override
     public void computerReset() {
         updateFlags.updateAndGet(operand -> operand | UPDATE_DISPLAY_UI | UPDATE_MEMORY_UI | UPDATE_REGISTER_UI);
     }
@@ -192,4 +201,6 @@ public class WebUIUpdater implements MTMCObserver {
     public void requestString() {
         webServer.sendEvent("console-readstr", ">");
     }
+    
+    private record ExecutionStep(String program, int asm, int src) {};
 }

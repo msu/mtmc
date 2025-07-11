@@ -59,6 +59,8 @@ public class MTMCClock
     }
     
     public void step() {
-        computer.pulse(1);
+        computer.fetchAndExecute();
+        computer.fetchCurrentInstruction();
+        computer.notifyOfStepExecution();
     }
 }

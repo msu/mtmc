@@ -450,6 +450,24 @@ public class MTMCWebView {
         currentFileMime = null;
         currentError = null;
     }
+    
+    public String getProgram() {
+        String original = computer.getDebugInfo().originalFile();
+        String assembly = computer.getDebugInfo().assemblyFile();
+        
+        return (original == null || original.length() < 1) ? assembly : original;
+    }
+    
+    public int getAssemblyLine() {
+        var ir = computer.getRegisterValue(Register.PC);
+        var debug = computer.getDebugInfo().assemblyLineNumbers();
+        
+        if (debug.length <= ir) {
+            return -1;
+        }
+        
+        return debug[ir];
+    }
 
     enum DisplayFormat {
         DYN,

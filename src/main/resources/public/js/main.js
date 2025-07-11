@@ -32,6 +32,11 @@ sseSource.addEventListener("update:memory-panel", (e) => {
     element.outerHTML = e.data
 })
 
+sseSource.addEventListener("update:step-execution", (e) => {
+    let step = JSON.parse(e.data);
+    //TODO: Integrate with editor
+});
+
 sseSource.onerror = (err) => {
     console.error("EventSource failed:", err);
 };

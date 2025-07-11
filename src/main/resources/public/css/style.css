@@ -775,4 +775,8 @@ details[open] > summary::before {
         top: 8px;
         right: 8px;
     }
+    
+    .file-system-nav-bar.editor-buttons .title {
+        padding-top: 0px;
+    }
 }

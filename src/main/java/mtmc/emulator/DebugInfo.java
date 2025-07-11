@@ -4,11 +4,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public record DebugInfo(List<String> debugStrings, String assemblyFile, String assemblySource,
-                        int[] assemblyLineNumbers, String originalFile, int[] originalLineNumbers,
-                        GlobalInfo[] globals,
-                        LocalInfo[][] locals
-) {
+public record DebugInfo(List<String> debugStrings,
+                        String assemblyFile, String assemblySource, int[] assemblyLineNumbers,
+                        String originalFile, int[] originalLineNumbers,
+                        GlobalInfo[] globals, LocalInfo[][] locals) {
 
     public void handleDebugString(short debugIndex, MonTanaMiniComputer monTanaMiniComputer) {
         String debugString = debugStrings.get(debugIndex);

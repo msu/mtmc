@@ -41,6 +41,10 @@ public class FileSystem {
     public boolean exists(String path) {
         return new File(DISK_PATH.toFile(), resolve(path)).exists();
     }
+    
+    public boolean mkdir(String path) {
+        return new File(DISK_PATH.toFile(), resolve(path)).mkdir();
+    }
 
     public String resolve(String filename) {
         File root = DISK_PATH.toFile();

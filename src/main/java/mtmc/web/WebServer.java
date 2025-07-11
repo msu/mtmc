@@ -175,14 +175,25 @@ public class WebServer {
                     computerView.closeFile();
                     ctx.html(render("templates/filetree.html"));
                 })
-                .get("/fs/new", ctx -> {
+                .get("/fs/new/file", ctx -> {
                     ctx.html(render("templates/newfile.html"));
                 })
-                .post("/fs/create", ctx -> {
+                .get("/fs/new/dir", ctx -> {
+                    ctx.html(render("templates/newdir.html"));
+                })
+                .post("/fs/create/file", ctx -> {
                     if (computerView.createFile(ctx.formParam("filename"), ctx.formParam("mime"))) {
                         ctx.html(render(computerView.selectEditor()));
                     } else {
                         ctx.html(render("templates/newfile.html"));
+                    }
+                })
+                .post("/fs/create/dir", ctx -> {
+                    if (computerView.createDirectory(ctx.formParam("filename"))) {
+                        computerView.closeFile();
+                        ctx.html(render("templates/filetree.html"));
+                    } else {
+                        ctx.html(render("templates/newdir.html"));
                     }
                 })
                 .sse("/sse", client -> {

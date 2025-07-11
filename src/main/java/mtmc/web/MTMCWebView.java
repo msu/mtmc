@@ -383,15 +383,53 @@ public class MTMCWebView {
             return false;
         }
         
+        if (filename.contains(" ")) {
+            this.currentError = "Spaces are not allowed in filenames";
+            return false;
+        }
+        
         if (fs.exists(filename)) {
             this.currentError = "'" + filename + "' already exists";
             return false;
         }
         
-        computer.getFileSystem().writeFile(filename, "");
+        fs.writeFile(filename, "");
         
-        this.currentFile = computer.getFileSystem().getCWD() + "/" + filename;
+        this.currentFile = fs.getCWD() + "/" + filename;
         this.currentFileMime = mime;
+        
+        return true;
+    }
+    
+    public boolean createDirectory(String filename) throws IOException {
+        FileSystem fs = computer.getFileSystem();
+        
+        this.currentFile = filename;
+        
+        if (filename.length() < 1) {
+            this.currentError = "Directory name is required";
+            return false;
+        }
+        
+        if (filename.contains("/")) {
+            this.currentError = "Directory name cannot contain '/'";
+            return false;
+        }
+        
+        if (filename.contains(" ")) {
+            this.currentError = "Spaces are not allowed in directory names";
+            return false;
+        }
+        
+        if (fs.exists(filename)) {
+            this.currentError = "'" + filename + "' already exists";
+            return false;
+        }
+        
+        if (!fs.mkdir(filename)) {
+            this.currentError = "Unable to create directory";
+            return false;
+        }
         
         return true;
     }

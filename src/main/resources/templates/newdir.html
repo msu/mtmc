@@ -5,22 +5,14 @@
     </div>
 
     <header class="file-system-nav-bar">
-        <div class="tray" style="padding: 4px">Create New File</div>
+        <div class="tray" style="padding: 4px">Create New Directory</div>
     </header>
-    <form fx-method="POST" fx-action="/fs/create/file" fx-swap="outerHTML" fx-target="#visual-shell">
+    <form fx-method="POST" fx-action="/fs/create/dir" fx-swap="outerHTML" fx-target="#visual-shell">
         <div>
             <input id="cd-search" name="cwd" placeholder="Current Directory" type="text" autocomplete="off"
                    value="{{ computer.getFileSystem().getCWD() }}" disabled="disabled">
         </div>
         <div class="new-file">
-            <div class="label">File Type:</div>
-            <div>
-                <select name="mime">
-                    <option value="text/x-asm" {% if computer.currentFileMime == "text/x-asm" %}selected{% endif %}>Assembly Language</option>
-                    <option value="text/x-csrc" {% if computer.currentFileMime == "text/x-csrc" %}selected{% endif %}>C Language</option>
-                    <option value="text/plain" {% if computer.currentFileMime == "text/plain" %}selected{% endif %}>Plain Text / Other</option>
-                </select>
-            </div>
             <div class="label">
                 Name:
             </div>

@@ -566,6 +566,10 @@ details[open] > summary::before {
     align-items: center;
 }
 
+.file-system-nav-bar.editor-buttons #editor-save[disabled] {
+    filter: brightness(75%);
+}
+
 .file-system-nav-bar .buttons-right {
     flex-grow: 1;
 }

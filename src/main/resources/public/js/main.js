@@ -361,7 +361,11 @@ async function startMonaco() {
     });
     
     function save() {
+        if (editor_save.hasAttribute("disabled")) {
+            return;
+        }
         fetch("/fs/write" + editor_div.dataset.filename, {method: 'POST', body: editor.getValue()});
+        editor_save.setAttribute("disabled", "disabled");
     };
     
     editor_save.onclick = save;
@@ -372,6 +376,10 @@ async function startMonaco() {
             e.stopPropagation();
             save();
         }
+    });
+    
+    editor.getModel().onDidChangeContent(function(event) {
+        editor_save.removeAttribute("disabled");
     });
 }
 

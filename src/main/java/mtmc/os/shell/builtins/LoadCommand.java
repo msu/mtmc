@@ -7,30 +7,22 @@ import mtmc.tokenizer.MTMCToken;
 import mtmc.tokenizer.MTMCTokenizer;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import mtmc.os.fs.FileSystem;
 
 public class LoadCommand extends ShellCommand {
-    static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
-
-    static Path getDiskPath(String pathString) {
-        Path path = Paths.get(pathString);
-        if (!path.isAbsolute()) {
-            path = DISK_PATH.resolve(path);
-        }
-        path = path.toAbsolutePath();
-        if (!path.startsWith(DISK_PATH)) {
-            throw new IllegalArgumentException(pathString + " is not a disk path");
-        }
-        return path;
+    static Path getDiskPath(String pathString, FileSystem fs) {
+        Path path = Path.of("disk" + fs.resolve(pathString));
+        return path.toAbsolutePath();
     }
 
     @Override
     public void exec(MTMCTokenizer tokens, MonTanaMiniComputer computer) throws Exception {
+        FileSystem fs = computer.getFileSystem();
         String program = tokens.collapseTokensAsString();
         if (program == null || program.isBlank()) {
             throw new IllegalArgumentException("missing or required argument 'src'");
         }
-        Path srcPath = getDiskPath(program);
+        Path srcPath = getDiskPath(program, fs);
 
         Executable exec = Executable.load(srcPath);
         computer.load(exec.code(), exec.data(), exec.graphics(), exec.debugInfo());

@@ -409,7 +409,7 @@ main {
 }
 
 .view-line:has(.step-highlight) {
-    background-color: #ffcccc;
+    background-color: rgba(255, 100, 100, 0.3);
 }
 
 :root {

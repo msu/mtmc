@@ -104,6 +104,10 @@ public class MonTanaMiniComputer {
     public void setStatus(ComputerStatus status) {
         this.status = status;
         this.notifyOfExecutionUpdate();
+        
+        if (status == FINISHED) {
+            this.notifyOfStepExecution();
+        }
     }
 
     public ComputerStatus getStatus() {

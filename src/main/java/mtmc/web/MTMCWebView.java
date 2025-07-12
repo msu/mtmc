@@ -356,6 +356,10 @@ public class MTMCWebView {
         }
     }
     
+    public boolean hasFileOpen() {
+        return this.currentFile != null;
+    }
+    
     public boolean createFile(String filename, String mime) throws IOException {
         FileSystem fs = computer.getFileSystem();
         
@@ -449,6 +453,36 @@ public class MTMCWebView {
         currentFile = null;
         currentFileMime = null;
         currentError = null;
+    }
+    
+    public boolean hasDebugInfo() {
+        return (computer.getDebugInfo() != null);
+    }
+    
+    public String getProgram() {
+        if (computer.getDebugInfo() == null) {
+            return "";
+        }
+        
+        String original = computer.getDebugInfo().originalFile();
+        String assembly = computer.getDebugInfo().assemblyFile();
+        
+        return (original == null || original.length() < 1) ? assembly : original;
+    }
+    
+    public int getAssemblyLine() {
+        if (computer.getDebugInfo() == null) {
+            return -1;
+        }
+        
+        var pc = computer.getRegisterValue(Register.PC);
+        var debug = computer.getDebugInfo().assemblyLineNumbers();
+        
+        if (debug == null || debug.length <= pc) {
+            return -1;
+        }
+        
+        return debug[pc];
     }
 
     enum DisplayFormat {

@@ -179,7 +179,7 @@ public class MTOS {
         } else if (syscallNumber == SysCall.getValue("rfile")) {
             short fileNamePtr = computer.getRegisterValue(A0);
             String fileName = readStringFromMemory(fileNamePtr);
-            File file = new File("disk/" + fileName);
+            File file = new File("disk" + computer.getFileSystem().resolve(fileName));
 
             if (!file.exists()) {
                 computer.setRegisterValue(RV, 0);
@@ -209,7 +209,7 @@ public class MTOS {
                     for (int lineNum = 0; lineNum < cappedLines; lineNum++) {
                         String line = lines.get(lineNum);
                         for (int colNum = 0; colNum < maxSize1; colNum++) {
-                            int offset = lineNum * 80 + colNum;
+                            int offset = lineNum * maxSize1 + colNum;
                             int byteOffset = offset / 8;
                             int bitOffset = offset % 8;
                             byte currentVal = computer.fetchByteFromMemory(destination + byteOffset);

@@ -1,8 +1,5 @@
 package mtmc.emulator;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import mtmc.asm.instructions.Instruction;
 import mtmc.os.MTOS;
 import mtmc.os.fs.FileSystem;
@@ -11,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
-import javax.imageio.ImageIO;
 
 import static mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
 import static mtmc.emulator.Register.*;
@@ -77,6 +73,7 @@ public class MonTanaMiniComputer {
         setRegisterValue(BP, dataBoundary);
 
         fetchCurrentInstruction(); // fetch the initial instruction for display purposes
+        notifyOfStepExecution(); // prepare for step execution
         display.loadGraphics(graphics); // ready graphics for use
 
         // reset computer status
@@ -99,10 +96,18 @@ public class MonTanaMiniComputer {
         setStatus(EXECUTING);
         clock.run();
     }
+    
+    public void step() {
+        clock.step();
+    }
 
     public void setStatus(ComputerStatus status) {
         this.status = status;
         this.notifyOfExecutionUpdate();
+        
+        if (status == FINISHED) {
+            this.notifyOfStepExecution();
+        }
     }
 
     public ComputerStatus getStatus() {
@@ -786,6 +791,14 @@ public class MonTanaMiniComputer {
         if (observers != null) {
             for (MTMCObserver observer : observers) {
                 observer.executionUpdated();
+            }
+        }
+    }
+
+    public void notifyOfStepExecution() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.stepExecution();
             }
         }
     }

@@ -32,6 +32,13 @@ sseSource.addEventListener("update:memory-panel", (e) => {
     element.outerHTML = e.data
 })
 
+sseSource.addEventListener("update:step-execution", (e) => {
+    let step = JSON.parse(e.data);
+    if (window.stepExecution) {
+        window.stepExecution(step);
+    }
+});
+
 sseSource.onerror = (err) => {
     console.error("EventSource failed:", err);
 };
@@ -334,8 +341,11 @@ async function startMonaco() {
     var editor_div = document.getElementById('editor');
     var editor_save = document.getElementById('editor-save');
     var editor_close = document.getElementById('editor-close');
-    var response = await fetch("/fs/read" + editor_div.dataset.filename);
+    
+    var filename = editor_div.dataset.filename;
+    var response = await fetch("/fs/read" + filename);
     var text = await response.text();
+    var stepHighlight = [];
     
     var theme = "vs";
     var language = "plaintext";
@@ -389,6 +399,23 @@ async function startMonaco() {
             evt.detail.cfg.confirm = () => confirm(message);
         }
     });
+    
+    window.stepExecution = function(step) {
+        var model = editor.getModel();
+        
+        if (step.program !== filename || step.asm < 1) {
+            stepHighlight = model.deltaDecorations(stepHighlight, []);
+            return;
+        }
+        
+        var range = new monaco.Range(step.asm, 1, step.asm, model.getLineMaxColumn(step.asm));
+        var options = { isWholeLine: true, inlineClassName: 'step-highlight' };
+        var decoration = {range: range, options: options};
+        
+        stepHighlight = model.deltaDecorations(stepHighlight, [decoration]);
+        
+        editor.revealLineInCenter(step.asm);
+    };
 }
 
 function fullscreen(id, event) {

@@ -63,4 +63,10 @@ public class MTMCClock
         computer.fetchCurrentInstruction();
         computer.notifyOfStepExecution();
     }
+
+    public void back() {
+        computer.rewind();
+        computer.fetchCurrentInstruction();
+        computer.notifyOfStepExecution();
+    }
 }

@@ -126,6 +126,9 @@ public class WebServer {
                     if (ctx.pathParam("action").equals("step")) {
                         computer.step();
                     }
+                    if (ctx.pathParam("action").equals("back")) {
+                        computer.back();
+                    }
                     ctx.html(render("templates/control.html"));
                 })
                 .post("/io/{buttons}", ctx -> {

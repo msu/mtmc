@@ -56,6 +56,10 @@ public class MTMCWebView {
         return (computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING);
     }
     
+    public boolean isBackAvailable() {
+        return computer.isBackAvailable();
+    }
+
     public int getSpeed() {
         return computer.getSpeed();
     }

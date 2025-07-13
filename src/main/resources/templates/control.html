@@ -29,12 +29,19 @@
             <button fx-action="/control/run" fx-method="post" fx-swap="none">
                 run
             </button>
+            <button fx-action="/control/back" fx-method="post" fx-swap='outerHTML' fx-target='#controls'
+                    {% if not computer.backAvailable %} disabled="disabled" {% endif %}>
+                back
+            </button>
             <button fx-action="/control/step" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
                 step
             </button>
             {% else %}
             <button fx-action="/control/pause" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
                 pause
+            </button>
+            <button fx-action="/control/back" fx-method="post" fx-swap="none" disabled="disabled">
+                back
             </button>
             <button fx-action="/control/step" fx-method="post" fx-swap="none" disabled="disabled">
                 step

@@ -226,7 +226,17 @@ public class Assembler {
         var labels = new ArrayList<>(lastLabels);
         labels.addAll(labelTokens);
         lastLabels = labels;
-        if (mode == ASMMode.TEXT) {
+        if (tokens.isEmpty()) {
+            for (MTMCToken labelToken : labelTokens) {
+                Data labelData = new Data(labelTokens, labelToken.line());
+                if (hasLabel(labelToken.stringValue())) {
+                    labelData.addError(tokens.poll(), "Label already defined: " + labelToken.stringValue());
+                } else {
+                    this.labels.put(labelToken.labelValue(), labelData);
+                }
+                data.add(labelData);
+            }
+        } else if (mode == ASMMode.TEXT) {
             parseInstruction(tokens, labels);
         } else {
             parseData(tokens, labels);
@@ -280,8 +290,8 @@ public class Assembler {
     private void parseData(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
         lastLabels = List.of();
         MTMCToken dataToken = tokens.poll();
-        Data dataElt = new Data(labelTokens, dataToken.line());
-        if (dataToken != null) {
+        Data dataElt = new Data(labelTokens, dataToken == null ? 0 : dataToken.line());
+        if(dataToken != null) {
             if (dataToken.type() == STRING) {
                 byte[] stringBytes = dataToken.stringValue().getBytes(StandardCharsets.US_ASCII);
                 byte[] nullTerminated = new byte[stringBytes.length + 1];
@@ -312,31 +322,6 @@ public class Assembler {
                     if (stringToken != null) {
                         loadGraphic(labelTokens, dataElt, stringToken);
                     }
-                } else {
-                    dataElt.addError(dataToken, "only data types are .int, .byte, and .image");
-                }
-            } else if (dataToken.type() == IDENTIFIER) {
-                if (dataToken.stringValue().equals("int")) {
-                    requireToken(tokens, LEFT_BRACE, dataElt);
-                    MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
-                    if (intToken != null) {
-                        dataElt.setValue(intToken, new byte[intToken.intValue() * 2]);
-                    }
-                    requireToken(tokens, RIGHT_BRACE, dataElt);
-                } else if (dataToken.stringValue().equals("byte")) {
-                    requireToken(tokens, LEFT_BRACE, dataElt);
-                    MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
-                    if (intToken != null) {
-                        dataElt.setValue(intToken, new byte[intToken.intValue()]);
-                    }
-                    requireToken(tokens, RIGHT_BRACE, dataElt);
-                } else if (dataToken.stringValue().equals("image")) {
-                    requireToken(tokens, LEFT_BRACE, dataElt);
-                    MTMCToken stringToken = requireString(tokens, dataElt);
-                    if (stringToken != null) {
-                        loadGraphic(labelTokens, dataElt, stringToken);
-                    }
-                    requireToken(tokens, RIGHT_BRACE, dataElt);
                 } else {
                     dataElt.addError(dataToken, "only data types are .int, .byte, and .image");
                 }

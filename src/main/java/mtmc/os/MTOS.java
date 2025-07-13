@@ -119,8 +119,7 @@ public class MTOS {
             short high = computer.getRegisterValue(A1);
             short temp;
             
-            if(low > high)
-            {
+            if(low > high) {
                 temp = low;
                 low = high;
                 high = temp;
@@ -182,7 +181,7 @@ public class MTOS {
             File file = new File("disk" + computer.getFileSystem().resolve(fileName));
 
             if (!file.exists()) {
-                computer.setRegisterValue(RV, 0);
+                computer.setRegisterValue(RV, 1);
                 return;
             }
 
@@ -230,8 +229,10 @@ public class MTOS {
                         computer.writeByteToMemory(destination + i, aByte);
                     }
                 }
+                computer.setRegisterValue(RV, 0);
             } catch (IOException e) {
                 computer.setRegisterValue(RV, -1);
+                e.printStackTrace(); // debugging
             }
 
         } else if (syscallNumber == SysCall.getValue("cwd")) {

@@ -294,6 +294,27 @@ public class Assembler {
                     dataElt.addError(dataToken, "Number is too large");
                 }
                 dataElt.setValue(dataToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
+            } else if (dataToken.type() == DOT) {
+                dataToken = tokens.poll();
+                dataElt = new Data(labelTokens, dataToken.line());
+                if (dataToken.stringValue().equals("int")) {
+                    MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
+                    if (intToken != null) {
+                        dataElt.setValue(intToken, new byte[intToken.intValue() * 2]);
+                    }
+                } else if (dataToken.stringValue().equals("byte")) {
+                    MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
+                    if (intToken != null) {
+                        dataElt.setValue(intToken, new byte[intToken.intValue()]);
+                    }
+                } else if (dataToken.stringValue().equals("image")) {
+                    MTMCToken stringToken = requireString(tokens, dataElt);
+                    if (stringToken != null) {
+                        loadGraphic(labelTokens, dataElt, stringToken);
+                    }
+                } else {
+                    dataElt.addError(dataToken, "only data types are .int, .byte, and .image");
+                }
             } else if (dataToken.type() == IDENTIFIER) {
                 if (dataToken.stringValue().equals("int")) {
                     requireToken(tokens, LEFT_BRACE, dataElt);
@@ -317,7 +338,7 @@ public class Assembler {
                     }
                     requireToken(tokens, RIGHT_BRACE, dataElt);
                 } else {
-                    dataElt.addError(dataToken, "only data types are int, byte, and image");
+                    dataElt.addError(dataToken, "only data types are .int, .byte, and .image");
                 }
             } else if (dataToken.type() == MINUS) {
                 MTMCToken nextToken = tokens.poll(); // get next
@@ -332,7 +353,7 @@ public class Assembler {
                     dataElt.setValue(joinToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
                 }
             } else {
-                dataElt.addError(dataToken, "Unknown token type");
+                dataElt.addError(dataToken, "Unknown token type: " + dataToken.toString());
             }
         }
 

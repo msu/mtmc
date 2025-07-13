@@ -1,5 +1,7 @@
 (function() {
-    const types = [ 'byte', 'int', 'image' ];
+    const types = [ '.byte', '.int', '.image' ];
+    
+    const sections = [ '.data', '.text' ];
     
     const instructions = [
         'mov', 'lbo', 'lwo', 'eqi', 'eq', 'lb', 'lw', 'li', 'sys',
@@ -41,6 +43,7 @@
         typeKeywords: types,
         registers: registers,
         syscalls: syscalls,
+        sections: sections,
 
         operators: [],
 
@@ -55,11 +58,12 @@
           root: [
             // identifiers and keywords 
             [/[a-z_0-9]+[:]/, 'type.variable'],
-            [/(?:^|\W)\.data|\.text(?:$|\W)/, 'section'],
 
+            [/\.[a-z_$][\w$]*/, { cases: { '@typeKeywords': 'keyword',
+                                           '@sections': 'section' } }],
+                             
             [/[a-z_$][\w$]*/, { cases: { '@syscalls': 'syscall',
                                          '@registers': 'constant',
-                                         '@typeKeywords': 'keyword',
                                          '@keywords': 'keyword',
                                          '@default': 'identifier' } }],
             [/[A-Z][\w\$]*/, 'type.identifier' ],  // to show class names nicely
@@ -153,6 +157,26 @@
                         label: keyword,
                         kind: monaco.languages.CompletionItemKind.Keyword,
                         insertText: spacePad(keyword, 5),
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        range: range
+                    });
+                }
+            } else if (previous.endsWith('.')) {
+                for (var keyword of types) {
+                    suggestions.push({
+                        label: keyword,
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: keyword.substring(1) + ' ',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        range: range
+                    });
+                }
+                
+                for (var keyword of sections) {
+                    suggestions.push({
+                        label: keyword,
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: keyword.substring(1) + ' ',
                         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                         range: range
                     });

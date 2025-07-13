@@ -2,7 +2,7 @@
 
 ## Overview
 
-MTMC assembly has a fairly large number of core instruction (37 or 52, depending on how you cound them) split across seven types:
+MTMC assembly has a fairly large number of core instruction (37 or 52, depending on how you count them) split across seven types:
 
 * Miscellaneous Instructions
 * ALU Related Instructions
@@ -18,28 +18,27 @@ There are 16 user-facing registers usable by name in assembly:
 
 | index | name   | description                                                           |
 |-------|--------|-----------------------------------------------------------------------|
-| 0     | `t0`   | temp register 0, holds temporary values, also tested for jumps        |
+| 0     | `t0`   | temp register 0, holds temporary values        |
 | 1     | `t1`   | temp register 1, holds temporary values                               |
 | 2     | `t2`   | temp register 2, holds temporary values                               |
 | 3     | `t3`   | temp register 3, holds temporary values                               |
-| 4     | `a0`   | arg register 0, holds the first argument for a function call          |
-| 5     | `a1`   | arg register 1, holds the second argument for a function call         |
-| 6     | `a2`   | arg register 2, holds the third argument for a function call          |
-| 7     | `a3`   | arg register 3, holds the fourth argument for a function call         |
-| 8     | `rv`   | return value register 0, holds the return value for a function call   |
-| 9     | `ra`   | return address register, holds the return address for a function call |
-| 10    | `fp`   | frame pointer, points to the top of the current function frame        |
-| 11    | `sp`   | stack pointer, points to the bottom of the current function frame     |
-| 12    | `bp`   | break pointer, points to the top of the current heap space            |
-| 13    | `pc`   | program counter, points to the next instruction to execute            |
-| 14    | `zero` | a register that holds the value zero                                  |
-| 15    | `one`  | a register that  holds the value one                                  |
+| 4     | `t4`   | temp register 3, holds temporary values                               |
+| 5     | `t5`   | temp register 3, holds temporary values                               |
+| 6     | `a0`   | arg register 0, holds the first argument for a function call          |
+| 7     | `a1`   | arg register 1, holds the second argument for a function call         |
+| 8     | `a2`   | arg register 2, holds the third argument for a function call          |
+| 9     | `a3`   | arg register 3, holds the fourth argument for a function call         |
+| 10    | `rv`   | return value register 0, holds the return value for a function call   |
+| 11    | `ra`   | return address register, holds the return address for a function call |
+| 12    | `fp`   | frame pointer, points to the top of the current function frame        |
+| 13    | `sp`   | stack pointer, points to the bottom of the current function frame     |
+| 14    | `bp`   | break pointer, points to the top of the current heap space            |
+| 15    | `pc`   | program counter, points to the next instruction to execute            |
 
-Note that the `zero` and `one` registers are initialized with the values `0` and `1` respectively and it is highly recommended that you not overwrite them.
 
 ## MTMC Assembly Basics
 
-MTMC Assembly programs consist of up to two sections, a data section, in which you can declare data, and a code section, in which you declare code.
+MTMC Assembly programs consist of up to two sections, a data section, in which you can declare data, and a text section in which you declare code.
 
 If you wish to have a data section, you must begin your assembly file with a line with the `.data` directive.
 
@@ -60,14 +59,14 @@ The above data will be placed after the code segment in memory, in a data segmen
 
 Also note that the `#` character can be used for line comments.
 
-Following this optional data section is a code section. If you have a data section you must begin the code segment with a `.code` directive.  If you do not have a `.data` segment, then that is not necessary.
+Following this optional data section is a text section for code. If you have a data section you must begin the code segment with a `.text` directive.  If you do not have a `.data` segment, then that is not necessary.
 
 Execution of programs begin at the first instruction in the code section, which will be placed in memory location 0 by the operating system when running a program.
 
 Here is a sample program continuing with the data section above:
 
 ```asm
-.code
+.text
   ldi t0, example_str # load address of the string
   mv a0, t0           # move it into the arg reg
   sys wstr            # write the string to the console

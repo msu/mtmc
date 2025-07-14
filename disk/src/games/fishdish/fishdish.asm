@@ -6,10 +6,10 @@
 .data
 
   graphics:
-    background: image { "background.png" }
-    fish_left: image { "fish-left.png" }
-    fish_right: image { "fish-right.png" }
-    shark_left: image { "shark-left.png" }
+    background: .image "background.png" 
+    fish_left:  .image "fish-left.png" 
+    fish_right: .image "fish-right.png" 
+    shark_left: .image "shark-left.png" 
 
   directions:
     up:    0b10000000

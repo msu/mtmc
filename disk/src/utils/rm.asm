@@ -1,10 +1,8 @@
 .data
-   error: "UNABLE TO DELETE\n\nDouble check the filename. If it is a directory, make sure it is empty."
+   error: "UNABLE TO DELETE\n"
 
 .text
 main:
-  li    a1  256
-
   sys   dfile
   eqi   rv  0
   jnz   done

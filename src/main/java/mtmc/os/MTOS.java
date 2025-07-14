@@ -119,8 +119,7 @@ public class MTOS {
             short high = computer.getRegisterValue(A1);
             short temp;
             
-            if(low > high)
-            {
+            if(low > high) {
                 temp = low;
                 low = high;
                 high = temp;
@@ -182,7 +181,7 @@ public class MTOS {
             File file = new File("disk" + computer.getFileSystem().resolve(fileName));
 
             if (!file.exists()) {
-                computer.setRegisterValue(RV, 0);
+                computer.setRegisterValue(RV, 1);
                 return;
             }
 
@@ -230,8 +229,10 @@ public class MTOS {
                         computer.writeByteToMemory(destination + i, aByte);
                     }
                 }
+                computer.setRegisterValue(RV, 0);
             } catch (IOException e) {
                 computer.setRegisterValue(RV, -1);
+                e.printStackTrace(); // debugging
             }
 
         } else if (syscallNumber == SysCall.getValue("cwd")) {
@@ -251,21 +252,12 @@ public class MTOS {
             computer.setRegisterValue(RV, maxSize-1);
         } else if (syscallNumber == SysCall.getValue("chdir")) {
 
-            short source = computer.getRegisterValue(A0);
-            short maxSize = computer.getRegisterValue(A1);
-            StringBuffer dir = new StringBuffer();
+            short pointer = computer.getRegisterValue(A0);
+            String dir = readStringFromMemory(pointer);
             
-            for (int i = 0; i < maxSize; i++) {
-                char c = (char)computer.fetchByteFromMemory(source + i);
-                
-                if(c == 0) break;
-                
-                dir.append(c);
-            }
-            
-            if (computer.getFileSystem().exists(dir.toString())) {
+            if (computer.getFileSystem().exists(dir)) {
                 computer.setRegisterValue(RV, 0);
-                computer.getFileSystem().setCWD(dir.toString());
+                computer.getFileSystem().setCWD(dir);
             } else {
                 computer.setRegisterValue(RV, 1);
             }
@@ -296,23 +288,15 @@ public class MTOS {
             short maxSize = computer.fetchWordFromMemory(dirent + 2);
             short maxSizeOut = computer.fetchWordFromMemory(destination + 2);
             
-            StringBuilder dir = new StringBuilder();
+            String dir = readStringFromMemory(dirent);
             File[] list;
-            
-            for (int i = 0; i < maxSize; i++) {
-                char c = (char)computer.fetchByteFromMemory(dirent + 4 + i);
-                
-                if(c == 0) break;
-                
-                dir.append(c);
-            }
 
-            if (!computer.getFileSystem().exists(dir.toString())) {
+            if (!computer.getFileSystem().exists(dir)) {
                 computer.setRegisterValue(RV, -1);
                 return;
             }
             
-            list = computer.getFileSystem().getFileList(dir.toString());
+            list = computer.getFileSystem().getFileList(dir);
             
             if (command == 0) { // Count of files in the directory
                 computer.setRegisterValue(RV, list.length);
@@ -339,19 +323,10 @@ public class MTOS {
                 computer.setRegisterValue(RV, Math.min(maxSizeOut, name.length())-1);
             }
         } else if (syscallNumber == SysCall.getValue("dfile")) {
-            short source = computer.getRegisterValue(A0);
-            short maxSize = computer.getRegisterValue(A1);
-            StringBuffer path = new StringBuffer();
+            short pointer = computer.getRegisterValue(A0);
+            String path = readStringFromMemory(pointer);
             
-            for (int i = 0; i < maxSize; i++) {
-                char c = (char)computer.fetchByteFromMemory(source + i);
-                
-                if(c == 0) break;
-                
-                path.append(c);
-            }
-            
-            if (computer.getFileSystem().delete(path.toString())) {
+            if (computer.getFileSystem().delete(path)) {
                 computer.setRegisterValue(RV, 0);
             } else {
                 computer.setRegisterValue(RV, 1);

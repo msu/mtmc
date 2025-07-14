@@ -53,7 +53,7 @@
     <div>
         <form fx-method="POST" fx-action="/fs/cwd/" fx-swap="outerHTML"
               fx-target="#visual-shell">
-            <input id="cd-search" name="cwd" placeholder="Current Directory" type="text" autocomplete="off"
+            <input id="cd-search" name="cwd" placeholder="Current Directory" type="text" autocomplete="off" autocorrect="off"
                    value="{{ computer.getFileSystem().getCWD() }}">
 
         </form>

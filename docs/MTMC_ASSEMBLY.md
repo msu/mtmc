@@ -96,6 +96,28 @@ Note that the MTMC-16 lacks CPU support for the following data types and thus th
 * floating point numbers (e.g. `3.14159`)
 * binary coded decimal (e.g. `'12345'`)
 
+## Order of Operands
+
+MTMC-16 assembly follows the common ordering of operands used by most assembly langagues.
+
+Load instructions like `li a0 10` always move data from the rightmost operand to the leftmost operand. They can be thought of as saying, "let a0 = 10". 
+
+Store instructions like `sw a0 my_var` always move data from the leftmost operand to the rightmost operand. They can be thought of as saying "let mem[my_var] = a0".
+
+When loading data, be aware of the difference between a constant value and a memory address. For example, `li a0 my_var` loads the memory address of `my_var` into `a0` and *not* the value stored at `my_var`. That's becuase `li` is used to load contant values. When assembled, `my_var` is transformed into a memory address like `14` and the instruction becomes `li a0 14`. 
+
+This can be easily confused with `lw a0 my_var` which says, "load a word stored at memory address `my_var`". The assembler will still translate `my_var` to `14`, but the CPU will interpet the `14` as a location in memory rather than a literal value.
+
+To help keep prevent confusion, the assembler offers the `la` alias for `li` to separate loading addresses from literals.
+
+Example:
+
+```asm
+li t0 14      # Load the number 14 into t0
+la t1 my_var  # Load address my_var into t1
+lw t2 my_var  # Load a word located at address my_var into t2
+```
+
 ## Frequently Asked Quesstions
 
 ### What does MTMC stand for?

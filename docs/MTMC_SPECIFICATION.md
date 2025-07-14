@@ -385,7 +385,7 @@ Here are the syscalls supported by MTOS:
 | `drawimg` | 0x50 | Draws an image specified by `a0` to x,y coordinates specified by `a1`,`a2`. 
 | `error`   | 0xFF | Aborts the current program execution with an error message, `a0` is a pointer to the error message      
 
-### Directory Entries
+#### Directory Entries
 
 The `dirent` syscall provides a method of iterating through a list of files in a directory. Since
 directory entries are complex, the syscall is designed to respond to different commands and 
@@ -396,10 +396,10 @@ argument contains the command to run.
 
 Here is a list of valid commands:
 
-| Command     | Hex  | Descrption                                                                                                                                       |
-|-------------|------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| `count`     | 0x00 | `rv` is set to  a count of files in the directory                                                                                                |
-| `get entry` | 0x01 | Retrieves the directory entry specified by `a2` and saves it to the structure specfified by `a3`. Valid values are 0 through `count`.            | 
+| Command     | Hex  | Descrption                                                                                                                                                    |
+|-------------|------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `count`     | 0x00 | `rv` is set to  a count of files in the directory                                                                                                             |
+| `get entry` | 0x01 | Retrieves the directory entry specified by `a2` and saves it to the data structure specified by `a3`. Valid values for `a2` are 0 through `count`.            | 
 
 A directory entry has the following in-memory structure:
 
@@ -421,3 +421,23 @@ dir_entry:
 Make sure the `size` and number of bytes allocated for `name` both match. Note that
 size must be specified in the strucutre as the `dirent` call reads it to determine how many
 bytes can be copied into `name`.
+
+#### Cell files (RFILE)
+
+The `rfile` syscall has special handling for files ending in the `.cells` extension. When
+reading such files, `a2` is the number of columns (width) to read and `a3` is the number
+of rows (height) to read. The total number of bytes written will be `a2 * a3 / 8` rounded
+up. 
+
+Rather than reading bytes directly, a 2 dimensional bitmap is encoded in a text file with
+the capital letter 'O' representing a 1 and a '.' representing a 0. Every four characters
+is one byte of data. 
+
+Lines are read to a maximum of `a2` and a maximum of `a3` lines are read. Missing data on
+a line is automatically zero filled. Lines starting with `!` are ignored as comments.
+
+This is useful for encoding 2 dimensional maps and other structures in a tight, bit-packed
+format that is easy to update with a text editor.
+
+See the data files for *Conway's Game of Life* (`/usr/games/life.asm`) in the `/data`
+directory for examples of the format in use. 

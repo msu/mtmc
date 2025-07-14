@@ -42,10 +42,10 @@ public class ListingTest
     public void testRelative()
     {
         FileSystem fs = new FileSystem();
-        Listing cwd = fs.listFiles("../data");
+        Listing cwd = fs.listFiles("../img");
         
-        assertEquals("data", cwd.name);
-        assertEquals("/data", cwd.path);
-        assertEquals(2, cwd.list().size());
+        assertEquals("img", cwd.name);
+        assertEquals("/img", cwd.path);
+        assertEquals(4, cwd.list().size());
     }
 }

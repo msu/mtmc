@@ -335,7 +335,7 @@ The I/O register is used to track the state of gamepad controls with each bit
 representing the on/off state for a given button. 
 
 | Name     | Hex  | binary      | Keyboard      | Description                       |
-|----------|------|-------------|---------------------------------------------------|
+|----------|------|-------------|---------------|-----------------------------------|
 | `up`     | `80` | `1000 0000` | up arrow      | the up arrow key was pressed      |
 | `down`   | `40` | `0100 0000` | down arrow    | the down arrow key was pressed    |
 | `left`   | `20` | `0010 0000` | left arrow    | the left arrow key was pressed    |

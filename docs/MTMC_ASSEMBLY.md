@@ -18,17 +18,17 @@ There are 16 user-facing registers usable by name in assembly:
 
 | index | name   | description                                                           |
 |-------|--------|-----------------------------------------------------------------------|
-| 0     | `t0`   | temp register 0, holds temporary values        |
+| 0     | `t0`   | temp register 0, holds temporary values                               |
 | 1     | `t1`   | temp register 1, holds temporary values                               |
 | 2     | `t2`   | temp register 2, holds temporary values                               |
 | 3     | `t3`   | temp register 3, holds temporary values                               |
-| 4     | `t4`   | temp register 3, holds temporary values                               |
-| 5     | `t5`   | temp register 3, holds temporary values                               |
+| 4     | `t4`   | temp register 4, holds temporary values                               |
+| 5     | `t5`   | temp register 5, holds temporary values                               |
 | 6     | `a0`   | arg register 0, holds the first argument for a function call          |
 | 7     | `a1`   | arg register 1, holds the second argument for a function call         |
 | 8     | `a2`   | arg register 2, holds the third argument for a function call          |
 | 9     | `a3`   | arg register 3, holds the fourth argument for a function call         |
-| 10    | `rv`   | return value register 0, holds the return value for a function call   |
+| 10    | `rv`   | return value register, holds the return value for a function call     |
 | 11    | `ra`   | return address register, holds the return address for a function call |
 | 12    | `fp`   | frame pointer, points to the top of the current function frame        |
 | 13    | `sp`   | stack pointer, points to the bottom of the current function frame     |

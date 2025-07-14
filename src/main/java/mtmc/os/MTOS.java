@@ -288,23 +288,15 @@ public class MTOS {
             short maxSize = computer.fetchWordFromMemory(dirent + 2);
             short maxSizeOut = computer.fetchWordFromMemory(destination + 2);
             
-            StringBuilder dir = new StringBuilder();
+            String dir = readStringFromMemory(dirent);
             File[] list;
-            
-            for (int i = 0; i < maxSize; i++) {
-                char c = (char)computer.fetchByteFromMemory(dirent + 4 + i);
-                
-                if(c == 0) break;
-                
-                dir.append(c);
-            }
 
-            if (!computer.getFileSystem().exists(dir.toString())) {
+            if (!computer.getFileSystem().exists(dir)) {
                 computer.setRegisterValue(RV, -1);
                 return;
             }
             
-            list = computer.getFileSystem().getFileList(dir.toString());
+            list = computer.getFileSystem().getFileList(dir);
             
             if (command == 0) { // Count of files in the directory
                 computer.setRegisterValue(RV, list.length);

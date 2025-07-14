@@ -9,21 +9,22 @@ file:
    # Output Directory Entry
    file_flags: 0
    file_name_size: 256
-   file_name: "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
+   file_name: .byte 256
 
 dir:
-   # Input Directory Entry
-   dir_flags: 0
+   # Input Directory
    dir_name_size: 256
-   dir_name: "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
+   dir_name: .byte 256
 
 
 .text
 main:
   # Check if a path was passed
   eqi a0  0
+  sw  a0  path
   jnz get_cwd
 
+  # Copy the passed in name to dir_name
   mov t0  a0
   li  t1  dir_name
   lw  t2  dir_name_size
@@ -55,7 +56,7 @@ get_cwd:
   sys cwd
 
 start:
-  li  a0  dir
+  li  a0  dir_name
   li  a1  0
   
   sys dirent
@@ -74,7 +75,7 @@ start:
   li  t0  0
 
 loop_file_list:
-  li  a0 dir
+  li  a0 dir_name
   li  a1  1
   mov a2  t0
   li  a3  file

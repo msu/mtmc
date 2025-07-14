@@ -252,21 +252,12 @@ public class MTOS {
             computer.setRegisterValue(RV, maxSize-1);
         } else if (syscallNumber == SysCall.getValue("chdir")) {
 
-            short source = computer.getRegisterValue(A0);
-            short maxSize = computer.getRegisterValue(A1);
-            StringBuffer dir = new StringBuffer();
+            short pointer = computer.getRegisterValue(A0);
+            String dir = readStringFromMemory(pointer);
             
-            for (int i = 0; i < maxSize; i++) {
-                char c = (char)computer.fetchByteFromMemory(source + i);
-                
-                if(c == 0) break;
-                
-                dir.append(c);
-            }
-            
-            if (computer.getFileSystem().exists(dir.toString())) {
+            if (computer.getFileSystem().exists(dir)) {
                 computer.setRegisterValue(RV, 0);
-                computer.getFileSystem().setCWD(dir.toString());
+                computer.getFileSystem().setCWD(dir);
             } else {
                 computer.setRegisterValue(RV, 1);
             }

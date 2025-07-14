@@ -3,8 +3,6 @@
 
 .text
 main:
-  li    a1  256
-
   sys   chdir
   eqi   rv  0
   jnz   done

@@ -297,9 +297,10 @@ The address or value to load or store from is found in the word immediately afte
 
 The MTMC supports one jump command that uses a register as the address to jump to, `jr`
 
-| Instruction | Form                  | Description                                    | Example                    |
-|-------------|-----------------------|------------------------------------------------|----------------------------|
-| `jr`        | `1000 0000 0000 rrrr` | Jumps to the location found in register `rrrr` | `jr ra` (aliased as `ret`) |
+| Instruction | Form                  | Description                                    | Example        |
+|-------------|-----------------------|------------------------------------------------|----------------|
+| `jr`        | `1000 0000 0000 rrrr` | Jumps to the location found in register `rrrr` | `jr ra`        |
+| `ret`       | `1000 0000 0000 rrrr` | Alias for `jr ra`                              | `ret`          |
 
 ### JUMPS
 
@@ -317,7 +318,7 @@ after itself.
 |-------------|-----------------------|---------------------------------------------------------------------------------------------------|--------------------------------------------|
 | `j`         | `1100 vvvv vvvv vvvv` | Jumps unconditionally to the location `vvvv vvvv vvvv`                                            | `j loop`                                   |
 | `jz`        | `1101 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `test bit` of `flags` is 0                              | `jz end`                                   |
-| `jnz`       | `1110 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `test bit` of `flags` is 1                              | `jz end`                                   |
+| `jnz`       | `1110 vvvv vvvv vvvv` | Jumps to the location `vvvv vvvv vvvv` if `test bit` of `flags` is 1                              | `jnz end`                                  |
 | `jal`       | `1111 vvvv vvvv vvvv` | Sets `ra` to the address of the next instruction (`pc` + 1) and sets the `pc` to `vvvv vvvv vvvv` | `jal square` (jump to function `square()`) |
 
 ## MTMC Calling Conventions
@@ -328,18 +329,21 @@ after itself.
 * `ra` should be saved on the stack below any other values but above any additional parameters
 * return value placed in `rv`
 
-## MTMC IO - WORK IN PROGRESS
+## MTMC IO
 
-| Name     | Hex  | binary      | Description                                  |
-|----------|------|-------------|----------------------------------------------|
-| `up`     | `80` | `1000 0000` | the up arrow key was pressed                 |
-| `down`   | `40` | `0100 0000` | the down arrow key was pressed               |
-| `left`   | `20` | `0010 0000` | the left arrow key was pressed               |
-| `right`  | `10` | `0001 0000` | the right arrow key was pressed              |
-| `start`  | `08` | `0000 1000` | the d key was pressed                        |
-| `select` | `04` | `0000 0100` | the f key was pressed                        |
-| `b`      | `02` | `0000 0010` | the B key was pressed                        |
-| `a`      | `01` | `0000 0001` | the A button was pressed                     |
+The I/O register is used to track the state of gamepad controls with each bit
+representing the on/off state for a given button. 
+
+| Name     | Hex  | binary      | Keyboard      | Description                       |
+|----------|------|-------------|---------------------------------------------------|
+| `up`     | `80` | `1000 0000` | up arrow      | the up arrow key was pressed      |
+| `down`   | `40` | `0100 0000` | down arrow    | the down arrow key was pressed    |
+| `left`   | `20` | `0010 0000` | left arrow    | the left arrow key was pressed    |
+| `right`  | `10` | `0001 0000` | right arrow   | the right arrow key was pressed   |
+| `start`  | `08` | `0000 1000` | 'l' key       | the start button was pressed      |
+| `select` | `04` | `0000 0100` | spacebar      | the select button was pressed     |
+| `b`      | `02` | `0000 0010` | 'a' key       | the B button was pressed          |
+| `a`      | `01` | `0000 0001` | 's' key       | the A button was pressed          |
 
 
 #### System Codes

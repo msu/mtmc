@@ -82,7 +82,7 @@
             [/@\s*[a-zA-Z_\$][\w\$]*/, { token: 'annotation', log: 'annotation token: $0' }],
 
             // numbers
-            [/0[bB][01]+/, 'number.binary'],
+            [/0[bB][01_]+/, 'number.binary'],
             [/0[xX][0-9a-fA-F]+/, 'number.hex'],
             [/[\-]?\d+/, 'number'],
 

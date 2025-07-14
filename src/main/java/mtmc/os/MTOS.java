@@ -331,19 +331,10 @@ public class MTOS {
                 computer.setRegisterValue(RV, Math.min(maxSizeOut, name.length())-1);
             }
         } else if (syscallNumber == SysCall.getValue("dfile")) {
-            short source = computer.getRegisterValue(A0);
-            short maxSize = computer.getRegisterValue(A1);
-            StringBuffer path = new StringBuffer();
+            short pointer = computer.getRegisterValue(A0);
+            String path = readStringFromMemory(pointer);
             
-            for (int i = 0; i < maxSize; i++) {
-                char c = (char)computer.fetchByteFromMemory(source + i);
-                
-                if(c == 0) break;
-                
-                path.append(c);
-            }
-            
-            if (computer.getFileSystem().delete(path.toString())) {
+            if (computer.getFileSystem().delete(path)) {
                 computer.setRegisterValue(RV, 0);
             } else {
                 computer.setRegisterValue(RV, 1);

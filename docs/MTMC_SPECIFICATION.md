@@ -300,7 +300,7 @@ The MTMC supports one jump command that uses a register as the address to jump t
 | Instruction | Form                  | Description                                    | Example        |
 |-------------|-----------------------|------------------------------------------------|----------------|
 | `jr`        | `1000 0000 0000 rrrr` | Jumps to the location found in register `rrrr` | `jr ra`        |
-| `ret`       | `1000 0000 0000 rrrr` | Alias for `jr ra`                              | `ret`          |
+| `ret`(alias)| `1000 0000 0000 rrrr` | Alias for `jr ra`                              | `ret`          |
 
 ### JUMPS
 

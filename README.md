@@ -32,4 +32,5 @@ The computer is displayed via a web interface that includes all the I/O such as 
 ## Documentation
 
 - [Computer Specification](docs/MTMC_SPECIFICATION.md)
-- [Aseembly Guide](docs/MTMC_ASSEMBLY.md)
+- [Assembly Guide](docs/MTMC_ASSEMBLY.md)
+- [Frequently Asked Questions](docs/MTMC_FAQ.md)

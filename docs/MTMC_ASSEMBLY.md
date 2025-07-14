@@ -75,6 +75,26 @@ Here is a sample program continuing with the data section above:
 
 This program loads the address of the string into `t0` then moves it to `a0`, then invokes the `wstr` system call, asking the operating system to write the string to the console.  Finally, the program exits.
 
+## Data Types
+
+Data can specified in a variety of formats. These representations provide convenient methods of specifying data.
+
+Note that some representations can only be used in the `.data` section. 
+
+| Type       | Examples        | Size           | .data | .text | Description                                      |
+|------------|-----------------|----------------|-------|-------|--------------------------------------------------|
+| Decimal    | `1`, `7`, `-10` | Word (2 bytes) | ✅    | ✅    | Any base-10 intger value from -32,768 to 32,767  |
+| Hexadecimal| `0x02`, `0xFA`  | Word (2 bytes) | ✅    | ✅    | Any base-16 value from 0x0000 to 0xFFFF          |
+| Binary     | `0b0000_0001`   | Word (2 bytes) | ✅    | ✅    | Binary encoded numbers start with '0b' followed by 1s and 0s. Underscores are ignored. |
+| String     | `"This is a string"` | 1 byte per character + 1 byte | ✅  | ❌ | Strings are an array of bytes encoded in ASCII and automatically terminated with a null terminator (0x00 byte) |
+| Byte Array | `.byte 256`     | Specified bytes| ✅    | ❌    | Allocates an empty array of bytes to the length specified |
+| Word Array | `.int 256`      | Specified words (count * 2 bytes)| ✅   | ❌   | Allocates an empty array of words to the length specified |
+| Image      | `.image "title.png"` | Word (2 bytes) | ✅ | ❌  | A reference to an image stored in the program ROM. The reference only takes two bytes and references the full data stored in the executable. |
+
+Note that the MTMC-16 lacks CPU support for the following data types and thus the assembly language does not understand them:
+
+* floating point numbers (e.g. `3.14159`)
+* binary coded decimal (e.g. `'12345'`)
 
 ## Frequently Asked Quesstions
 

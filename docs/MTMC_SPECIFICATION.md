@@ -346,26 +346,78 @@ representing the on/off state for a given button.
 | `a`      | `01` | `0000 0001` | 's' key       | the A button was pressed          |
 
 
-#### System Codes
+## System Calls
 
-Here are the syscodes supported by MTOS - WORK IN PROGRESS
+Operating system services are exposed via the `sys` instruction. The code passed
+by `sys` is interpreted by the operating system and used to executed an OS
+function. This is similar to interrupt codes used in most real-world computers.
+
+Here are the syscalls supported by MTOS:
 
 | Syscall   | Hex  | Description                                                                                                                                           |
 |-----------|------|:------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `halt`    | 0x00 | Shuts the computer down                                                                                                                               |
+| `exit`    | 0x00 | Stops execution of the program                                                                                                                               |
 | `rint`    | 0x01 | Reads an int value from the console into `rv`                                                                                                         |
 | `wint`    | 0x02 | Writes the int value in `a0` to the console                                                                                                           |
 | `rstr`    | 0x03 | Reads a string into the memory location pointed to by `a0` of max length `a1` from the console.  The bytes read are left in `rv`.                     |
-| `wstr`    | 0x04 | Writes a null terminated string to the console from the memory location pointed to by `a0`                                                            |
-| `rfile`   | 0x05 | Reads a file into the memory location pointed to by `a0` of max length `a1` from the file whose name is in `a2`.  The bytes read are left in `rv`.    |
-| `wfile`   | 0x06 | Writes the bytes from the memory location pointed to by `a0` of length `a1` into teh file whose name is in `a2`.                                      |
-| `rnd`     | 0x07 | Puts a random number between `a0` and `a1` (inclusive) into `rv`                                                                                      |
-| `sleep`   | 0x08 | Sleeps the system for the number of milliseconds found in `a0`                                                                                        |
-| `fbreset` | 0x11 | Resets the frame buffer to all zeros                                                                                                                  |
-| `fbstat`  | 0x12 | Sets `rv` to the 2-bit value of the pixel location `a0`, `a1` (out of bounds pixels will always be 0)                                                 |
-| `fbset`   | 0x13 | Sets the 2-bit value of the pixel location `a0`, `a1`, to the value found in `a3` (values may be 0, 1, 2 or 3, all other values will be treated as 0) |
-| `fbss`    | 0x14 | Draws the sprite found at sprite index `a0` into the framebuffer at location `a1`, `a2`.  If `a3` is `1`, transparency will be respected.             |
-| `fbds`    | 0x14 | Draws the sprite found at sprite index `a0` into the framebuffer at location `a1`, `a2`.  If `a3` is `1`, transparency will be respected.             |
-| `fbsync`  | 0x14 | Synchronizes the frame buffer to the screen                                                                                                           |
-| `error`   | 0xF0 | Aborts the current program execution with an error message, `a0` is a pointer to the error message      
-| `timer`   | 0x22 | If `a0` is non-zero, sets a timer to count down the number of milliseconds specified in `a0`. Returns the remaining number of ms in `rv`.             |
+| `wchr`    | 0x04 | Write the character stored in `a0` to the console                                                                                                     |
+| `rchr`    | 0x05 | Reads a single character from the console and stores the result in `rv`                                                                               |
+| `wstr`    | 0x06 | Writes a null terminated string to the console from the memory location pointed to by `a0`                                                            |
+| `printf`  | 0x07 | Formats a null terminated string from the memory location pointed to by `a0` and writes to the console. Values `%d` (number), `%c` (character), and `%s` (string) are interpreted as replace keys. Replace values are taken in stack order from a stack pointer in register `a1`. The stack pointer is not changed. Strings listed on the stack must be a pointer to the memory address of a null terminated string. |
+| `rfile`   | 0x10 | Reads a file into the memory location pointed to by `a0` of max length `a1` from the file whose name is in `a2`. `rv` is 0 if successful, 1 if file not found, and -1 if an unexpected error occurs.    |
+| `wfile`   | 0x11 | Writes the bytes from the memory location pointed to by `a0` of length `a1` into the file whose name is in `a2`.                                      |
+| `cwd`     | 0x12 | Writes a null terminated string of the current working directory to the memory address in `a0` with a maximum length specified by `a1`. The number of characters written is saved to `rv`. |
+| `chdir`   | 0x13 | Changes the directory to the path pointed to in `a0`. The value of `rv` is 0 if successful, 1 if the operation failed.                                |
+| `dirent`  | 0x14 | Used for filesystem directory services. Full explanation is given in the section below.                                                               |
+| `dfile`   | 0x15 | Attempts to delete the file path pointed to by `a0`. Returns 0 in `rv` if successful, 1 if failed. Common failures are the path not existing and attempting to delete a non-empty directory. |
+| `rnd`     | 0x20 | Puts a random number between `a0` and `a1` (inclusive) into `rv`                                                                                      |
+| `sleep`   | 0x21 | Sleeps the system for the number of milliseconds found in `a0`                                                                                        |
+| `timer`   | 0x22 | Sets a timer for the number of milliseconds specified in `a0`. If 0, the timer is not affected. Returns the number of milliseconds remaining in `rv`. |
+| `fbreset` | 0x30 | Resets the frame buffer to a blank screen                                                                                                             |
+| `fbstat`  | 0x31 | Sets `rv` to the 2-bit value of the pixel location `a0`, `a1` (out of bounds pixels will always be 0)                                                 |
+| `fbset`   | 0x32 | Sets the 2-bit value of the pixel location `a0`, `a1`, to the value found in `a3` (values may be 0, 1, 2 or 3, all other values will be treated as 0) |
+| `fbline`  | 0x33 | Draws a line between start x,y and end x,y coordinates specified by a0,a1 and a2,a3 respectively.                                                     |
+| `fbrect`  | 0x34 | Fills a rectange between start x,y and end x,y coordinates specified by a0,a1 and a2,a3 respectively.                                                 |
+| `fbflush` | 0x35 | Swaps the drawing surface to the screen for display. Graphics will not appear on the screen until this is called.                                     |
+| `joystick`| 0x3A | Copies the state of the `io` register to `rv`                                                                                                         |
+| `scolor`  | 0x3B | Sets the current drawing color to the value specified in `a0`. Valid colors are 0, 1, 2, and 3.                                                       |
+| `memcopy` | 0x40 | Copies `a2` number of bytes from the memory address specified in `a0` to the address specified in `a1`.                                               |
+| `drawimg` | 0x50 | Draws an image specified by `a0` to x,y coordinates specified by `a1`,`a2`. 
+| `error`   | 0xFF | Aborts the current program execution with an error message, `a0` is a pointer to the error message      
+
+### Directory Entries
+
+The `dirent` syscall provides a method of iterating through a list of files in a directory. Since
+directory entries are complex, the syscall is designed to respond to different commands and 
+interact with data structures in memory.
+
+The `a0` argument always points to the path of the directory to read. The `a1`
+argument contains the command to run.
+
+Here is a list of valid commands:
+
+| Command     | Hex  | Descrption                                                                                                                                       |
+|-------------|------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `count`     | 0x00 | `rv` is set to  a count of files in the directory                                                                                                |
+| `get entry` | 0x01 | Retrieves the directory entry specified by `a2` and saves it to the structure specfified by `a3`. Valid values are 0 through `count`.            | 
+
+A directory entry has the following in-memory structure:
+
+| Name    | Type    | Size         | Description                                                         |
+|---------|---------|--------------|---------------------------------------------------------------------|
+| `flags` | int     | 2 bytes      | Bit 0 is set to 1 if the entry is a directory, 0 if a regular file. |
+| `size`  | int     | 2 bytes      | The number of bytes allocated for the name of the entry.            |
+| `name`  | string  | `size` bytes | A null terminated string containing the name, padded out to `size`  |
+
+In assembly, this structure can be allocated in the `.data` section like this:
+
+```asm
+dir_entry:
+   dir_entry_flags: 0
+   dir_entry_size:  256
+   dir_entry_name:  .byte 256
+```
+
+Make sure the `size` and number of bytes allocated for `name` both match. Note that
+size must be specified in the strucutre as the `dirent` call reads it to determine how many
+bytes can be copied into `name`.

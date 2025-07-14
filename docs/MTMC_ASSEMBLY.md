@@ -80,8 +80,13 @@ This program loads the address of the string into `t0` then moves it to `a0`, th
 
 ### What does MTMC stand for?
 
-*Montana Microcomputer* - named after Montana State University where it was
-conceived and developed.
+*Montana State Minicomputer* - named after Montana State University where it was
+conceived and developed. *MT* is the two-letter abbreviation for "Montana" while *MC*
+is short for "Mini Computer*. 
+
+"Mini Computers" were systems like the PDP-11 that fit within a single rack rather than
+a full room like a Mainframe Computer. These ultimately gave way to "Micro Computers"
+which were home computers like the Commodore 64 and the IBM PC.
 
 ### What does the 16 in MTMC-16 stand for?
 

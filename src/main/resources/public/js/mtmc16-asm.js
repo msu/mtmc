@@ -7,7 +7,11 @@
         'mov', 'lbo', 'lwo', 'eqi', 'eq', 'lb', 'lw', 'li', 'sys',
         'j', 'jnz', 'jz', 'jal', 'inc', 'dec', 'push', 'pop',
         'sw', 'sb', 'swo', 'sbo', 'ret', 'mul', 'add', 'sub',
-        'div', 'and', 'or', 'xor', 'lt', 'lti', 'gt', 'gti'
+        'div', 'and', 'or', 'xor', 'lt', 'lti', 'gt', 'gti', 'la',
+        'lbr', 'lwr', 'sbr', 'swr', 'seti', 'nop', 'mod', 'shl',
+        'shr', 'min', 'max', 'not', 'lnot', 'neg', 'imm', 'dup',
+        'swap', 'drop', 'over', 'rot', 'sop', 'pushi', 'neq', 'gte',
+        'gti', 'gtei', 'lte', 'ltei', 'neqi', 'jr'
     ];
     
     const registers = [

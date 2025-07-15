@@ -1,6 +1,6 @@
 <html lang="en">
 <body>
-<table cellspacing="4" cellpadding="0" width="90%" border="0">
+<table cellspacing="4" cellpadding="0" width="99%" border="0">
     <tr>
         <td width="20" align="center" bgcolor="#243571">&nbsp;</td>
         <td width="64" align="center" bgcolor="#243571">
@@ -23,19 +23,109 @@
         </td>
     </tr>
 </table>
-<h1>The Montana Mini-Computer / MTMC-16</h1>
+<table cellspacing="0" cellpadding="0" width="99%" border="0">
+<td width="96">&nbsp;</td>
+<td width="768">
+<h1>The Montana Mini-Computer / MTMC-16 Homepage</h1>
 <p>
-    It's cool.
+The MonTana state Mini Computer is a virtual computer intended to show how digital computation works in a fun and visual way.
+</p><p>
+The MTSC combines ideas from the PDP-11, MIPS, Scott CPU, Game Boy and JVM to make a relatively simple 16-bit computer that can accomplish basic computing tasks.
+</p><p>
+The computer is displayed via a web interface that includes all the I/O such as console and display, visual representations of the computer state, and a built in code editor to construct and debug software for the computer.
 </p>
-<h2>Download</h2>
-<p>
+<br>
+<table width="760">
+    <tr>
+        <td valign="top" width="33%">
+<h2>Download Now</h2>
 <a href="#">Coming soon!</a>
-</p>
+        </td>
+        <td valign="top" width="33%">
+<h2>GitHub</h2>
+<a href="https://github.com/msu/mtmc/">MTMC-16 Project</a>
+        </td>
+        <td valign="top">
+<h2>Documentation</h2>
+<a href="https://github.com/msu/mtmc/blob/master/docs/MTMC_SPECIFICATION.md">Computer Specification</a><br>
+<a href="https://github.com/msu/mtmc/blob/master/docs/MTMC_ASSEMBLY.md">Assembly Guide</a><br>
+<a href="https://github.com/msu/mtmc/blob/master/docs/MTMC_FAQ.md">Frequently Asked Questions</a>
+        </td>
+    </tr>
+</table>
+<h2>Requirements</h2>
+<ul>
+    <li>Desktop Computer, Virtual Machine, or Server</li>
+    <li><a href="https://adoptium.net">Java 21</a> or higher Virtual Machine</li>
+    <li>Modern Web Browser</li>
+    <li>A willingness to learn</li>
+</ul>
 <h2>Screenshot</h2>
 <img src="images/screenshot.png" alt="Screenshot" width="768">
-<h2>GitHub</h2>
-<p>
-<a href="https://github.com/msu/mtmc/">MTMC-16 Project</a>
-</p>
+<br><br>
+<table width="760">
+<tr>
+<td width="45%" valign="top">
+<h2>Overall Architecture</h2>
+<ul>
+<li>16-bit binary computer<br><br></li>
+<li>byte-addressable<br><br></li>
+<li>2 byte (16-bit) words<br><br></li>
+<li>4k of Memory
+<ul>
+<li>4096 bytes/addresses</li>
+<li>2048 words<br><br></li>
+</ul>
+</li>
+<li>16 Registers<br><br></li>
+<li>160x144 2-bit green scale display
+<ul>
+<li><code>00</code> - <code><font color="#2a453b"><b>#2a453b</b></font></code> - darkest</li>
+<li><code>01</code> - <code><font color="#365d48"><b>#365d48</b></font></code> - dark</li>
+<li><code>10</code> - <code><font color="#577c44"><b>#577c44</b></font></code> - light</li>
+<li><code>11</code> - <code><font color="#7f860f"><b>#7f860f</b></font></code> - lightest<br><br></li>
+</ul>
+</li>
+<li>Console for text input/output & commands<br><br></li>
+<li>Operating System (MTOS)<br><br></li>
+<li>Core data types are signed 16-bit integers & bytes<br><br></li>
+</ul>
+</td>
+<td valign="top">
+<h2>Links</h2>
+<ul>
+    <li><a href="https://en.wikipedia.org/wiki/PDP-11">Wikipedia page on the PDP-11</a><br><br></li>
+<li><a href="https://cs.stanford.edu/people/eroberts/courses/soco/projects/risc/mips/index.html">Stanford page on the MIPS RISC architecture research</a><br><br></li>
+<li><a href="https://www.youtube.com/watch?v=RRg5hRlywIg">Scott CPU Introduction</a><br><br></li>
+<li><a href="https://www.copetti.org/writings/consoles/game-boy/">Gameboy Architecture: A practical analysis by Rodrigo Copetti</a><br><br></li>
+<li><a href="https://docs.oracle.com/javase/specs/jvms/se8/html/">Java Virtual Machine Specification</a><br><br></li>
+<li><a href="https://www.cs.montana.edu/directory/2256398/carson-gross">Montana State University Computer Science Instructor</a><br><br></li>
+<li><a href="https://grugbrain.dev">The Grug Brained Developer: A layman's guide to thinking like the self-aware smol brained</a><br><br></li>
+<li><a href="https://htmx.org">htmx: high power tools for HTML</a><br><br></li>
+<li><a href="https://github.com/bigskysoftware/fixi?tab=readme-ov-file">fixi.js - it ain't much...</a><br><br></li>
+<li><a href="https://hypermedia.cs.montana.edu">The Hypermedia Research Group</a><br><br></li>
+<li><a href="https://bigsky.software">Big Sky Software</a><br><br></li>
+<li><a href="https://www.invirgance.com">Invirgance: Changing the way software is delivered</a><br><br></li>
+</ul>
+</td>
+</tr>
+</table>
+</td>
+<td>&nbsp;</td>
+</table>
+<br>
+<hr>
+<i>&copy; Copyright 2025 All Rights Reserved</i>
+<br><br>
+Best viewed with<br>
+<img src="images/badges.png" alt="Netscape and Internet Exploder">
+<img src="images/realplayer.png" alt="RealPlayer">
+<img src="images/shockwave.png" alt="Macromedia Shockwave">
+<img src="images/flash.png" alt="Macromedia Flash Player">
+<img src="images/acrobat.png" alt="Adobe Acrobat">
+<img src="images/winzip.png" alt="WinZip">
+<img src="images/quicktime.png" alt="Apple Quicktime">
+<img src="images/noframes.png" alt="Campaign against frames">
+<img src="images/notepad.png" alt="Made with Netbeans (which is kinda like Notepad)">
 </body>
 </html>

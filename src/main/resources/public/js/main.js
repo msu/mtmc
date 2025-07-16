@@ -1,6 +1,7 @@
 // connect to sse endpoint
 const sseSource = new EventSource("/sse", {withCredentials: true});
 let buttons = 0x00;
+let gamepad = null;
 
 sseSource.addEventListener("update:execution", (e) => {
     let element = document.getElementById("controls");
@@ -188,6 +189,52 @@ function initJoystick() {
         buttons &= ~key_mappings[e.key];
         fetch("/io/" + buttons.toString(16), {method: 'POST'});
     });
+    
+    
+    // key mappings
+    gamepad_mappings = {
+        12: 0x80,
+        13: 0x40,
+        14: 0x20,
+        15: 0x10,
+        9: 0x08,
+        8: 0x04,
+        0: 0x02,
+        1: 0x01
+    };
+    
+    // gamepad
+    window.addEventListener("gamepadconnected", (evt) => {
+        gamepad = evt.gamepad;
+        requestAnimationFrame(checkGamepadInput);
+        console.log("Gamepad connected", gamepad);
+    });
+    
+    window.addEventListener("gamepaddisconnected", (evt) => {
+        if (gamepad === evt.gamepad) {
+            gamepad = null;
+            console.log("Gamepad disconnected", gamepad);
+        }
+    });
+    
+    function checkGamepadInput() {
+        var last = buttons;
+
+        if(!gamepad) return; // Not polling anymore
+
+        navigator.getGamepads(); // Poll gamepads
+
+        Object.keys(gamepad_mappings).forEach(button => {
+            if (gamepad.buttons[button].pressed) buttons |= gamepad_mappings[button];
+            else buttons &= ~gamepad_mappings[button];
+        });
+        
+        if (buttons !== last) {
+            fetch("/io/" + buttons.toString(16), {method: 'POST'});
+        }
+        
+        requestAnimationFrame(checkGamepadInput);
+    }
 }
 
 function initConsole() {

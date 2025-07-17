@@ -47,15 +47,56 @@ public class MTOSTest {
     @Test
     public void testWriteStr() {
         MonTanaMiniComputer computer = new MonTanaMiniComputer();
-        int address = 50;
         byte[] bytes = "Hello world!".getBytes(Charsets.US_ASCII);
-        for (int i = 0; i < bytes.length; i++) {
-            computer.writeByteToMemory(address + i, bytes[i]);
-        }
-        computer.setRegisterValue(A0, address);
+        computer.writeStringToMemory(50, bytes);
+        computer.setRegisterValue(A0, 50);
         short inst = 0b0000_0000_0000_0110; // sys wstr
         computer.execInstruction(inst);
         assertEquals("Hello world!", computer.getConsole().getOutput());
+    }
+
+    @Test
+    public void testAtoi() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        byte[] bytes = "42".getBytes(Charsets.US_ASCII);
+        computer.writeStringToMemory(50, bytes);
+        computer.setRegisterValue(A0, 50);
+        short inst = 0x8; // atoi
+        computer.execInstruction(inst);
+        assertEquals(42, computer.getRegisterValue(RV));
+    }
+
+    @Test
+    public void testAtoiWithSpace() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        byte[] bytes = "  42  ".getBytes(Charsets.US_ASCII);
+        computer.writeStringToMemory(50, bytes);
+        computer.setRegisterValue(A0, 50);
+        short inst = 0x8; // atoi
+        computer.execInstruction(inst);
+        assertEquals(42, computer.getRegisterValue(RV));
+    }
+
+    @Test
+    public void testAtoiWithTrailingContent() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        byte[] bytes = "  42  122 ".getBytes(Charsets.US_ASCII);
+        computer.writeStringToMemory(50, bytes);
+        computer.setRegisterValue(A0, 50);
+        short inst = 0x8; // atoi
+        computer.execInstruction(inst);
+        assertEquals(42, computer.getRegisterValue(RV));
+    }
+
+    @Test
+    public void testAtoiWithBadValueReturnsZero() {
+        MonTanaMiniComputer computer = new MonTanaMiniComputer();
+        byte[] bytes = "  asdf  122 ".getBytes(Charsets.US_ASCII);
+        computer.writeStringToMemory(50, bytes);
+        computer.setRegisterValue(A0, 50);
+        short inst = 0x8; // atoi
+        computer.execInstruction(inst);
+        assertEquals(0, computer.getRegisterValue(RV));
     }
 
     @Test

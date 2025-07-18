@@ -44,8 +44,8 @@
 
     grow_size:  1
     tail_size:  3
-    tail_x:     byte { 80 }
-    tail_y:     byte { 80 }
+    tail_x:     .byte 80
+    tail_y:     .byte 80
 
   food:
     food_x:     0
@@ -121,7 +121,7 @@ clear_buffer:
   mov  t2 t0
   mul  t2 t1
   li   t3 0         # Counter
-  li   t4 0xFF         # Zero
+  li   t4 0         # Zero
 
 clear_loop:
 

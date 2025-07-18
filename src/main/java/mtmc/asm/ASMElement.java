@@ -10,7 +10,7 @@ public abstract class ASMElement implements HasLocation {
     private final List<MTMCToken> labels;
     List<ASMError> errors = new ArrayList<>();
     private int location = -1;
-    private int lineNumber;
+    protected int lineNumber;
 
     public ASMElement(List<MTMCToken> labels, int lineNumber) {
         this.labels = labels;

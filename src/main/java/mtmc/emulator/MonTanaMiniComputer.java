@@ -1,17 +1,14 @@
 package mtmc.emulator;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import mtmc.asm.instructions.Instruction;
 import mtmc.os.MTOS;
 import mtmc.os.fs.FileSystem;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.IntStream;
-import javax.imageio.ImageIO;
 
 import static mtmc.emulator.MonTanaMiniComputer.ComputerStatus.*;
 import static mtmc.emulator.Register.*;
@@ -36,10 +33,13 @@ public class MonTanaMiniComputer {
     MTMCDisplay display = new MTMCDisplay(this);
     MTMCClock clock = new MTMCClock(this);
     FileSystem fileSystem = new FileSystem(this);
+    LinkedList<RewindStep> rewindSteps = new LinkedList<>();
+    public static final int MAX_REWIND_STEPS = 100;
 
     // listeners
     private List<MTMCObserver> observers = new ArrayList<>();
     private DebugInfo debugInfo = null;
+    private RewindStep currentRewindStep;
 
     public MonTanaMiniComputer() {
         initMemory();
@@ -48,7 +48,9 @@ public class MonTanaMiniComputer {
     public void initMemory() {
         registerFile = new short[Register.values().length];
         memory = new byte[MEMORY_SIZE];
+        rewindSteps = null;
         setRegisterValue(SP, (short) MEMORY_SIZE);  // default the stack pointer to the top of memory
+        rewindSteps = new LinkedList<>();
         observers.forEach(MTMCObserver::computerReset);
     }
 
@@ -77,6 +79,7 @@ public class MonTanaMiniComputer {
         setRegisterValue(BP, dataBoundary);
 
         fetchCurrentInstruction(); // fetch the initial instruction for display purposes
+        notifyOfStepExecution(); // prepare for step execution
         display.loadGraphics(graphics); // ready graphics for use
 
         // reset computer status
@@ -99,10 +102,22 @@ public class MonTanaMiniComputer {
         setStatus(EXECUTING);
         clock.run();
     }
+    
+    public void back() {
+        clock.back();
+    }
+
+    public void step() {
+        clock.step();
+    }
 
     public void setStatus(ComputerStatus status) {
         this.status = status;
         this.notifyOfExecutionUpdate();
+        
+        if (status == FINISHED) {
+            this.notifyOfStepExecution();
+        }
     }
 
     public ComputerStatus getStatus() {
@@ -110,6 +125,8 @@ public class MonTanaMiniComputer {
     }
 
     public void fetchAndExecute() {
+        currentRewindStep = new RewindStep();
+        rewindSteps.push(currentRewindStep);
         fetchCurrentInstruction();
         short instruction = getRegisterValue(IR);
         if (isDoubleWordInstruction(instruction)) {
@@ -693,8 +710,19 @@ public class MonTanaMiniComputer {
             console.println("BAD MEMORY LOCATION ON WRITE: " + address + " (0x" + Integer.toHexString(address & 0xFFFF) + ")");
             return;
         }
+        byte currentValue = memory[address];
+        addRewindStep(() -> memory[address] = currentValue);
         memory[address] = value;
         observers.forEach(o -> o.memoryUpdated(address, value));
+    }
+
+    private void addRewindStep(Runnable runnable) {
+        if (currentRewindStep != null && rewindSteps != null) {
+            currentRewindStep.addSubStep(runnable);
+            if (rewindSteps.size() > MAX_REWIND_STEPS) {
+                rewindSteps.removeLast();
+            }
+        }
     }
 
     public void setRegisterValue(Register register, int value) {
@@ -705,6 +733,10 @@ public class MonTanaMiniComputer {
         if (Short.MAX_VALUE < value || value < Short.MIN_VALUE) {
             // TODO mark as overflow
         }
+        short currentValue = registerFile[register];
+        addRewindStep(() -> {
+            registerFile[register] = currentValue;
+        });
         registerFile[register] = (short) value;
         observers.forEach(o -> o.registerUpdated(register, value));
     }
@@ -806,6 +838,14 @@ public class MonTanaMiniComputer {
         }
     }
 
+    public void notifyOfStepExecution() {
+        if (observers != null) {
+            for (MTMCObserver observer : observers) {
+                observer.stepExecution();
+            }
+        }
+    }
+
     public void notifyOfRequestString() {
         if (observers != null) {
             for (MTMCObserver observer : observers) {
@@ -867,6 +907,15 @@ public class MonTanaMiniComputer {
 
     public FileSystem getFileSystem() {
         return fileSystem;
+    }
+
+    public void rewind() {
+        RewindStep latestRewindStep = rewindSteps.pop();
+        latestRewindStep.rewind();
+    }
+
+    public boolean isBackAvailable() {
+        return !rewindSteps.isEmpty();
     }
 
     public enum ComputerStatus {

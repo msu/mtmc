@@ -114,13 +114,61 @@ public class MTOS {
             computer.getConsole().print(sb.toString());
             computer.setRegisterValue(RV, sb.length());
         } else if (syscallNumber == SysCall.getValue("rnd")) {
+        } else if (syscallNumber == SysCall.getValue("printf")) {
+            short pointer = computer.getRegisterValue(A0);
+            short initSP = computer.getRegisterValue(A1);
+            String fmtString = readStringFromMemory(pointer);
+            StringBuilder sb = new StringBuilder();
+            int stackOff = 0;
+            int i = 0;
+            while (i < fmtString.length()) {
+                char c = fmtString.charAt(i++);
+                if (c != '%') {
+                    sb.append(c);
+                    continue;
+                }
+
+                if (i >= fmtString.length()) break;
+                c = fmtString.charAt(i++);
+
+                if (c == 'd') {
+                    stackOff += 2;
+                    int v = computer.fetchWordFromMemory(initSP - stackOff);
+                    sb.append(v);
+                } else if (c == 'c') {
+                    stackOff += 2;
+                    char v = (char) computer.fetchWordFromMemory(initSP - stackOff);
+                    sb.append(v);
+                } else if (c == 's') {
+                    stackOff += 2;
+                    short valuePointer = computer.fetchWordFromMemory(initSP - stackOff);
+                    String s = readStringFromMemory(valuePointer);
+                    sb.append(s);
+                } else {
+                    sb.append('%').append(c);
+                }
+            }
+
+            computer.getConsole().print(sb.toString());
+            computer.setRegisterValue(RV, sb.length());
+        } else if (syscallNumber == SysCall.getValue("atoi")) {
+            short pointer = computer.getRegisterValue(A0);
+            String string = readStringFromMemory(pointer);
+            String[] split = string.trim().split("\\s+");
+            String firstNum = split[0];
+            try {
+                short value = Short.parseShort(firstNum);
+                computer.setRegisterValue(RV, value);
+            } catch(NumberFormatException e) {
+                computer.setRegisterValue(RV, 0);
+            }
+        } else if (syscallNumber == SysCall.getValue("rnd")) {
             // rnd
             short low = computer.getRegisterValue(A0);
             short high = computer.getRegisterValue(A1);
             short temp;
             
-            if(low > high)
-            {
+            if(low > high) {
                 temp = low;
                 low = high;
                 high = temp;
@@ -179,10 +227,10 @@ public class MTOS {
         } else if (syscallNumber == SysCall.getValue("rfile")) {
             short fileNamePtr = computer.getRegisterValue(A0);
             String fileName = readStringFromMemory(fileNamePtr);
-            File file = new File("disk/" + fileName);
+            File file = new File("disk" + computer.getFileSystem().resolve(fileName));
 
             if (!file.exists()) {
-                computer.setRegisterValue(RV, 0);
+                computer.setRegisterValue(RV, 1);
                 return;
             }
 
@@ -209,7 +257,7 @@ public class MTOS {
                     for (int lineNum = 0; lineNum < cappedLines; lineNum++) {
                         String line = lines.get(lineNum);
                         for (int colNum = 0; colNum < maxSize1; colNum++) {
-                            int offset = lineNum * 80 + colNum;
+                            int offset = lineNum * maxSize1 + colNum;
                             int byteOffset = offset / 8;
                             int bitOffset = offset % 8;
                             byte currentVal = computer.fetchByteFromMemory(destination + byteOffset);
@@ -230,13 +278,15 @@ public class MTOS {
                         computer.writeByteToMemory(destination + i, aByte);
                     }
                 }
+                computer.setRegisterValue(RV, 0);
             } catch (IOException e) {
                 computer.setRegisterValue(RV, -1);
+                e.printStackTrace(); // debugging
             }
 
         } else if (syscallNumber == SysCall.getValue("cwd")) {
         
-            String cwd = computer.getFileSystem().getCWD();
+            String cwd = computer.getFileSystem().listCWD().path;
 
             short destination = computer.getRegisterValue(A0);
             int maxSize = Math.min(computer.getRegisterValue(A1), cwd.length()+1);
@@ -251,21 +301,12 @@ public class MTOS {
             computer.setRegisterValue(RV, maxSize-1);
         } else if (syscallNumber == SysCall.getValue("chdir")) {
 
-            short source = computer.getRegisterValue(A0);
-            short maxSize = computer.getRegisterValue(A1);
-            StringBuffer dir = new StringBuffer();
+            short pointer = computer.getRegisterValue(A0);
+            String dir = readStringFromMemory(pointer);
             
-            for (int i = 0; i < maxSize; i++) {
-                char c = (char)computer.fetchByteFromMemory(source + i);
-                
-                if(c == 0) break;
-                
-                dir.append(c);
-            }
-            
-            if (computer.getFileSystem().exists(dir.toString())) {
+            if (computer.getFileSystem().exists(dir)) {
                 computer.setRegisterValue(RV, 0);
-                computer.getFileSystem().setCWD(dir.toString());
+                computer.getFileSystem().setCWD(dir);
             } else {
                 computer.setRegisterValue(RV, 1);
             }
@@ -287,6 +328,58 @@ public class MTOS {
             
             computer.getDisplay().drawImage(image, x, y);
             computer.setRegisterValue(RV, 0);
+        } else if (syscallNumber == SysCall.getValue("dirent")) {
+            short dirent = computer.getRegisterValue(A0);
+            short command = computer.getRegisterValue(A1);
+            short offset = computer.getRegisterValue(A2);
+            short destination = computer.getRegisterValue(A3);
+            
+            short maxSize = computer.fetchWordFromMemory(dirent + 2);
+            short maxSizeOut = computer.fetchWordFromMemory(destination + 2);
+            
+            String dir = readStringFromMemory(dirent);
+            File[] list;
+
+            if (!computer.getFileSystem().exists(dir)) {
+                computer.setRegisterValue(RV, -1);
+                return;
+            }
+            
+            list = computer.getFileSystem().getFileList(dir);
+            
+            if (command == 0) { // Count of files in the directory
+                computer.setRegisterValue(RV, list.length);
+            } if (command == 1) {
+
+                if (offset < 0 || offset >= list.length) {
+                    computer.setRegisterValue(RV, -2);
+                    return;
+                }
+                
+                File file = list[offset];
+                String name = file.getName();
+                int size = Math.min(maxSizeOut-1, name.length());
+
+                computer.writeWordToMemory(destination, file.isDirectory() ? 1 : 0);
+                
+                for (int i = 0; i < size; i++) {
+                    byte aByte = (byte)name.charAt(i);
+                    computer.writeByteToMemory(destination + 4 + i, aByte);
+                }
+
+                //TODO: Should this return the length with or without the null terminator?
+                computer.writeByteToMemory(destination + 4 + size, (byte)0);
+                computer.setRegisterValue(RV, Math.min(maxSizeOut, name.length())-1);
+            }
+        } else if (syscallNumber == SysCall.getValue("dfile")) {
+            short pointer = computer.getRegisterValue(A0);
+            String path = readStringFromMemory(pointer);
+            
+            if (computer.getFileSystem().delete(path)) {
+                computer.setRegisterValue(RV, 0);
+            } else {
+                computer.setRegisterValue(RV, 1);
+            }
         }
     }
 

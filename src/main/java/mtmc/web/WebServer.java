@@ -2,7 +2,6 @@ package mtmc.web;
 
 import com.google.gson.Gson;
 import io.javalin.http.HttpStatus;
-import mtmc.emulator.MTMCIO;
 import mtmc.emulator.MonTanaMiniComputer;
 import io.javalin.Javalin;
 import io.javalin.http.sse.SseClient;
@@ -14,9 +13,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import mtmc.os.fs.FileSystem;
 
 public class WebServer {
 
@@ -63,6 +64,7 @@ public class WebServer {
         // config
         this.javalinApp = Javalin.create(cfg -> {
             cfg.staticFiles.add("public");
+            cfg.staticFiles.enableWebjars();
         });
         // paths
         javalinApp
@@ -122,8 +124,10 @@ public class WebServer {
                         computer.run();
                     }
                     if (ctx.pathParam("action").equals("step")) {
-                        computer.fetchAndExecute();
-                        computer.fetchCurrentInstruction(); // fetch next instruction for display
+                        computer.step();
+                    }
+                    if (ctx.pathParam("action").equals("back")) {
+                        computer.back();
                     }
                     ctx.html(render("templates/control.html"));
                 })
@@ -135,10 +139,24 @@ public class WebServer {
                     computerView.toggleMemoryFormat();
                     uiUpdater.updateMemoryImmediately();
                 })
+                .get("/fs/read/*", ctx -> {
+                    String path = ctx.path().substring("/fs/read".length());
+                    FileSystem fs = computerView.getFileSystem();
+
+                    ctx.contentType(fs.getMimeType(path));
+                    ctx.result(fs.openFile(path));
+                })
+                .post("/fs/write/*", ctx -> {
+                    String path = ctx.path().substring("/fs/write".length());
+                    FileSystem fs = computerView.getFileSystem();
+                    
+                    fs.saveFile(path, ctx.bodyInputStream());
+                    ctx.html("");
+                })
                 .get("/fs/toggle/*", ctx -> {
                     String path = ctx.path().substring("/fs/toggle/".length());
                     computerView.getFileSystem().setCWD(path);
-                    ctx.html(render("templates/editors.html"));
+                    ctx.html(render("templates/filetree.html"));
 
                     //ctx.html(computerView.getVisualShell());
                     // .getVisualShell() is outdated. renderFileTree() is manual input.
@@ -149,16 +167,36 @@ public class WebServer {
                     if (!successfullyOpened) {
                         ctx.status(HttpStatus.NOT_FOUND);
                     }
-                    ctx.html(render("templates/editors.html"));
+                    ctx.html(render(computerView.selectEditor()));
                 })
                 .post("/fs/cwd", ctx -> {
                     computerView.getFileSystem().setCWD(ctx.formParam("cwd"));
-                    ctx.html(render("templates/editors.html"));
-
+                    ctx.html(render("templates/filetree.html"));
                 })
                 .get("/fs/close", ctx -> {
                     computerView.closeFile();
-                    ctx.html(render("templates/editors.html"));
+                    ctx.html(render("templates/filetree.html"));
+                })
+                .get("/fs/new/file", ctx -> {
+                    ctx.html(render("templates/newfile.html"));
+                })
+                .get("/fs/new/dir", ctx -> {
+                    ctx.html(render("templates/newdir.html"));
+                })
+                .post("/fs/create/file", ctx -> {
+                    if (computerView.createFile(ctx.formParam("filename"), ctx.formParam("mime"))) {
+                        ctx.html(render(computerView.selectEditor()));
+                    } else {
+                        ctx.html(render("templates/newfile.html"));
+                    }
+                })
+                .post("/fs/create/dir", ctx -> {
+                    if (computerView.createDirectory(ctx.formParam("filename"))) {
+                        computerView.closeFile();
+                        ctx.html(render("templates/filetree.html"));
+                    } else {
+                        ctx.html(render("templates/newdir.html"));
+                    }
                 })
                 .sse("/sse", client -> {
                     client.keepAlive();

@@ -7,42 +7,35 @@ import mtmc.tokenizer.MTMCTokenizer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import mtmc.os.fs.FileSystem;
 
 public class AssembleCommand extends ShellCommand {
-    static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
-
-    static Path getDiskPath(String pathString) {
-        Path path = Paths.get(pathString);
-        if (!path.isAbsolute()) {
-            path = DISK_PATH.resolve(path);
-        }
-        path = path.toAbsolutePath();
-        if (!path.startsWith(DISK_PATH)) {
-            throw new IllegalArgumentException(pathString + " is not a disk path");
-        }
-        return path;
+    static Path getDiskPath(String pathString, FileSystem fs) {
+        Path path = Path.of("disk" + fs.resolve(pathString));
+        return path.toAbsolutePath();
     }
 
     @Override
     public void exec(MTMCTokenizer tokens, MonTanaMiniComputer computer) throws Exception {
+        FileSystem fs = computer.getFileSystem();
         String src = tokens.collapseTokensAsString();
         if (src == null || src.isBlank()) {
             throw new IllegalArgumentException("missing or required argument 'src'");
         }
-        Path srcPath = getDiskPath(src);
+        Path srcPath = getDiskPath(src, fs);
 
         String dst = tokens.collapseTokensAsString();
         if (dst == null || dst.isBlank()) {
             throw new IllegalArgumentException("missing required argument 'dst'");
         }
-        Path dstPath = getDiskPath(dst);
+        Path dstPath = getDiskPath(dst, fs);
 
         String contents = Files.readString(srcPath);
         Assembler assembler = new Assembler();
-        var file_name = srcPath.toString().substring(DISK_PATH.toString().length()).replaceAll("\\\\", "/");
+        var file_name = fs.resolve(src); // srcPath.toString().substring(DISK_PATH.toString().length()).replaceAll("\\\\", "/");
         var executable = assembler.assembleExecutable(file_name, contents);
         executable.dump(dstPath);
+        computer.notifyOfFileSystemUpdate();
     }
 
     @Override

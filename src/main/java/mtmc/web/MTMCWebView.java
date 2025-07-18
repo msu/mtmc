@@ -4,13 +4,11 @@ import mtmc.asm.instructions.Instruction;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import mtmc.os.fs.FileSystem;
-import mtmc.os.fs.Listing;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -26,7 +24,9 @@ public class MTMCWebView {
     private DisplayFormat memoryDisplayFormat = DisplayFormat.DYN;
 
     private Set<String> expandedPaths = new HashSet<>();
-    private String currentFileContent = null;
+    private String currentFile;
+    private String currentFileMime;
+    private String currentError;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -56,6 +56,10 @@ public class MTMCWebView {
         return (computer.getStatus() == MonTanaMiniComputer.ComputerStatus.EXECUTING);
     }
     
+    public boolean isBackAvailable() {
+        return computer.isBackAvailable();
+    }
+
     public int getSpeed() {
         return computer.getSpeed();
     }
@@ -125,21 +129,28 @@ public class MTMCWebView {
         return blinken.toString();
     }
 
-    public String getCurrentFileContent() {
-        return currentFileContent;
+    public String getCurrentFilename() {
+        return currentFile;
     }
 
-    @NotNull
-    private String renderFileTree() {
-        File rootFile = computer.getOS().loadFile("/");
-        var sb = new StringBuilder();
-        sb.append("<ul><li><code>/</code><ul>");
+    public String getCurrentFileMime() {
+        return currentFileMime;
+    }
 
-        for (File file : rootFile.listFiles()) {
-            appendContentForFile(file, sb);
+    public String getCurrentError() {
+        return currentError;
+    }
+    
+    public String selectEditor() {
+        if (currentFileMime.startsWith("text/")) {
+            return "templates/editors/monaco.html";
         }
-        sb.append("</ul></li></ul>");
-        return sb.toString();
+        
+        if (currentFileMime.startsWith("image/")) {
+            return "templates/editors/image.html";
+        }
+        
+        return "templates/editors/noeditor.html";
     }
 
     private void appendContentForFile(File file, StringBuilder sb) {
@@ -161,11 +172,6 @@ public class MTMCWebView {
         sb.append(file.getName());
         sb.append("</a>");
         sb.append("</li>");
-    }
-
-    private void appendListingContent(Listing listing) {
-
-        return;
     }
 
     private void appendDirectoryContent(File file, StringBuilder sb) {
@@ -353,23 +359,134 @@ public class MTMCWebView {
             expandedPaths.add(pathToToggle);
         }
     }
-
-    public boolean openFile(String fileToOpen) {
-        File file = computer.getOS().loadFile(fileToOpen);
-        if (file.exists() && file.isFile()) {
-            try {
-                currentFileContent = Files.readString(file.toPath());
-                return true;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
+    
+    public boolean hasFileOpen() {
+        return this.currentFile != null;
+    }
+    
+    public boolean createFile(String filename, String mime) throws IOException {
+        FileSystem fs = computer.getFileSystem();
+        
+        this.currentFile = filename;
+        this.currentFileMime = mime;
+        
+        if (filename.length() < 1) {
+            this.currentError = "File name is required";
             return false;
         }
+        
+        if (!filename.contains(".")) {
+            switch(mime) {
+                case "text/x-asm":
+                    filename += ".asm";
+                    break;
+                case "text/x-csrc":
+                    filename += ".c";
+                    break;
+            }
+        }
+        
+        if (filename.contains("/")) {
+            this.currentError = "File name cannot contain '/'";
+            return false;
+        }
+        
+        if (filename.contains(" ")) {
+            this.currentError = "Spaces are not allowed in filenames";
+            return false;
+        }
+        
+        if (fs.exists(filename)) {
+            this.currentError = "'" + filename + "' already exists";
+            return false;
+        }
+        
+        fs.writeFile(filename, "");
+        
+        this.currentFile = fs.getCWD() + "/" + filename;
+        this.currentFileMime = mime;
+        
+        return true;
+    }
+    
+    public boolean createDirectory(String filename) throws IOException {
+        FileSystem fs = computer.getFileSystem();
+        
+        this.currentFile = filename;
+        
+        if (filename.length() < 1) {
+            this.currentError = "Directory name is required";
+            return false;
+        }
+        
+        if (filename.contains("/")) {
+            this.currentError = "Directory name cannot contain '/'";
+            return false;
+        }
+        
+        if (filename.contains(" ")) {
+            this.currentError = "Spaces are not allowed in directory names";
+            return false;
+        }
+        
+        if (fs.exists(filename)) {
+            this.currentError = "'" + filename + "' already exists";
+            return false;
+        }
+        
+        if (!fs.mkdir(filename)) {
+            this.currentError = "Unable to create directory";
+            return false;
+        }
+        
+        return true;
+    }
+
+    public boolean openFile(String fileToOpen) throws IOException {
+        File file = computer.getOS().loadFile(fileToOpen);
+        
+        if (!file.exists() || !file.isFile()) return false;
+
+        this.currentFile = fileToOpen;
+        this.currentFileMime = computer.getFileSystem().getMimeType(fileToOpen);
+        
+        return true;
     }
 
     public void closeFile() {
-        currentFileContent = null;
+        currentFile = null;
+        currentFileMime = null;
+        currentError = null;
+    }
+    
+    public boolean hasDebugInfo() {
+        return (computer.getDebugInfo() != null);
+    }
+    
+    public String getProgram() {
+        if (computer.getDebugInfo() == null) {
+            return "";
+        }
+        
+        String original = computer.getDebugInfo().originalFile();
+        String assembly = computer.getDebugInfo().assemblyFile();
+        
+        return (original == null || original.length() < 1) ? assembly : original;
+    }
+    
+    public int getAssemblyLine() {
+        if (computer.getDebugInfo() == null) {
+            return -1;
+        }
+        
+        var pc = computer.getRegisterValue(Register.PC);
+        var debug = computer.getDebugInfo().assemblyLineNumbers();
+        
+        if (debug == null || debug.length <= pc) {
+            return -1;
+        }
+        
+        return debug[pc];
     }
 
     enum DisplayFormat {

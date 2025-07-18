@@ -1,20 +1,21 @@
 package mtmc.os.fs;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import mtmc.emulator.MonTanaMiniComputer;
 
 public class FileSystem {
-    private static Map<String, ArrayList<String>> DIRECTORY_W_FILES = new TreeMap<String, ArrayList<String>>();
     private String cwd = "/home";
     private MonTanaMiniComputer computer;
-    
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
-    static final Path HOME_PATH = Path.of(DISK_PATH.toString(), "/home");
     
     public FileSystem() {
         this(null);
@@ -22,128 +23,130 @@ public class FileSystem {
     
     public FileSystem(MonTanaMiniComputer computer) {
         this.computer = computer;
+        
+        initFileSystem();
     }
 
+    private void initFileSystem() {
+        if (DISK_PATH.toFile().exists()) return;
+        
+        // Make the disk/ directory
+        DISK_PATH.toFile().mkdirs();
+        
+        try (var in = new ZipInputStream(getClass().getResourceAsStream("/disk.zip"))) {
+            ZipEntry entry;
+            File file;
+            
+            byte[] data = new byte[4096];
+            int count;
+
+            while ((entry = in.getNextEntry()) != null) {
+                file = new File(entry.getName());
+                
+                if (entry.isDirectory()) {
+                    file.mkdirs();
+                } else {
+                    file.getParentFile().mkdirs();
+                    
+                    try (var out = new FileOutputStream(file)) {
+                        while((count = in.read(data)) > 0) {
+                            out.write(data, 0, count);
+                        }
+                    }
+                }
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
     private void notifyOfFileSystemUpdate() {
         if (this.computer != null) {
             computer.notifyOfFileSystemUpdate();
         }
     }
     
+    public String getCWD() {
+        return this.cwd;
+    }
+    
     public void setCWD(String cwd) {
         this.cwd = resolve(cwd);
         this.notifyOfFileSystemUpdate();
-    }
-
-    public String getCWD() {
-        return cwd;
     }
     
     public boolean exists(String path) {
         return new File(DISK_PATH.toFile(), resolve(path)).exists();
     }
-
-    public String resolve(String fileName) {
-        String resolvedString = "";
-        String[] cwdPath = cwd.split("/");
-        ArrayList<String> cwdArrayList = new ArrayList<>(Arrays.asList(cwdPath)); // Convert to ArrayList
-//        if (cwdPath[0].equals("")) { // Remove empty string (First slash)
-//            cwdArrayList.removeFirst();
-//        }
-        String[] path = fileName.split("/");
-        ArrayList<String> fileArrayList = new ArrayList<>(Arrays.asList(path)); // Convert to ArrayList
-        resolvedString = pathConstructor(cwdArrayList, fileArrayList); // Handles absolute and relative construction
-
-        return resolvedString;
+    
+    public boolean mkdir(String path) {
+        boolean success = new File(DISK_PATH.toFile(), resolve(path)).mkdir();
+        
+        if (success) {
+            computer.notifyOfFileSystemUpdate();
+        }
+        
+        return success;
     }
-    /*public String pathConstructor(ArrayList<String> cwd, ArrayList<String> path){
-        ArrayList<String> constructedPath = new ArrayList<>();
-        if(path.get(0).equals("")){
-            path.removeFirst();
+    
+    public boolean delete(String path) {
+        boolean success = new File(DISK_PATH.toFile(), resolve(path)).delete();
+        
+        if (success) {
+            computer.notifyOfFileSystemUpdate();
         }
-    }*/
-    public String pathConstructor(ArrayList<String> cwd, ArrayList<String> path) {
-        ArrayList<String> constructedPath = new ArrayList<>();
-        if (path.isEmpty()) { // This fulfills (cd " ")
-            // do nothing, just a guard for path.get(0)
-        } else if (path.get(0).equals("")) {
-            path.removeFirst();
-            for (String link : path) {
-                if(link.equals("..") && constructedPath.isEmpty()){
-                }
-                else if (link.equals("..") && !constructedPath.isEmpty()) { // Check if there is a directory to move up
-                    constructedPath.removeLast();
-                } else if (!link.equals(".")) { // Don't add "." to path string
-                    constructedPath.add(link);
-                }
-            }
-        } else { // Else-If given path is absolute
-            constructedPath.addAll(cwd); // Only added when ".." or "." are at the beginning
-            for (String link : path) {
-                if(link.equals("..") && constructedPath.isEmpty()){}
-                if (link.equals("..") && !constructedPath.isEmpty()) { // Check if there is a directory to move up
-                    constructedPath.removeLast();
-                } else if (!link.equals(".")) { // Don't add "." to path string
-                    constructedPath.add(link);
-                }
-            }
-        }
-
-        if (constructedPath.isEmpty()) return "/";
-        if (constructedPath.get(0).isEmpty()) {
-            constructedPath.removeFirst();
-        }
-        String fileString = "";
-        for (String link : constructedPath) {
-            fileString += ("/" + link);
-        }
-        return fileString;
+        
+        return success;
     }
 
-    public String join(String front, String back) {
-        String joinedPath = "";
-        String[] parts = back.split("/");
-        if (!parts[0].equals("/")) {
-            joinedPath = front + "/" + back;
-        } else if (parts[0].equals("/")) {
-            joinedPath = front + back;
+    public String resolve(String filename) {
+        File root = DISK_PATH.toFile();
+        File directory = filename.startsWith("/") ? root : new File(root, cwd);
+        String[] path = filename.split("/");
+        
+        for (String name : path) {
+            if (name.equals(".")) {
+                continue;
+            } else if (name.equals("..") && directory.equals(root)) {
+                continue;
+            } else if (name.equals("..")) {
+                directory = directory.getParentFile();
+            } else {
+                directory = new File(directory, name);
+            }
         }
-        return joinedPath;
+        
+        if(directory.equals(root)) {
+            return "/";
+        }
+
+        return directory.getAbsolutePath().substring(root.getAbsolutePath().length());
     }
 
     public Path getRealPath(String path) { // Resolves given path and returns /disk/ + path
         String resolvedPath = resolve(path);
-        String slashGone = resolvedPath.substring(1);
-        return DISK_PATH.resolve(slashGone).toFile().toPath();
+        String slashGone = resolvedPath.length() > 0 ? resolvedPath.substring(1) : "";
+        File file = DISK_PATH.resolve(slashGone).toFile();
+        
+        if (file.getAbsolutePath().length() < DISK_PATH.toFile().getAbsolutePath().length()) {
+            return DISK_PATH;
+        }
+        
+        return file.toPath();
+    }
+    
+    public File[] getFileList(String path) {
+        File resolvedPath = getRealPath(path).toFile();
+        
+        if (!resolvedPath.isDirectory()) return new File[]{ resolvedPath };
+        
+        return resolvedPath.listFiles();
     }
 
     public Listing listFiles(String path) {
         File resolvedPath = getRealPath(path).toFile();
-        Listing listing = listFilesRecursive(resolvedPath, 0);
-        return listing;
-    }
-
-    private Listing listFilesRecursive(File file, int depth) {
-        String mtmcPath = file.getPath().substring(DISK_PATH.toAbsolutePath().toString().length());
-        Listing listing = new Listing(mtmcPath, file.getName(), new ArrayList<>(), new LinkedHashMap<>()); // Set Listing() path to current level
-        if (!file.isDirectory()) {
-            // This is never entered
-            return null;
-        }
-        File[] files = file.listFiles();
-        for (int i = 0; i < files.length; i++) {
-
-            File f = files[i];
-            if (f.isDirectory()) {
-                //listing.subdirectories.put(f.getName(), new Listing(f, new ArrayList<>(), new LinkedHashMap<>())); Wrong
-                //System.out.println(("\t").repeat(depth) + f.getName());
-                listing.subdirectories.put(f.getName(), listFilesRecursive(f, depth + 1));
-            } else {
-                listing.listOfFiles.add(f);
-                //System.out.println(("\t").repeat(depth) + f.getName());
-            }
-        }
-        return listing;
+        
+        return new Listing(this, resolvedPath);
     }
 
     public Listing listCWD() {
@@ -163,5 +166,36 @@ public class FileSystem {
         Path filePath = getRealPath(path);
         var contents = Files.readString(filePath);
         return contents;
+    }
+    
+    public String getMimeType(String path) throws IOException {
+        var file = getRealPath(path);
+        var name = file.toFile().getName().toLowerCase();
+        var probed = Files.probeContentType(file);
+        
+        if(name.endsWith(".asm")) return "text/x-asm";
+        if(name.endsWith(".c")) return "text/x-csrc";
+        if(name.endsWith(".sea")) return "text/x-csrc";
+        if(probed != null) return probed;
+        
+        return "application/octet-stream";
+    }
+    
+    public InputStream openFile(String path) throws IOException {
+        var file = getRealPath(path).toFile();
+        
+        return new FileInputStream(file);
+    }
+    
+    public void saveFile(String path, InputStream contents) throws IOException {
+        var file = getRealPath(path).toFile();
+        byte[] data = new byte[4096];
+        int count;
+        
+        try(var out = new FileOutputStream(file)) {
+            while((count = contents.read(data)) > 0) {
+                out.write(data, 0, count);
+            }
+        }
     }
 }

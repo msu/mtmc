@@ -1,6 +1,7 @@
 // connect to sse endpoint
 const sseSource = new EventSource("/sse", {withCredentials: true});
 let buttons = 0x00;
+let gamepad = null;
 
 sseSource.addEventListener("update:execution", (e) => {
     let element = document.getElementById("controls");
@@ -8,7 +9,7 @@ sseSource.addEventListener("update:execution", (e) => {
 });
 
 sseSource.addEventListener("update:filesystem", (e) => {
-    let element = document.getElementById("fs");
+    let element = document.getElementById("visual-shell");
     element.outerHTML = e.data;
 });
 
@@ -31,6 +32,13 @@ sseSource.addEventListener("update:memory-panel", (e) => {
     let element = document.getElementById("memory-panel");
     element.outerHTML = e.data
 })
+
+sseSource.addEventListener("update:step-execution", (e) => {
+    let step = JSON.parse(e.data);
+    if (window.stepExecution) {
+        window.stepExecution(step);
+    }
+});
 
 sseSource.onerror = (err) => {
     console.error("EventSource failed:", err);
@@ -181,6 +189,52 @@ function initJoystick() {
         buttons &= ~key_mappings[e.key];
         fetch("/io/" + buttons.toString(16), {method: 'POST'});
     });
+    
+    
+    // key mappings
+    gamepad_mappings = {
+        12: 0x80,
+        13: 0x40,
+        14: 0x20,
+        15: 0x10,
+        9: 0x08,
+        8: 0x04,
+        0: 0x02,
+        1: 0x01
+    };
+    
+    // gamepad
+    window.addEventListener("gamepadconnected", (evt) => {
+        gamepad = evt.gamepad;
+        requestAnimationFrame(checkGamepadInput);
+        console.log("Gamepad connected", gamepad);
+    });
+    
+    window.addEventListener("gamepaddisconnected", (evt) => {
+        if (gamepad === evt.gamepad) {
+            gamepad = null;
+            console.log("Gamepad disconnected", gamepad);
+        }
+    });
+    
+    function checkGamepadInput() {
+        var last = buttons;
+
+        if(!gamepad) return; // Not polling anymore
+
+        navigator.getGamepads(); // Poll gamepads
+
+        Object.keys(gamepad_mappings).forEach(button => {
+            if (gamepad.buttons[button].pressed) buttons |= gamepad_mappings[button];
+            else buttons &= ~gamepad_mappings[button];
+        });
+        
+        if (buttons !== last) {
+            fetch("/io/" + buttons.toString(16), {method: 'POST'});
+        }
+        
+        requestAnimationFrame(checkGamepadInput);
+    }
 }
 
 function initConsole() {
@@ -328,3 +382,119 @@ function initConsole() {
 
     input.focus();
 }
+
+// Monaco editor support tools
+async function startMonaco() {
+    var editor_div = document.getElementById('editor');
+    var editor_save = document.getElementById('editor-save');
+    var editor_close = document.getElementById('editor-close');
+    
+    var filename = editor_div.dataset.filename;
+    var response = await fetch("/fs/read" + filename);
+    var text = await response.text();
+    var stepHighlight = [];
+    
+    var theme = "vs";
+    var language = "plaintext";
+    
+    switch(editor_div.dataset.mime) {
+        case "text/x-asm":
+            language = "mtmc16-asm";
+            theme = "mtmc16-asm";
+            break;
+        case "text/x-csrc":
+            language = "c";
+            break;
+        case "application/json":
+        case "text/mtmc16-bin":
+            language = "json";
+            break;
+    }
+    
+    var editor = monaco.editor.create(editor_div, {
+        value: text,
+        language: language,
+        theme: theme,
+        automaticLayout: true
+    });
+    
+    function save() {
+        if (editor_save.hasAttribute("disabled")) {
+            return;
+        }
+        fetch("/fs/write" + editor_div.dataset.filename, {method: 'POST', body: editor.getValue()});
+        editor_save.setAttribute("disabled", "disabled");
+    };
+    
+    editor_save.onclick = save;
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_S, save); // Not working for some reason
+    editor_div.addEventListener("keydown", function(e) {  // fallback
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            e.stopPropagation();
+            save();
+        }
+    });
+    
+    editor.getModel().onDidChangeContent(function(event) {
+        editor_save.removeAttribute("disabled");
+    });
+    
+    editor_close.addEventListener("fx:config", (evt) => {
+        var message = "You have unsaved work. Are you sure you want to close?";
+        if (!editor_save.hasAttribute("disabled")) {
+            evt.detail.cfg.confirm = () => confirm(message);
+        }
+    });
+    
+    window.stepExecution = function(step) {
+        var model = editor.getModel();
+        
+        if (step.program !== filename || step.asm < 1) {
+            stepHighlight = model.deltaDecorations(stepHighlight, []);
+            return;
+        }
+        
+        var range = new monaco.Range(step.asm, 1, step.asm, model.getLineMaxColumn(step.asm));
+        var options = { isWholeLine: true, inlineClassName: 'step-highlight' };
+        var decoration = {range: range, options: options};
+        
+        stepHighlight = model.deltaDecorations(stepHighlight, [decoration]);
+        
+        editor.revealLineInCenter(step.asm);
+    };
+}
+
+function fullscreen(id, event) {
+    document.getElementById(id).classList.add("fullscreen");
+    
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+}
+
+function restore(id) {
+    document.getElementById(id).classList.remove("fullscreen");
+    
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+}
+
+document.addEventListener("fx:swapped", (evt) => {
+    var action = evt.detail.cfg.action;
+
+    if (action.startsWith("/fs/open/") || action.startsWith("/fs/create")) {
+        startMonaco();
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    if (document.getElementById("editor")) {
+        startMonaco();
+    }
+});

@@ -7,7 +7,7 @@
 # BASIC source: https://github.com/RayKV423/original-hunt-the-wumpus/
 
 .data
-  wumpus_title: image { "wumpus.png" }
+  wumpus_title: .image "wumpus.png"
 
   newline: "\n"
   comma: ", "
@@ -187,7 +187,7 @@
     arrows: 5
     state:  0                   # 0 - Alive, 1 - Win, -1 - Dead
 
-  arrow_path: byte { 5 }
+  arrow_path: .byte 5
 
 
 .text

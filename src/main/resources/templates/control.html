@@ -14,7 +14,10 @@
                     <option value="100" {% if computer.speed == 100 %}selected{% endif %}>100 Hz</option>
                     <option value="1000" {% if computer.speed == 1000 %}selected{% endif %}>1 Khz</option>
                     {% if computer.speed == 10000 %}
-                    <option value="1000000" selected>10 Khz</option>
+                    <option value="10000" selected>10 Khz</option>
+                    {% endif %}
+                    {% if computer.speed == 100000 %}
+                    <option value="100000" selected>100 Khz</option>
                     {% endif %}
                     <option value="1000000" {% if computer.speed == 1000000 %}selected{% endif %}>1 Mhz</option>
                     {% if computer.speed == 0 %}
@@ -26,12 +29,19 @@
             <button fx-action="/control/run" fx-method="post" fx-swap="none">
                 run
             </button>
+            <button fx-action="/control/back" fx-method="post" fx-swap='outerHTML' fx-target='#controls'
+                    {% if not computer.backAvailable %} disabled="disabled" {% endif %}>
+                back
+            </button>
             <button fx-action="/control/step" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
                 step
             </button>
             {% else %}
             <button fx-action="/control/pause" fx-method="post" fx-swap='outerHTML' fx-target='#controls'>
                 pause
+            </button>
+            <button fx-action="/control/back" fx-method="post" fx-swap="none" disabled="disabled">
+                back
             </button>
             <button fx-action="/control/step" fx-method="post" fx-swap="none" disabled="disabled">
                 step

@@ -101,7 +101,7 @@ public class WebUIUpdater implements MTMCObserver {
                             webServer.sendEvent("update:memory", webServer.getComputerView().getMemoryTable());
                         }
                         if ((updates & UPDATE_FILESYSTEM_UI) != 0) {
-                            webServer.sendEvent("update:filesystem", webServer.render("templates/editors.html"));
+                            webServer.sendEvent("update:filesystem", webServer.render("templates/filetree.html"));
                         }
                         if ((updates & UPDATE_EXECUTION_UI) != 0) {
                             webServer.sendEvent("update:execution", webServer.render("templates/control.html"));
@@ -135,6 +135,9 @@ public class WebUIUpdater implements MTMCObserver {
     
     @Override
     public void filesystemUpdated() {
+        if (webServer.getComputerView().hasFileOpen()) {
+            return; // Don't update the file tree if an editor is open
+        }
         updateFlags.updateAndGet(operand -> operand | UPDATE_FILESYSTEM_UI);
     }
 
@@ -170,6 +173,19 @@ public class WebUIUpdater implements MTMCObserver {
     }
 
     @Override
+    public void stepExecution() {
+        if (!webServer.getComputerView().hasDebugInfo()) {
+            return;
+        }
+        
+        var program = webServer.getComputerView().getProgram();
+        var asm = webServer.getComputerView().getAssemblyLine();
+        var step = new ExecutionStep(program, asm, -1);
+                
+        webServer.sendEvent("update:step-execution", json.toJson(step));
+    }
+
+    @Override
     public void computerReset() {
         updateFlags.updateAndGet(operand -> operand | UPDATE_DISPLAY_UI | UPDATE_MEMORY_UI | UPDATE_REGISTER_UI);
     }
@@ -192,4 +208,6 @@ public class WebUIUpdater implements MTMCObserver {
     public void requestString() {
         webServer.sendEvent("console-readstr", ">");
     }
+    
+    private record ExecutionStep(String program, int asm, int src) {};
 }

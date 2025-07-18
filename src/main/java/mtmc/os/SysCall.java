@@ -9,11 +9,14 @@ public enum SysCall {
     RCHR(0x05),
     WSTR(0x06),
     PRINTF(0x07),
+    ATOI(0x08),
 
     RFILE(0x10),
     WFILE(0x11),
     CWD(0x12),
     CHDIR(0x13),
+    DIRENT(0x14),
+    DFILE(0x15),
 
     RND(0x20),
     SLEEP(0x21),
@@ -31,8 +34,8 @@ public enum SysCall {
     MEMCPY(0x40),
 
     DRAWIMG(0x50),
-
-    ERROR(0x0FF);
+    
+    ERROR(0xFF);
 
     private final byte value;
 

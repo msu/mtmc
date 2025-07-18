@@ -12,10 +12,7 @@ import mtmc.tokenizer.MTMCToken;
 import mtmc.tokenizer.MTMCTokenizer;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import mtmc.asm.graphics.Graphic;
 
@@ -30,12 +27,12 @@ public class Assembler {
     List<Graphic> graphics = new ArrayList<>();
     int dataSize = 0;
     HashMap<String, HasLocation> labels;
-    DebugInfo debugInfo = new DebugInfo(new ArrayList<>());
 
     ASMMode mode = ASMMode.TEXT;
     MTMCTokenizer tokenizer;
     private List<MTMCToken> lastLabels = List.of();
     private String srcName = "disk/file.asm";
+    private List<String> debugStrings;
 
     public Assembler() {
         labels = new HashMap<>();
@@ -47,19 +44,68 @@ public class Assembler {
 
     public AssemblyResult assemble(String file, String asm) {
         tokenizer = new MTMCTokenizer(asm, "#");
+        debugStrings = new ArrayList<>();
         parseAssembly();
         resolveLocations();
         List<ASMError> errors = collectErrors();
+        DebugInfo debugInfo = null;
         byte[] code = null, data = null;
         byte[][] graphics = null;
-        int[] asmLineNumbers = null;
         if (errors.isEmpty()) {
-            code = codeGen();
-            data = dataGen();
-            asmLineNumbers = asmLineNumbersGen(code.length);
-            graphics = graphicsGen();
+            code = genCode();
+            data = genData();
+            graphics = genGraphics();
+            debugInfo = genDebugInfo(file, asm, code);
         }
-        return new AssemblyResult(code, data, graphics, debugInfo, errors, asm, file, asmLineNumbers);
+        return new AssemblyResult(code, data, graphics, debugInfo, errors);
+    }
+
+    private DebugInfo genDebugInfo(String assemblyFile, String assemblySource, byte[] code) {
+
+        int[] assemblyLineNumbers = new int[code.length];
+
+        String originalFile = "";
+        int[] originalLineNumbers = new int[code.length];
+
+        List<DebugInfo.GlobalInfo> globals = new ArrayList<>();
+        DebugInfo.LocalInfo[][] locals = new DebugInfo.LocalInfo[code.length][];
+
+        int location = 0;
+        int originalLineNumber = 0;
+        Map<String, DebugInfo.LocalInfo> currentLocals = new TreeMap<>();
+        for (Instruction instruction : instructions) {
+            int asmLineNumber = instruction.getLineNumber();
+            if (instruction instanceof MetaInstruction mi) {
+                if (mi.isFileDirective()) {
+                    originalFile = mi.getOriginalFilePath();
+                } else if (mi.isLineDirective()) {
+                    originalLineNumber = mi.getOriginalLineNumber();
+                } else if (mi.isGlobalDirective()) {
+                    globals.add(new DebugInfo.GlobalInfo(mi.getGlobalName(), mi.getGlobalLocation(), mi.getGlobalType()));
+                } else if (mi.isLocalDirective()) {
+                    currentLocals.put(mi.getLocalName(), new DebugInfo.LocalInfo(mi.getLocalName(), mi.getLocalOffset(), mi.getLocalType()));
+                } else if (mi.isEndLocalDirective()) {
+                    currentLocals.remove(mi.getLocalName());
+                }
+            }
+            while(location < instruction.getLocation() + instruction.getSizeInBytes()) {
+                assemblyLineNumbers[location] = asmLineNumber;
+                originalLineNumbers[location] = originalLineNumber;
+                locals[location] = currentLocals.values().toArray(new DebugInfo.LocalInfo[0]);
+                location++;
+            }
+        }
+
+        DebugInfo debugInfo = new DebugInfo(debugStrings,
+                assemblyFile,
+                assemblySource,
+                assemblyLineNumbers,
+                originalFile,
+                originalLineNumbers,
+                globals.toArray(new DebugInfo.GlobalInfo[0]),
+                locals);
+
+        return debugInfo;
     }
 
     public Executable assembleExecutable(String srcName, String asm) {
@@ -89,7 +135,7 @@ public class Assembler {
         }
     }
 
-    private byte[] dataGen() {
+    private byte[] genData() {
         byte[] dataBytes = new byte[dataSize];
         for (Data dataElt : data) {
             dataElt.genData(dataBytes, this);
@@ -97,7 +143,7 @@ public class Assembler {
         return dataBytes;
     }
 
-    private byte[] codeGen() {
+    private byte[] genCode() {
         byte[] code = new byte[instructionsSize];
         for (Instruction instruction : instructions) {
            instruction.genCode(code, this);
@@ -105,20 +151,23 @@ public class Assembler {
         return code;
     }
 
-    private int[] asmLineNumbersGen(int len) {
-        int[] asmLineNumbers = new int[len];
+    private int[] genOriginalLineNumbers(int length) {
+        int[] asmLineNumbers = new int[length];
+        int currentLineNumber = 0;
         int location = 0;
         for (Instruction instruction : instructions) {
-            int lineNumber = instruction.getLineNumber();
+            if (instruction instanceof MetaInstruction mi && mi.isLineDirective()) {
+                currentLineNumber = mi.getOriginalLineNumber();
+            }
             while(location < instruction.getLocation() + instruction.getSizeInBytes()) {
-                asmLineNumbers[location] = lineNumber;
+                asmLineNumbers[location] = currentLineNumber;
                 location++;
             }
         }
         return asmLineNumbers;
     }
 
-    private byte[][] graphicsGen() {
+    private byte[][] genGraphics() {
         byte[][] graphics = new byte[this.graphics.size()][];
         int index = 0;
         for (Graphic graphic : this.graphics) {
@@ -162,6 +211,11 @@ public class Assembler {
 
     private void parseLine() {
         LinkedList<MTMCToken> tokens = getTokensForLine();
+
+        if (parseMetaDirective(tokens)) {
+            return;
+        }
+
         ASMMode newMode = parseModeFlag(tokens);
         if (newMode != null) {
             mode = newMode;
@@ -172,11 +226,53 @@ public class Assembler {
         var labels = new ArrayList<>(lastLabels);
         labels.addAll(labelTokens);
         lastLabels = labels;
-        if (mode == ASMMode.TEXT) {
+        if (tokens.isEmpty()) {
+            for (MTMCToken labelToken : labelTokens) {
+                Data labelData = new Data(labelTokens, labelToken.line());
+                if (hasLabel(labelToken.stringValue())) {
+                    labelData.addError(tokens.poll(), "Label already defined: " + labelToken.stringValue());
+                } else {
+                    this.labels.put(labelToken.labelValue(), labelData);
+                }
+                data.add(labelData);
+            }
+        } else if (mode == ASMMode.TEXT) {
             parseInstruction(tokens, labels);
         } else {
             parseData(tokens, labels);
         }
+    }
+
+    private boolean parseMetaDirective(LinkedList<MTMCToken> tokens) {
+        if (tokens.size() >= 2 && tokens.get(0).type() == AT) {
+            tokens.removeFirst();
+            MetaInstruction metaInstruction = new MetaInstruction(tokens.removeFirst());
+            if (metaInstruction.isFileDirective()) {
+                MTMCToken path = requireString(tokens, metaInstruction);
+                metaInstruction.setOriginalFilePath(path);
+            } else if (metaInstruction.isGlobalDirective()) {
+                MTMCToken name = requireString(tokens, metaInstruction);
+                MTMCToken location = requireIntegerToken(tokens, metaInstruction, Integer.MAX_VALUE);
+                MTMCToken type = requireString(tokens, metaInstruction);
+                metaInstruction.setGlobalInfo(name, location, type);
+            } else if (metaInstruction.isLocalDirective()) {
+                MTMCToken name = requireString(tokens, metaInstruction);
+                MTMCToken offset = requireIntegerToken(tokens, metaInstruction, Integer.MAX_VALUE);
+                MTMCToken type = requireString(tokens, metaInstruction);
+                metaInstruction.setLocalInfo(name, offset, type);
+            } else if (metaInstruction.isEndLocalDirective()) {
+                MTMCToken name = requireString(tokens, metaInstruction);
+                metaInstruction.setEndLocalInfo(name);
+            } else if (metaInstruction.isLineDirective()) {
+                MTMCToken lineNumber = requireIntegerToken(tokens, metaInstruction, Integer.MAX_VALUE);
+                metaInstruction.setOriginalLineNumber(lineNumber);
+            } else {
+                metaInstruction.addError("Unknown meta directive");
+            }
+            instructions.add(metaInstruction);
+            return true;
+        }
+        return false;
     }
 
     private ASMMode parseModeFlag(LinkedList<MTMCToken> tokens) {
@@ -194,8 +290,8 @@ public class Assembler {
     private void parseData(LinkedList<MTMCToken> tokens, List<MTMCToken> labelTokens) {
         lastLabels = List.of();
         MTMCToken dataToken = tokens.poll();
-        Data dataElt = new Data(labelTokens, dataToken.line());
-        if (dataToken != null) {
+        Data dataElt = new Data(labelTokens, dataToken == null ? 0 : dataToken.line());
+        if(dataToken != null) {
             if (dataToken.type() == STRING) {
                 byte[] stringBytes = dataToken.stringValue().getBytes(StandardCharsets.US_ASCII);
                 byte[] nullTerminated = new byte[stringBytes.length + 1];
@@ -208,30 +304,26 @@ public class Assembler {
                     dataElt.addError(dataToken, "Number is too large");
                 }
                 dataElt.setValue(dataToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
-            } else if (dataToken.type() == IDENTIFIER) {
+            } else if (dataToken.type() == DOT) {
+                dataToken = tokens.poll();
+                dataElt = new Data(labelTokens, dataToken.line());
                 if (dataToken.stringValue().equals("int")) {
-                    requireToken(tokens, LEFT_BRACE, dataElt);
                     MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
                     if (intToken != null) {
                         dataElt.setValue(intToken, new byte[intToken.intValue() * 2]);
                     }
-                    requireToken(tokens, RIGHT_BRACE, dataElt);
                 } else if (dataToken.stringValue().equals("byte")) {
-                    requireToken(tokens, LEFT_BRACE, dataElt);
                     MTMCToken intToken = requireIntegerToken(tokens, dataElt, MonTanaMiniComputer.MEMORY_SIZE);
                     if (intToken != null) {
                         dataElt.setValue(intToken, new byte[intToken.intValue()]);
                     }
-                    requireToken(tokens, RIGHT_BRACE, dataElt);
                 } else if (dataToken.stringValue().equals("image")) {
-                    requireToken(tokens, LEFT_BRACE, dataElt);
                     MTMCToken stringToken = requireString(tokens, dataElt);
                     if (stringToken != null) {
                         loadGraphic(labelTokens, dataElt, stringToken);
                     }
-                    requireToken(tokens, RIGHT_BRACE, dataElt);
                 } else {
-                    dataElt.addError(dataToken, "only data types are int, byte, and image");
+                    dataElt.addError(dataToken, "only data types are .int, .byte, and .image");
                 }
             } else if (dataToken.type() == MINUS) {
                 MTMCToken nextToken = tokens.poll(); // get next
@@ -246,7 +338,7 @@ public class Assembler {
                     dataElt.setValue(joinToken, new byte[]{(byte) (integerValue >>> 8), (byte) integerValue});
                 }
             } else {
-                dataElt.addError(dataToken, "Unknown token type");
+                dataElt.addError(dataToken, "Unknown token type: " + dataToken.toString());
             }
         }
 
@@ -325,8 +417,9 @@ public class Assembler {
                 miscInst.setValue(value);
             } else if (type == InstructionType.DEBUG) {
                 MTMCToken debugString = requireString(tokens, miscInst);
-                // create a dummy int token representing the offset of the debug string
-                int debugStringIndex = debugInfo.addDebugString(debugString.stringValue());
+                // create a dummy int token representing the offset of the debug string in the debug info
+                int debugStringIndex = debugStrings.size();
+                debugStrings.add(debugString.stringValue());
                 MTMCToken value = new MTMCToken(0, 0, 0, 0, String.valueOf(debugStringIndex), INTEGER);
                 miscInst.setValue(value);
             }

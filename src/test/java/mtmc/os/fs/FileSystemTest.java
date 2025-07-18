@@ -1,15 +1,10 @@
-package mtmc.os;
+package mtmc.os.fs;
 
-import mtmc.os.fs.FileSystem;
-import mtmc.os.fs.Listing;
 import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class FSTests {
+public class FileSystemTest {
     @Test
     public void testPaths() {
         var fs = new FileSystem();
@@ -35,30 +30,5 @@ public class FSTests {
                     assertEquals("/bin/cat", fs.resolve("cat"));
                 }
         );
-    }
-
-    @Test
-    public void testPathJoin() {
-        var fs = new FileSystem();
-        assertAll(
-                () -> assertEquals("/bin/pwd", fs.join("/bin", "pwd")),
-                () -> assertEquals("/bin/./echo", fs.join("/bin", "./echo")),
-                () -> assertEquals("/bin/../../echo", fs.join("/bin", "../../echo")),
-                () -> assertEquals("scoobie/doobie", fs.join("scoobie", "doobie")),
-                () -> {
-                    fs.setCWD("/img");
-                    assertEquals("/img/dog", fs.join("/img", "dog"));
-                }
-        );
-    }
-
-
-    @Test
-    public void testListFiles() {
-        var fs = new FileSystem();
-        //fs.listFiles("../bin");
-        fs.listFiles("..");
-        //fs.listFiles("../home");
-
     }
 }

@@ -162,6 +162,11 @@ public class SeaCompiler {
         }
 
         code.append(func.name.content()).append(":\n");
+        int lineNo = Token.getLineAndOffset(program.source, func.start.start())[0];
+        if (currentLineNo != lineNo) {
+            code.append("@line ").append(lineNo).append('\n');
+            currentLineNo = lineNo;
+        }
         code.append("  push ra\n");
         code.append("  push fp\n");
         code.append("  mov fp sp\n");

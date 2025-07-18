@@ -488,6 +488,21 @@ public class MTMCWebView {
         
         return debug[pc];
     }
+    
+    public int getSourceLine() {
+        if (computer.getDebugInfo() == null) {
+            return -1;
+        }
+        
+        var pc = computer.getRegisterValue(Register.PC);
+        var debug = computer.getDebugInfo().originalLineNumbers();
+        
+        if (debug == null || debug.length <= pc) {
+            return -1;
+        }
+        
+        return debug[pc];
+    }
 
     enum DisplayFormat {
         DYN,

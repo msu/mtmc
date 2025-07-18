@@ -780,7 +780,7 @@ details[open] > summary::before {
     max-height: calc(100% - 0px);
 }
 
-@media only screen and (max-width: 768px), screen and (orientation: portrait) {
+@media only screen and (max-width: 768px) and (orientation: portrait) {
     
     html {
         overflow: hidden;

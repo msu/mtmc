@@ -30,9 +30,9 @@ public enum SysCall {
     FBFLUSH(0x35),
     JOYSTICK(0x3A),
     SCOLOR(0x3B),
-    
-    MEMCOPY(0x40),
-    
+
+    MEMCPY(0x40),
+
     DRAWIMG(0x50),
     
     ERROR(0xFF);

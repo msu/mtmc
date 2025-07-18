@@ -2,6 +2,7 @@ package mtmc.asm;
 
 import mtmc.emulator.DebugInfo;
 import mtmc.emulator.MonTanaMiniComputer;
+import mtmc.emulator.Register;
 import mtmc.os.SysCall;
 import mtmc.util.BinaryUtils;
 import org.jetbrains.annotations.NotNull;
@@ -77,6 +78,22 @@ public class AssemblerTest {
         assertEquals(computer.getRegisterValue(T1), 0);
         computer.run();
         assertEquals(computer.getRegisterValue(T1), 12);
+    }
+
+    @Test
+    public void memcpy() {
+        var computer = assembleAndLoad("mcp t0 t1 8");
+        computer.writeWordToMemory(100, 0x0123);
+        computer.writeWordToMemory(102, 0x4567);
+        computer.writeWordToMemory(104, 0x89AB);
+        computer.writeWordToMemory(106, 0xCDEF);
+        computer.setRegisterValue(Register.T0, 100);
+        computer.setRegisterValue(Register.T1, 108);
+        computer.run();
+        assertEquals((short) 0x0123, computer.fetchWordFromMemory(108));
+        assertEquals((short) 0x4567, computer.fetchWordFromMemory(110));
+        assertEquals((short) 0x89AB, computer.fetchWordFromMemory(112));
+        assertEquals((short) 0xCDEF, computer.fetchWordFromMemory(114));
     }
 
     @Test

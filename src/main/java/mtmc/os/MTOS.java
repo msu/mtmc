@@ -216,7 +216,7 @@ public class MTOS {
             computer.setRegisterValue(RV, computer.getIOState());
         } else if (syscallNumber == SysCall.getValue("scolor")) {
             computer.getDisplay().setColor(computer.getRegisterValue(A0));
-        } else if (syscallNumber == SysCall.getValue("memcopy")) {
+        } else if (syscallNumber == SysCall.getValue("memcpy")) {
             short fromPointer = computer.getRegisterValue(A0);
             short toPointer = computer.getRegisterValue(A1);
             short bytes = computer.getRegisterValue(A2);

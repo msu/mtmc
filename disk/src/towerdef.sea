@@ -1,0 +1,34 @@
+
+
+struct Enemy {
+    int x;
+    int y;
+    int health;
+};
+
+struct Tower {
+    int x;
+    int y;
+    int power;
+};
+
+int main() {
+    int towern = 1;
+    Tower towers[20] = { { 10, 10, 1 } };
+
+    int enemyn = 0;
+    Enemy enemies[100] = {};
+
+    int stage = 0;
+
+    while (1) {
+        if (stage == 0) {
+            // TODO: input
+        } else if (stage == 1) {
+            // TODO: waves
+        } else {
+        }
+    }
+
+    return 0;
+}

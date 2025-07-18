@@ -9,7 +9,8 @@ import mtmc.lang.sea.ast.Unit;
 import mtmc.os.exec.Executable;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SeaCompilationTests {
     Executable compile(String src) {
@@ -327,7 +328,7 @@ public class SeaCompilationTests {
                 int main() {
                     int x = 13;
                     int y = 42;
-               
+                
                     if (x > y || y / x == 3) {
                         printf("yo!\\n");
                     }
@@ -447,9 +448,90 @@ public class SeaCompilationTests {
 
     @Test
     public void scanfMe() {
-
         var output = compileAndRun("""
                 
                 """);
+    }
+
+    @Test
+    public void structures() {
+        var output = compileAndRun("""
+                int printf(char *s, ...);
+                
+                struct Point {
+                    int x;
+                    int y;
+                };
+                
+                int main() {
+                    Point pt = {100, 10};
+                    printf("Hello from %d, %d\\n", pt.x, pt.y);
+                
+                    Point p2 = {50, 50};
+                    printf("Hello to %d, %d\\n", p2.x, p2.y);
+                
+                    int dy = p2.y - pt.y;
+                    int dx = p2.x - pt.x;
+                    printf("slope between points is %d/%d\\n", dy, dx);
+                
+                    return 0;
+                }
+                
+                """);
+        assertEquals("Hello from 100, 10\nHello to 50, 50\nslope between points is 40/-50\n", output);
+    }
+
+    @Test
+    public void assignInStruct() {
+        var output = compileAndRun("""
+                int printf(char *s, ...);
+                
+                struct Person {
+                    char *name;
+                    int age;
+                };
+                
+                int main() {
+                    Person dev = {"dillon", 21};
+                    printf("name = %s, age = %d\\n", dev.name, dev.age);
+                    // summer 2025
+                    dev.age = 22;
+                    printf("name = %s, age = %d\\n", dev.name, dev.age);
+                    return 0;
+                }
+                """);
+        assertEquals("name = dillon, age = 21\nname = dillon, age = 22\n", output);
+    }
+
+    @Test
+    public void assignInEmbeddedStructs() {
+        var output = compileAndRun("""
+                int printf(char *s, ...);
+                
+                struct Address {
+                    char *city;
+                    char *state;
+                };
+                
+                struct Person {
+                    char *name;
+                    int age;
+                    Address addr;
+                };
+                
+                int main() {
+                    Person dev = {"dillon", 21, {"Bozeman", "MT"}};
+                    printf("name = %s, age = %d\\n", dev.name, dev.age);
+                    printf("  from %s, %s\\n", dev.addr.city, dev.addr.state);
+                
+                    // summer 2025
+                    dev.age = 22;
+                    dev.addr = {"Jamestown", "ND"};
+                    printf("name = %s, age = %d\\n", dev.name, dev.age);
+                    printf("  from %s, %s\\n", dev.addr.city, dev.addr.state);
+                    return 0;
+                }
+                """);
+        assertEquals("name = dillon, age = 21\n from Bozeman, MT\nname = dillon, age = 22\n from Jamestown, ND\n", output);
     }
 }

@@ -142,7 +142,7 @@ public class MonTanaMiniComputer {
         short instructionType = getBits(16, 4, instruction);
         if (instructionType == 0x0000) { // MISC
             short topNibble = getBits(12, 4, instruction);
-           switch (topNibble) {
+            switch (topNibble) {
                 case 0b0000 -> {
                     // sys call
                     short sysCall = getBits(8, 8, instruction);
@@ -177,6 +177,18 @@ public class MonTanaMiniComputer {
                     short immediateValue = getBits(4, 4, instruction);
                     setRegisterValue(target, immediateValue);
                 }
+               case 0b0101 -> {
+                   // mcp
+                   short source = getBits(8, 4, instruction);
+                   source = getRegisterValue(source);
+                   short dest = getBits(4, 4, instruction);
+                   dest = getRegisterValue(dest);
+                   int size = getRegisterValue(DR);
+                   for (int i = 0; i < size; i++) {
+                       byte value = fetchByteFromMemory(source + i);
+                       writeByteToMemory(dest + i, value);
+                   }
+               }
                 case 0b1000 -> {
                     // debug
                     short debugIndex = getBits(8, 8, instruction);
@@ -658,6 +670,10 @@ public class MonTanaMiniComputer {
         }
         boolean isPushImmediate = getBits(16, 8, instruction) == 0b0010_1111;
         if (isPushImmediate) {
+            return true;
+        }
+        boolean isMcp = getBits(16, 8, instruction) == 0b0000_0101;
+        if (isMcp) {
             return true;
         }
         return false;

@@ -1,14 +1,24 @@
 package mtmc.lang.sea;
 
+import java.sql.Blob;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public sealed interface SeaType {
     default int size() {
-        if (this == CHAR) return 1;
+        if (this == CHAR) return 2;
         if (this == INT) return 2;
         if (this == VOID) return 0;
         if (this instanceof Pointer) return 2;
+        if (this instanceof Struct struct) {
+            int size = 0;
+            for (Map.Entry<String, SeaType> fieldSet : struct.fields.entrySet()) {
+                SeaType type = fieldSet.getValue();
+                size += type.size();
+            }
+            return size;
+        }
         throw new IllegalStateException("sizeof " + getClass().getName() + " is undefined");
     }
 
@@ -17,9 +27,7 @@ public sealed interface SeaType {
     }
 
     default boolean isIntegral() {
-        return this == CHAR
-                || this == INT
-                || this instanceof Pointer;
+        return this == CHAR || this == INT || this instanceof Pointer;
     }
 
     default boolean isStructure() {
@@ -66,11 +74,55 @@ public sealed interface SeaType {
         return ((Func) this).result();
     }
 
-    default boolean isConvertibleTo(SeaType other) {
-        if (this.isVoid() || other.isVoid()) return false;
-        if (this.isArithmetic() && other.isArithmetic()) return true;
-        if (this.isAPointer() && other.isAPointer()) return true;
-        return this.equals(other);
+    default void checkConversionTo(SeaType other) throws ConversionError {
+        if (this.isVoid() || other.isVoid()) throw new ConversionError(this, other, "void is not assignable to void");
+        if (this.isArithmetic() && other.isArithmetic()) return;
+        if (this.isAPointer() && other.isAPointer()) return;
+        if (this instanceof Initializer initializer && other instanceof Struct s) {
+            // this is kinda complex
+            // the way this should work is we process named assignments and then based on the last
+            // index of the named assignments, we start putting in values
+            // the challenge here is that the blob may have too many values or may initialize them improperly
+            if (initializer.values.size() != s.fields.size()) {
+                throw new ConversionError(this, other, "initializer has too many or too few values");
+            }
+
+            int i = 0;
+            for (Map.Entry<String, SeaType> entry : s.fields.entrySet()) {
+                var name = entry.getKey();
+                var ty = entry.getValue();
+                var valueTy = initializer.values.get(i);
+
+                try {
+                    valueTy.checkConversionTo(ty);
+                } catch (ConversionError error) {
+                    throw new ConversionError(ty, valueTy,
+                            "value cannot be assigned to " + ty.repr() + " for '" + name + "'", error);
+                }
+
+                i += 1;
+            }
+            return;
+        }
+        if (!this.equals(other)) {
+            throw new ConversionError(this, other, this.repr() + " is not convertible to " + other.repr());
+        }
+    }
+
+    class ConversionError extends Exception {
+        public final SeaType fromType, toType;
+
+        private ConversionError(SeaType fromType, SeaType toType, String message) {
+            super(message);
+            this.fromType = fromType;
+            this.toType = toType;
+        }
+
+        private ConversionError(SeaType fromType, SeaType toType, String message, ConversionError parent) {
+            super(message, parent);
+            this.fromType = fromType;
+            this.toType = toType;
+        }
     }
 
     default boolean isCastableTo(SeaType target) {
@@ -119,6 +171,19 @@ public sealed interface SeaType {
             s.append(")");
             return s.toString();
         }
+        if (this instanceof Initializer(List<SeaType> values)) {
+            var s = new StringBuilder();
+            s.append("{");
+            for (int i = 0; i < values.size(); i++) {
+                if (i > 0) s.append(", ");
+                s.append(values.get(i).repr());
+            }
+            s.append("}");
+            return s.toString();
+        }
+        if (this instanceof Struct s) {
+            return "struct " + s.name;
+        }
         throw new UnsupportedOperationException("unknown type " + this);
     }
 
@@ -135,12 +200,18 @@ public sealed interface SeaType {
             return ty;
         }
     }
+
     final class Primitive implements SeaType {
         // this is purely for debug info lmfao
         public final String name;
 
         private Primitive(String name) {
             this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 
@@ -150,5 +221,12 @@ public sealed interface SeaType {
         }
     }
 
-    record Struct(String name, Map<String, SeaType> args) implements SeaType {}
+    record Struct(String name, LinkedHashMap<String, SeaType> fields) implements SeaType {
+        public SeaType field(String name) {
+            return fields.get(name);
+        }
+    }
+
+    record Initializer(List<SeaType> values) implements SeaType {
+    }
 }

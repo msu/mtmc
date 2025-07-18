@@ -161,12 +161,6 @@ main {
     color: black;
 }
 
-#editors {
-    display: grid;
-    grid-template-rows: 1fr 1fr 1fr 1fr;
-    height: 95%;
-}
-
 /*#memory {
     font-family: monospace;
     height: 90%;
@@ -753,11 +747,37 @@ details[open] > summary::before {
     height: 100dvh;
 }
 
-.site #editor {
+.site #editors {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-height: calc(100vh - 44px);
+    height: calc(100vh - 44px);
+    max-height: calc(100vh - 44px);
+}
+
+.site #editor, .site #assembly {
+    flex-basis: 50% 50%;
     flex-grow: 1;
     font-family: monospace;
     resize: none;
     border: 0px;
+    min-height: calc(50% - 2px);
+    height: calc(50% - 2px);
+    max-height: calc(50% - 2px);
+    overflow: hidden;
+}
+
+.site #assembly.hidden {
+    display: none;
+}
+
+.site #editors:has(#assembly.hidden) #editor {
+    flex-basis: 100%;
+    min-height: calc(100% - 0px);
+    height: calc(100% - 0px);
+    max-height: calc(100% - 0px);
 }
 
 @media only screen and (max-width: 768px), screen and (orientation: portrait) {

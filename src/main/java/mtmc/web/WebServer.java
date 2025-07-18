@@ -13,7 +13,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -70,6 +69,10 @@ public class WebServer {
         javalinApp
                 .get("/", ctx -> {
                     ctx.html(render("templates/index.html"));
+                })
+                .get("/asm", ctx -> {
+                    ctx.header("Content-Type", "text/x-asm");
+                    ctx.result(computerView.getAssemblySource());
                 })
                 .get("/display", ctx -> {
                     ctx.header("Content-Type", "image/png");

@@ -503,6 +503,12 @@ public class MTMCWebView {
         
         return debug[pc];
     }
+    
+    public String getAssemblySource() {
+        if (!hasDebugInfo()) return "";
+        
+        return computer.getDebugInfo().assemblySource();
+    }
 
     enum DisplayFormat {
         DYN,

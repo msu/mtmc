@@ -12,5 +12,8 @@
             <button id="editor-close" fx-swap='outerHTML' fx-target='#visual-shell' fx-action='/fs/close/'><img src="/img/xmark.svg" width="16" height="16" alt="Close"></button>
         </div>
     </div>
-    <div id="editor" data-filename="{{computer.currentFilename}}" data-mime="{{computer.currentFileMime}}"></div>
+    <div id="editors">
+        <div id="editor" data-filename="{{computer.currentFilename}}" data-mime="{{computer.currentFileMime}}"></div>
+        <div id="assembly" class="hidden" data-mime="text/x-asm"></div>
+    </div>
 </div>

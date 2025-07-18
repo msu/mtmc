@@ -389,10 +389,14 @@ async function startMonaco() {
     var editor_save = document.getElementById('editor-save');
     var editor_close = document.getElementById('editor-close');
     
+    var viewer_div = document.getElementById('assembly');
+    var viewer = null;
+    
     var filename = editor_div.dataset.filename;
     var response = await fetch("/fs/read" + filename);
     var text = await response.text();
     var stepHighlight = [];
+    var viewerHighlight = [];
     
     var theme = "vs";
     var language = "plaintext";
@@ -447,22 +451,68 @@ async function startMonaco() {
         }
     });
     
-    window.stepExecution = function(step) {
+    function renderHighlight(editor, highlight, line) {
         var model = editor.getModel();
-        var type = filename.toLowerCase().endsWith(".asm") ? "asm" : "src";
         
-        if (step.program !== filename || step[type] < 1) {
-            stepHighlight = model.deltaDecorations(stepHighlight, []);
-            return;
+        if (line < 1) {
+            return model.deltaDecorations(highlight, []);
         }
         
-        var range = new monaco.Range(step[type], 1, step[type], model.getLineMaxColumn(step[type]));
+        var range = new monaco.Range(line, 1, line, model.getLineMaxColumn(line));
         var options = { isWholeLine: true, inlineClassName: 'step-highlight' };
         var decoration = {range: range, options: options};
         
-        stepHighlight = model.deltaDecorations(stepHighlight, [decoration]);
+        highlight = model.deltaDecorations(highlight, [decoration]);
+
+        editor.revealLineInCenter(line);
         
-        editor.revealLineInCenter(step.asm);
+        return highlight;
+    }
+    
+    window.stepExecution = async function(step) {
+        var model = editor.getModel();
+        var type = filename.toLowerCase().endsWith(".asm") ? "asm" : "src";
+        
+        if (step.program !== filename) {
+            return;
+        }
+        
+        if (!viewer && type === "src") {
+            var response = await fetch("/asm");
+            var code = await response.text();
+            
+            viewer_div.classList.remove("hidden");
+            
+            viewer = monaco.editor.create(viewer_div, {
+                value: code,
+                language: "mtmc16-asm",
+                theme: "mtmc16-asm",
+                automaticLayout: true,
+                readOnly: true
+            });
+        }
+        
+        stepHighlight = renderHighlight(editor, stepHighlight, step[type]);
+        
+        if (viewer) {
+            viewerHighlight = renderHighlight(viewer, viewerHighlight, step.asm);
+        }
+        
+//        if (viewer) {
+//            if (step.asm < 1) {
+//                viewerHighlight = model.deltaDecorations(viewerHighlight, []);
+//                return;
+//            }
+//            
+//            model = viewer.getModel();
+//            range = new monaco.Range(step.asm, 1, step.asm, model.getLineMaxColumn(step.asm));
+//            options = { isWholeLine: true, inlineClassName: 'step-highlight' };
+//            decoration = {range: range, options: options};
+//
+//            viewerHighlight = model.deltaDecorations(viewerHighlight, [decoration]);
+//
+//            viewer.revealLineInCenter(step.asm);
+//        }
     };
 }
 

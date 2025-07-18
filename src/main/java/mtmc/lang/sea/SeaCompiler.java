@@ -8,6 +8,7 @@ import mtmc.os.exec.Executable;
 import mtmc.util.StringEscapeUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SeaCompiler {
     protected Unit program;
@@ -511,55 +512,79 @@ public class SeaCompiler {
         }
     }
 
-    void compileBin(ExpressionBin expr, Frame frame, String dst) {
-        switch (expr.op()) {
+    void compileBin(ExpressionBin bin, Frame frame, String dst) {
+        switch (bin.op()) {
             case "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=" -> {
-                if (!(expr.lhs instanceof ExpressionIdent id)) {
-                    throw new UnsupportedOperationException("don't know how to compile " + expr.lhs.getClass().getSimpleName());
+                int fieldOffset = 0;
+                int valueSize = bin.lhs.type().size();
+                LinkedList<String> nameParts = new LinkedList<>();
+                Expression base = bin.lhs;
+                while (base instanceof ExpressionAccess acc) {
+                    nameParts.addFirst(acc.ident.name());
+                    fieldOffset += getFieldOffset((SeaType.Struct) acc.value.type(), acc.ident.name());
+                    base = acc.value;
+                }
+                if (fieldOffset > 0) {
+                    fieldOffset += valueSize; // i dunno man
+                }
+                if (!(base instanceof ExpressionIdent id)) {
+                    throw new UnsupportedOperationException("cannot compile non-ident/access");
                 }
 
-                final String name = id.name();
-                code.append("# store ").append(name).append('\n');
+                code.append("# store ").append(String.join(".", nameParts)).append('\n');
 
-
-                if (expr.op().equals("=")) {
-                    compile(expr.rhs, frame, "t0");
-                } else {
-                    compile(id, frame, "t0");
-                    compile(expr.rhs, frame, "t1");
-                    switch (expr.op()) {
-                        case "+=" -> code.append("  add t0 t1\n");
-                        case "-=" -> code.append("  sub t0 t1\n");
-                        case "*=" -> code.append("  mul t0 t1\n");
-                        case "/=" -> code.append("  div t0 t1\n");
-                        case "%=" -> code.append("  mod t0 t1\n");
-                        case "&=" -> code.append("  and t0 t1\n");
-                        case "|=" -> code.append("  or t0 t1\n");
-                        case "^=" -> code.append("  xor t0 t1\n");
-                        case "<<=" -> code.append("  lsh t0 t1\n");
-                        case ">>=" -> code.append("  rsh t0 t1\n");
-                        case String op -> throw new UnsupportedOperationException("I dunnot how to compile " + op);
-                    }
-                }
-
-                if (globalLabels.containsKey(name)) {
-                    code.append("  sw t0 ").append(globalLabels.get(name)).append('\n');
-                } else {
-                    var offset = frame.get(name);
-                    if (offset > 15) {
-                        String label = internConstant(-offset);
-                        code.append("  lw t1 ").append(label).append('\n');
+                String name = id.name();
+                if (valueSize == 2) {
+                    if (bin.op().equals("=")) {
+                        compile(bin.rhs, frame, "t0");
                     } else {
-                        code.append("  li t1 ").append(-offset).append('\n');
+                        compile(id, frame, "t0");
+                        compile(bin.rhs, frame, "t1");
+                        switch (bin.op()) {
+                            case "+=" -> code.append("  add t0 t1\n");
+                            case "-=" -> code.append("  sub t0 t1\n");
+                            case "*=" -> code.append("  mul t0 t1\n");
+                            case "/=" -> code.append("  div t0 t1\n");
+                            case "%=" -> code.append("  mod t0 t1\n");
+                            case "&=" -> code.append("  and t0 t1\n");
+                            case "|=" -> code.append("  or t0 t1\n");
+                            case "^=" -> code.append("  xor t0 t1\n");
+                            case "<<=" -> code.append("  lsh t0 t1\n");
+                            case ">>=" -> code.append("  rsh t0 t1\n");
+                            case String op -> throw new UnsupportedOperationException("I dunnot how to compile " + op);
+                        }
                     }
-                    code.append("  swr t0 fp t1\n");
+
+                    if (globalLabels.containsKey(name)) {
+                        code.append("  sw t0 ").append(globalLabels.get(name)).append('\n');
+                    } else {
+                        var offset = frame.get(name);
+                        if (offset > 15) {
+                            String label = internConstant(-(offset + fieldOffset));
+                            code.append("  lw t1 ").append(label).append('\n');
+                        } else {
+                            code.append("  li t1 ").append(-(offset + fieldOffset)).append('\n');
+                        }
+                        code.append("  swr t0 fp t1\n");
+                    }
+                } else {
+                    assert bin.op().equals("=");
+                    // TODO: large assignment
+//                    compileLocation(bin.rhs, frame, "t2");
+//
+//                    if (globalLabels.containsKey(name)) {
+//
+//                    } else {
+//                        var offset = frame.get(name);
+//                        code.append("  mcp t2 t3 ").append(valueSize).append('\n');
+//                    }
                 }
             }
             case "<", ">", "<=", ">=", "==", "!=" -> {
                 int label = labelNo++;
                 var insr = dst == null ? "pushi" : "li " + dst;
                 compileBranchingInstruction(
-                        expr,
+                        bin,
                         frame,
                         "cmpFalse" + label,
                         "cmpEnd" + label,
@@ -574,10 +599,10 @@ public class SeaCompiler {
                 String falseLabel = "andFalse" + label;
                 String endLabel = "andEnd" + label;
 
-                compile(expr.lhs, frame, "t4");
+                compile(bin.lhs, frame, "t4");
                 code.append("  eqi t4 0\n");
                 code.append("  jnz ").append(falseLabel).append('\n');
-                compile(expr.rhs, frame, "t4");
+                compile(bin.rhs, frame, "t4");
                 code.append("  eqi t4 0\n");
                 code.append("  jnz ").append(falseLabel).append('\n');
                 code.append("  ").append(insr).append(" 1\n");
@@ -593,10 +618,10 @@ public class SeaCompiler {
                 String trueLabel = "orTrue" + label;
                 String endLabel = "orEnd" + label;
 
-                compile(expr.lhs, frame, "t4");
+                compile(bin.lhs, frame, "t4");
                 code.append("  eqi t4 0\n");
                 code.append("  jz ").append(trueLabel).append('\n');
-                compile(expr.rhs, frame, "t4");
+                compile(bin.rhs, frame, "t4");
                 code.append("  eqi t4 0\n");
                 code.append("  jz ").append(trueLabel).append('\n');
                 code.append("  ").append(insr).append(" 0\n");
@@ -606,10 +631,10 @@ public class SeaCompiler {
                 code.append(endLabel).append(":\n");
             }
             default -> {
-                compile(expr.lhs, frame, null);
-                compile(expr.rhs, frame, null);
+                compile(bin.lhs, frame, null);
+                compile(bin.rhs, frame, null);
                 code.append("  ");
-                switch (expr.op()) {
+                switch (bin.op()) {
                     case "+" -> code.append("sadd");
                     case "-" -> code.append("ssub");
                     case "*" -> code.append("smul");

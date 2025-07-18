@@ -480,4 +480,58 @@ public class SeaCompilationTests {
                 """);
         assertEquals("Hello from 100, 10\nHello to 50, 50\nslope between points is 40/-50\n", output);
     }
+
+    @Test
+    public void assignInStruct() {
+        var output = compileAndRun("""
+                int printf(char *s, ...);
+                
+                struct Person {
+                    char *name;
+                    int age;
+                };
+                
+                int main() {
+                    Person dev = {"dillon", 21};
+                    printf("name = %s, age = %d\\n", dev.name, dev.age);
+                    // summer 2025
+                    dev.age = 22;
+                    printf("name = %s, age = %d\\n", dev.name, dev.age);
+                    return 0;
+                }
+                """);
+        assertEquals("name = dillon, age = 21\nname = dillon, age = 22\n", output);
+    }
+
+    @Test
+    public void assignInEmbeddedStructs() {
+        var output = compileAndRun("""
+                int printf(char *s, ...);
+                
+                struct Address {
+                    char *city;
+                    char *state;
+                };
+                
+                struct Person {
+                    char *name;
+                    int age;
+                    Address addr;
+                };
+                
+                int main() {
+                    Person dev = {"dillon", 21, {"Bozeman", "MT"}};
+                    printf("name = %s, age = %d\\n", dev.name, dev.age);
+                    printf("  from %s, %s\\n", dev.addr.city, dev.addr.state);
+                
+                    // summer 2025
+                    dev.age = 22;
+                    dev.addr = {"Jamestown", "ND"};
+                    printf("name = %s, age = %d\\n", dev.name, dev.age);
+                    printf("  from %s, %s\\n", dev.addr.city, dev.addr.state);
+                    return 0;
+                }
+                """);
+        assertEquals("name = dillon, age = 21\n from Bozeman, MT\nname = dillon, age = 22\n from Jamestown, ND\n", output);
+    }
 }

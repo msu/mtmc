@@ -94,7 +94,7 @@ public sealed interface SeaType {
                 var valueTy = initializer.values.get(i);
 
                 try {
-                    ty.checkConversionTo(valueTy);
+                    valueTy.checkConversionTo(ty);
                 } catch (ConversionError error) {
                     throw new ConversionError(ty, valueTy,
                             "value cannot be assigned to " + ty.repr() + " for '" + name + "'", error);
@@ -207,6 +207,11 @@ public sealed interface SeaType {
 
         private Primitive(String name) {
             this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 

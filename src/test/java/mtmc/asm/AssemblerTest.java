@@ -81,7 +81,7 @@ public class AssemblerTest {
 
     @Test
     public void memcpy() {
-        var computer = assemble("mcp t0 t1 8");
+        var computer = assembleAndLoad("mcp t0 t1 8");
         computer.writeWordToMemory(100, 0x0123);
         computer.writeWordToMemory(102, 0x4567);
         computer.writeWordToMemory(104, 0x89AB);

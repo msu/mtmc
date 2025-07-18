@@ -236,7 +236,7 @@ public class SeaExpressionTests {
 
     <T extends Expression> T parseExpr(String lex, Object... args) {
         var tokens = Token.tokenize(lex);
-        var parser = new SeaParser(tokens);
+        var parser = new SeaParser(null, lex, tokens);
         for (int i = 0; i < args.length; i += 2) {
             var name = (String) args[i];
             var token = new Token(Token.Type.LIT_IDENT, name, 0, 0);

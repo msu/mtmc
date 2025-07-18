@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class SeaCompilationTests {
     Executable compile(String src) {
         var tokens = Token.tokenize(src);
-        var parser = new SeaParser(tokens);
+        var parser = new SeaParser(null, src, tokens);
         Unit program;
         try {
             program = parser.parseUnit();

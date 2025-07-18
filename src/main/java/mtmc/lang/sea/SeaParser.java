@@ -12,6 +12,8 @@ import java.util.*;
 import static mtmc.lang.sea.Token.Type.*;
 
 public class SeaParser {
+    private final String filename;
+    private final String source;
     private final List<Token> tokens;
     private int index = 0;
 
@@ -22,7 +24,9 @@ public class SeaParser {
         scope.add(new LinkedHashMap<>());
     }
 
-    public SeaParser(@NotNull List<Token> tokens) {
+    public SeaParser(String filename, String source, @NotNull List<Token> tokens) {
+        this.filename = filename;
+        this.source = source;
         this.tokens = tokens;
         this.symbols = new LinkedHashMap<>();
     }
@@ -63,7 +67,7 @@ public class SeaParser {
             }
         }
 
-        return new Unit(declarations, this.symbols);
+        return new Unit(this.filename, this.source, declarations, this.symbols);
     }
 
     public DeclarationFunc.ParamList parseParamList() throws ParseException {

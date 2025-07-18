@@ -7,9 +7,9 @@ import mtmc.os.exec.Executable;
 
 public class SeaLanguage implements Language {
     @Override
-    public Executable compileExecutable(String source) throws mtmc.lang.ParseException, CompilationException  {
+    public Executable compileExecutable(String filename, String source) throws mtmc.lang.ParseException, CompilationException  {
         var tokens = Token.tokenize(source);
-        var parser = new SeaParser(tokens);
+        var parser = new SeaParser(filename, source, tokens);
         Unit program = parser.parseUnit();
 
         var compiler = new SeaCompiler(program);

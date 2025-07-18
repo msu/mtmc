@@ -8,7 +8,6 @@ import mtmc.os.exec.Executable;
 import mtmc.util.StringEscapeUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SeaCompiler {
     protected Unit program;
@@ -17,6 +16,7 @@ public class SeaCompiler {
     private StringBuilder code = new StringBuilder();
     private HashMap<String, String> globalLabels = new HashMap<>();
     private HashMap<Object, String> dataLabels = new HashMap<>();
+    private int currentLineNo = -1;
 
     public SeaCompiler(Unit program) {
         this.program = program;
@@ -54,6 +54,11 @@ public class SeaCompiler {
         String code = this.code.toString();
 
         String asm = "";
+
+        if (this.program.filename != null) {
+            asm += "@file " + StringEscapeUtils.escapeString(this.program.filename) + "\n";
+        }
+
         if (!data.isBlank()) {
             asm += ".data\n" + data;
         }
@@ -229,6 +234,12 @@ public class SeaCompiler {
     }
 
     private void compile(Statement statement, Frame frame) {
+        int lineNo = Token.getLineAndOffset(program.source, statement.start.start())[0];
+        if (currentLineNo != lineNo) {
+            code.append("@line ").append(lineNo).append('\n');
+            currentLineNo = lineNo;
+        }
+
         if (statement.getLabelAnchor() != null) {
             code.append(statement.getLabelAnchor().content()).append(":\n");
         }
@@ -408,6 +419,11 @@ public class SeaCompiler {
     }
 
     void compile(Expression expression, Frame frame, String dst) {
+        int lineNo = Token.getLineAndOffset(program.source, expression.start.start())[0];
+        if (currentLineNo != lineNo) {
+            code.append("@line ").append(lineNo).append('\n');
+            currentLineNo = lineNo;
+        }
         switch (expression) {
             case ExpressionAccess expr -> compileAccess(expr, frame, dst);
             case ExpressionBin expr -> compileBin(expr, frame, dst);

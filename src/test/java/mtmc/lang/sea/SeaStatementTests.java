@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SeaStatementTests {
     List<Statement> parseStatements(String lex) {
         var tokens = Token.tokenize(lex);
-        var parser = new SeaParser(tokens);
+        var parser = new SeaParser(null, lex, tokens);
 
         try {
             var stmts = new ArrayList<Statement>();
@@ -50,7 +50,7 @@ public class SeaStatementTests {
 
     <T extends Statement> T parseStatement(String lex) {
         var tokens = Token.tokenize(lex);
-        var parser = new SeaParser(tokens);
+        var parser = new SeaParser(null, lex, tokens);
 
         try {
             var stmt = parser.parseStatement();

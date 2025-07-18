@@ -38,6 +38,7 @@ public class Shell {
         COMMANDS.put("run", new RunCommand());
         COMMANDS.put("pause", new PauseCommand());
         COMMANDS.put("speed", new SpeedCommand());
+        COMMANDS.put("sc", new SeacCommand());
     }
 
     public static boolean isCommand(String cmd) {

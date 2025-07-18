@@ -180,8 +180,9 @@ public class WebUIUpdater implements MTMCObserver {
         
         var program = webServer.getComputerView().getProgram();
         var asm = webServer.getComputerView().getAssemblyLine();
-        var step = new ExecutionStep(program, asm, -1);
-                
+        var source = webServer.getComputerView().getSourceLine();
+        var step = new ExecutionStep(program, asm, source);
+
         webServer.sendEvent("update:step-execution", json.toJson(step));
     }
 

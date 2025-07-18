@@ -449,13 +449,14 @@ async function startMonaco() {
     
     window.stepExecution = function(step) {
         var model = editor.getModel();
+        var type = filename.toLowerCase().endsWith(".asm") ? "asm" : "src";
         
-        if (step.program !== filename || step.asm < 1) {
+        if (step.program !== filename || step[type] < 1) {
             stepHighlight = model.deltaDecorations(stepHighlight, []);
             return;
         }
         
-        var range = new monaco.Range(step.asm, 1, step.asm, model.getLineMaxColumn(step.asm));
+        var range = new monaco.Range(step[type], 1, step[type], model.getLineMaxColumn(step[type]));
         var options = { isWholeLine: true, inlineClassName: 'step-highlight' };
         var decoration = {range: range, options: options};
         

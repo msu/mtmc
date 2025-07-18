@@ -17,7 +17,7 @@ public class SeacCommand extends ShellCommand  {
                 if (!tokens.more()) throw new IllegalArgumentException("expected filename after '-o'");
                 output = tokens.collapseTokensAsString();
             } else {
-                filename = tokens.collapseTokensAsString();
+                filename = token;
             }
         }
 

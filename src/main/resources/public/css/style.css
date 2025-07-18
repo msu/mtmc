@@ -752,9 +752,9 @@ details[open] > summary::before {
     flex-grow: 1;
     flex-direction: column;
     gap: 2px;
-    min-height: calc(100vh - 44px);
-    height: calc(100vh - 44px);
-    max-height: calc(100vh - 44px);
+    min-height: calc(100dvh - 44px);
+    height: calc(100dvh - 44px);
+    max-height: calc(100dvh - 44px);
 }
 
 .site #editor, .site #assembly {

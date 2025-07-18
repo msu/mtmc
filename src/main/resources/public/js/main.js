@@ -470,9 +470,8 @@ async function startMonaco() {
     }
     
     window.stepExecution = async function(step) {
-        var model = editor.getModel();
         var type = filename.toLowerCase().endsWith(".asm") ? "asm" : "src";
-        
+
         if (step.program !== filename) {
             return;
         }
@@ -497,22 +496,6 @@ async function startMonaco() {
         if (viewer) {
             viewerHighlight = renderHighlight(viewer, viewerHighlight, step.asm);
         }
-        
-//        if (viewer) {
-//            if (step.asm < 1) {
-//                viewerHighlight = model.deltaDecorations(viewerHighlight, []);
-//                return;
-//            }
-//            
-//            model = viewer.getModel();
-//            range = new monaco.Range(step.asm, 1, step.asm, model.getLineMaxColumn(step.asm));
-//            options = { isWholeLine: true, inlineClassName: 'step-highlight' };
-//            decoration = {range: range, options: options};
-//
-//            viewerHighlight = model.deltaDecorations(viewerHighlight, [decoration]);
-//
-//            viewer.revealLineInCenter(step.asm);
-//        }
     };
 }
 

@@ -2,6 +2,7 @@ package mtmc.os.shell.builtins;
 
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.lang.sea.SeaLanguage;
+import mtmc.os.fs.FileSystem;
 import mtmc.os.shell.ShellCommand;
 import mtmc.tokenizer.MTMCTokenizer;
 import mtmc.util.StringEscapeUtils;
@@ -11,6 +12,7 @@ public class SeacCommand extends ShellCommand  {
     public void exec(MTMCTokenizer tokens, MonTanaMiniComputer computer) throws Exception {
         String output = "a.out";
         String filename = null;
+        FileSystem fs = computer.getFileSystem();
         while (tokens.more()) {
             var token = tokens.collapseTokensAsString();
             if (token.equals("-o")) {
@@ -25,16 +27,17 @@ public class SeacCommand extends ShellCommand  {
             throw new IllegalArgumentException("expected source file");
         }
 
-        if (!computer.getFileSystem().exists(filename)) {
+        if (!fs.exists(filename)) {
             throw new IllegalArgumentException("file " + StringEscapeUtils.escapeString(filename) + " does not exist");
         }
-
+System.out.println(fs.resolve(filename));
         SeaLanguage lang = new SeaLanguage();
-        String content = computer.getFileSystem().readFile(filename);
-        var exec = lang.compileExecutable(filename, content);
+        String content = fs.readFile(filename);
+        var exec = lang.compileExecutable(fs.resolve(filename), content);
 
         String bin = exec.dump();
         computer.getFileSystem().writeFile(output, bin);
+        computer.notifyOfFileSystemUpdate();
     }
 
     @Override

@@ -766,7 +766,6 @@ details[open] > summary::before {
     min-height: calc(50% - 2px);
     height: calc(50% - 2px);
     max-height: calc(50% - 2px);
-    overflow: hidden;
 }
 
 .site #assembly.hidden {

@@ -499,21 +499,21 @@ public class SeaCompiler {
             if (globalLabels.containsKey(ident.name())) {
                 var label = globalLabels.get(ident.name());
                 code.append("  la t2 ").append(label).append('\n');
-                code.append("  li t3 ").append(-fieldOffset).append('\n');
                 if (dst == null) {
-                    code.append("  lwr t0 t2 t3\n");
+                    code.append("  lwo t0 t2 ").append(-fieldOffset).append('\n');
                     code.append("  push t0\n");
                 } else {
-                    code.append("  lwr ").append(dst).append(" t2 t3\n");
+                    code.append("  lwo ").append(dst).append(" ").append(-fieldOffset).append('\n');
                 }
             } else {
                 int offset = frame.get(ident.name());
-                code.append("  li t3 ").append(-(offset + fieldOffset + valueSize)).append('\n');
+                int off = -(offset + fieldOffset + valueSize);
+//                code.append("  li t3 ").append().append('\n');
                 if (dst == null) {
-                    code.append("  lwr t0 fp t3\n");
+                    code.append("  lwo t0 fp ").append(off).append("\n");
                     code.append("  push t0\n");
                 } else {
-                    code.append("  lwr ").append(dst).append(" fp t3\n");
+                    code.append("  lwo ").append(dst).append(" fp ").append(off).append("\n");
                 }
             }
         } else {
@@ -793,17 +793,11 @@ public class SeaCompiler {
             }
         } else {
             var offset = frame.get(ident.name());
-            if (offset > 15) {
-                String label = internConstant(-offset);
-                code.append("  lw t3 ").append(label).append('\n');
-            } else {
-                code.append("  li t3 ").append(-offset).append("\n");
-            }
             if (dst == null) {
-                code.append("  lwr t0 fp t3\n");
+                code.append("  lwo t0 fp ").append(-offset).append('\n');
                 code.append("  push t0\n");
             } else {
-                code.append("  lwr ").append(dst).append(" fp t3\n");
+                code.append("  lwo ").append(dst).append(" fp ").append(-offset).append('\n');
             }
         }
     }
@@ -811,17 +805,17 @@ public class SeaCompiler {
     void compileIndex(ExpressionIndex expr, Frame frame, String dst) {
         compile(expr.array, frame, null);
         compile(expr.index, frame, null);
-        code.append("  pop t1\n"); // load the offset into t1
+        code.append("  pop t2\n"); // load the offset into t2
         if (expr.array.type().size() != 1) {
             code.append("  li t0 ").append(expr.array.type().size()).append('\n');
-            code.append("  mul t1 t1 t0\n");
+            code.append("  mul t2 t2 t0\n");
         }
-        code.append("  pop t0\n"); // load the pointer into t0
+        code.append("  pop t1\n"); // load the pointer into t1
         if (dst == null) {
-            code.append("  lwr t2 t0 t1\n");
-            code.append("  push t2\n");
+            code.append("  lwr t0 t1 t2\n");
+            code.append("  push t0\n");
         } else {
-            code.append("  lwr ").append(dst).append(" t0 t1\n");
+            code.append("  lwr ").append(dst).append(" t1 t2\n");
         }
     }
 

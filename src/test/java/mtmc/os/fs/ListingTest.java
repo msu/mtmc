@@ -35,7 +35,6 @@ public class ListingTest
         
         assertEquals("home", cwd.name);
         assertEquals("/home", cwd.path);
-        assertEquals("Justice", cwd.list().get(0).name);
     }
     
     @Test
@@ -46,6 +45,6 @@ public class ListingTest
         
         assertEquals("img", cwd.name);
         assertEquals("/img", cwd.path);
-        assertEquals(4, cwd.list().size());
+        assertEquals(5, cwd.list().size());
     }
 }

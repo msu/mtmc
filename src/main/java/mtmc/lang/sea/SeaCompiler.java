@@ -386,13 +386,13 @@ public class SeaCompiler {
             var offset = frame.get(stmt.name());
             int varSize = stmt.type.type().size();
             if (varSize == 2) {
-                if (offset > 15) {
-                    String label = internConstant(-offset);
-                    code.append("  lw t3 ").append(label).append('\n');
-                } else {
-                    code.append("  li t3 ").append(-offset).append("\n");
-                }
-                code.append("  swr t0 fp t3\n");
+//                if (offset > 15) {
+//                    String label = internConstant(-offset);
+//                    code.append("  lw t3 ").append(label).append('\n');
+//                } else {
+//                    code.append("  li t3 ").append(-offset).append("\n");
+//                }
+                code.append("  swo t0 fp ").append(-offset).append("\n");
             } else {
                 code.append("  mov t0 sp\n");
                 code.append("  mov t1 fp\n");
@@ -583,13 +583,14 @@ public class SeaCompiler {
                         code.append("  mov ").append(reg).append(" t0\n");
                     } else {
                         var offset = frame.get(name);
-                        if (offset > 15) {
-                            String label = internConstant(-(offset + fieldOffset));
-                            code.append("  lw t1 ").append(label).append('\n');
-                        } else {
-                            code.append("  li t1 ").append(-(offset + fieldOffset)).append('\n');
-                        }
-                        code.append("  swr t0 fp t1\n");
+//                        if (offset > 15) {
+//                            String label = internConstant(-(offset + fieldOffset));
+//                            code.append("  lw t1 ").append(label).append('\n');
+//                        } else {
+//                            code.append("  li t1 ").append(-(offset + fieldOffset)).append('\n');
+//                        }
+                        var off = -(offset + fieldOffset);
+                        code.append("  swo t0 fp ").append(off).append("\n");
                     }
                 } else {
                     assert bin.op().equals("=");

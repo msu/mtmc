@@ -34,24 +34,24 @@ accomplish basic computing tasks.
 
 The MTMC has a total of 16 user-facing register. They are outlined below.
 
-| index | name   | description                                                           |
-|-------|--------|-----------------------------------------------------------------------|
-| 0     | `t0`   | temp register 0, holds temporary values                               |
-| 1     | `t1`   | temp register 1, holds temporary values                               |
-| 2     | `t2`   | temp register 2, holds temporary values                               |
-| 3     | `t3`   | temp register 3, holds temporary values                               |
-| 4     | `t4`   | temp register 4, holds temporary values                               |
-| 5     | `t5`   | temp register 5, holds temporary values                               |
-| 6     | `a0`   | arg register 0, holds the first argument for a function call          |
-| 7     | `a1`   | arg register 1, holds the second argument for a function call         |
-| 8     | `a2`   | arg register 2, holds the third argument for a function call          |
-| 9     | `a3`   | arg register 3, holds the fourth argument for a function call         |
-| 10    | `rv`   | return value register, holds the return value for a function call     |
-| 11    | `ra`   | return address register, holds the return address for a function call |
-| 12    | `fp`   | frame pointer, points to the top of the current function frame        |
-| 13    | `sp`   | stack pointer, points to the bottom of the current function frame     |
-| 14    | `bp`   | break pointer, points to the top of the current heap space            |
-| 15    | `pc`   | program counter, points to the next instruction to execute            |
+| index | name | description                                                           |
+|-------|------|-----------------------------------------------------------------------|
+| 0     | `t0` | temp register 0, holds temporary values                               |
+| 1     | `t1` | temp register 1, holds temporary values                               |
+| 2     | `t2` | temp register 2, holds temporary values                               |
+| 3     | `t3` | temp register 3, holds temporary values                               |
+| 4     | `t4` | temp register 4, holds temporary values                               |
+| 5     | `t5` | temp register 5, holds temporary values                               |
+| 6     | `a0` | arg register 0, holds the first argument for a function call          |
+| 7     | `a1` | arg register 1, holds the second argument for a function call         |
+| 8     | `a2` | arg register 2, holds the third argument for a function call          |
+| 9     | `a3` | arg register 3, holds the fourth argument for a function call         |
+| 10    | `rv` | return value register, holds the return value for a function call     |
+| 11    | `ra` | return address register, holds the return address for a function call |
+| 12    | `fp` | frame pointer, points to the top of the current function frame        |
+| 13    | `sp` | stack pointer, points to the bottom of the current function frame     |
+| 14    | `bp` | break pointer, points to the top of the current heap space            |
+| 15    | `pc` | program counter, points to the next instruction to execute            |
 
 In addition to these registers, there are the following non-user facing registers:
 
@@ -134,24 +134,24 @@ instruction.
 If the result of an ALU operation is zero the `test` bit of the `flag` register will be set to `0`, otherwise it will
 be set to `1`
 
-| Instruction | Form                   | Description                                                                                                         | Example          |
-|-------------|------------------------|---------------------------------------------------------------------------------------------------------------------|------------------|
-| `add`       | `0001 0000 rrrr ssss`  | Adds the value of `rrrr` to `ssss` and saves it to `rrrr`                                                           | `add t0 t1`      |
-| `sub`       | `0001 0001 rrrr ssss`  | Subtracts the value of `rrrr` to `ssss` and saves it to `rrrr`                                                      | `sub t0 t1`      |
-| `mul`       | `0001 0010 rrrr ssss`  | Multiplies the value of `rrrr` to `ssss` and saves it to `rrrr`                                                     | `mul t0 t1`      |
-| `div`       | `0001 0011 rrrr ssss`  | Divides the value of `rrrr` by `ssss` and saves it to `rrrr`                                                        | `div t0 t1`      |
-| `mod`       | `0001 0100 rrrr ssss`  | Computes the mod the value of `rrrr` by `ssss` and saves it to `rrrr`                                               | `mod t0 t1`      |
-| `and`       | `0001 0101 rrrr ssss`  | Bitwise ANDs the value of `rrrr` by `ssss` and saves it to `rrrr`                                                   | `and t0 t1`      |
-| `or`        | `0001 0110 rrrr ssss`  | Bitwise ORs the value of `rrrr` by `ssss` and saves it to `rrrr`                                                    | `or t0 t1`       |
-| `xor`       | `0001 0111 rrrr ssss`  | Bitwise XORs the value of `rrrr` by `ssss` and saves it to `rrrr`                                                   | `xor t0 t1`      |
-| `shl`       | `0001 1000 rrrr ssss`  | Shifts the value in `rrrr` the unsigned value `vvvv` bits to the left and saves it to `rrrr`                        | `shl t0 t1`      |
-| `shr`       | `0001 1001 rrrr ssss`  | Shifts the value in `rrrr` the unsigned value `vvvv` bits to the right and saves it to `rrrr`                       | `shr t0 t1`      |
-| `min`       | `0001 1010 rrrr ssss`  | Leaves the minimum of the values in `rrrr` and `ssss` in `rrrr`                                                     | `min t0 t1`      |
-| `max`       | `0001 1011 rrrr ssss`  | Leaves the minimum of the values in `rrrr` and `ssss` in `rrrr`                                                     | `max t0 t1`      |
-| `not`       | `0001 1100 rrrr 0000`  | Bitwise NOTs the value of `rrrr` and saves it to `rrrr`                                                             | `not t0`         |
-| `lnot`      | `0001 1101 rrrr 0000`  | Logical NOT: if the the value of `rrrr` is `0` set `rrrr` value to `1`, `0` otherwise                               | `lnot t0`        |
-| `neg`       | `0001 1110 rrrr 0000 ` | Negates the value of `rrrr` and saves it to `rrrr`                                                                  | `neg t0`         |
-| `imm`       | `0001 1111 rrrr aaaa ` | Applies the ALU operation found in `aaaa` and applies it to `rrr` and the next word in memory after the instruction | `imm add t0 12`  |
+| Instruction | Form                   | Description                                                                                                         | Example         |
+|-------------|------------------------|---------------------------------------------------------------------------------------------------------------------|-----------------|
+| `add`       | `0001 0000 rrrr ssss`  | Adds the value of `rrrr` to `ssss` and saves it to `rrrr`                                                           | `add t0 t1`     |
+| `sub`       | `0001 0001 rrrr ssss`  | Subtracts the value of `rrrr` to `ssss` and saves it to `rrrr`                                                      | `sub t0 t1`     |
+| `mul`       | `0001 0010 rrrr ssss`  | Multiplies the value of `rrrr` to `ssss` and saves it to `rrrr`                                                     | `mul t0 t1`     |
+| `div`       | `0001 0011 rrrr ssss`  | Divides the value of `rrrr` by `ssss` and saves it to `rrrr`                                                        | `div t0 t1`     |
+| `mod`       | `0001 0100 rrrr ssss`  | Computes the mod the value of `rrrr` by `ssss` and saves it to `rrrr`                                               | `mod t0 t1`     |
+| `and`       | `0001 0101 rrrr ssss`  | Bitwise ANDs the value of `rrrr` by `ssss` and saves it to `rrrr`                                                   | `and t0 t1`     |
+| `or`        | `0001 0110 rrrr ssss`  | Bitwise ORs the value of `rrrr` by `ssss` and saves it to `rrrr`                                                    | `or t0 t1`      |
+| `xor`       | `0001 0111 rrrr ssss`  | Bitwise XORs the value of `rrrr` by `ssss` and saves it to `rrrr`                                                   | `xor t0 t1`     |
+| `shl`       | `0001 1000 rrrr ssss`  | Shifts the value in `rrrr` the unsigned value `vvvv` bits to the left and saves it to `rrrr`                        | `shl t0 t1`     |
+| `shr`       | `0001 1001 rrrr ssss`  | Shifts the value in `rrrr` the unsigned value `vvvv` bits to the right and saves it to `rrrr`                       | `shr t0 t1`     |
+| `min`       | `0001 1010 rrrr ssss`  | Leaves the minimum of the values in `rrrr` and `ssss` in `rrrr`                                                     | `min t0 t1`     |
+| `max`       | `0001 1011 rrrr ssss`  | Leaves the minimum of the values in `rrrr` and `ssss` in `rrrr`                                                     | `max t0 t1`     |
+| `not`       | `0001 1100 rrrr 0000`  | Bitwise NOTs the value of `rrrr` and saves it to `rrrr`                                                             | `not t0`        |
+| `lnot`      | `0001 1101 rrrr 0000`  | Logical NOT: if the the value of `rrrr` is `0` set `rrrr` value to `1`, `0` otherwise                               | `lnot t0`       |
+| `neg`       | `0001 1110 rrrr 0000 ` | Negates the value of `rrrr` and saves it to `rrrr`                                                                  | `neg t0`        |
+| `imm`       | `0001 1111 rrrr aaaa ` | Applies the ALU operation found in `aaaa` and applies it to `rrr` and the next word in memory after the instruction | `imm add t0 12` |
 
 The second nibble of the instruction determines the ALU operation. Here is a table of those operations:
 
@@ -204,17 +204,17 @@ Stack assembly instructions do not require you specify a stack pointer register.
 
 If it is omitted then the assembler will assume you want to use the `sp` register.
 
-| Instruction | Form                  | Description                                                                                                                                           | Example                                    |
-|-------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| `push`      | `0010 0000 rrrr ssss` | Pushes the word value of `rrrr` onto the stack pointed at by `ssss`, `ssss` is decrement by 2 bytes and the value in `rrrr` is saved to that location | `push t0` (`sp` is implied)                |
-| `pop`       | `0010 0001 rrrr ssss` | Pops the word at the top of the stack pointed at by `ssss` into `rrrr`, `ssss` is incremented by 2 bytes.                                             | `pop ra t4` (explicit stack pointer `t4`)  |
-| `dup`       | `0010 0010 0000 ssss` | Duplicates the word at the top of the stack pointed to by `ssss`.                                                                                     | `dup`                                      |
-| `swap`      | `0010 0011 0000 ssss` | Swaps the two words at the top of the stack pointed to by `ssss`.                                                                                     | `swap`                                     |
-| `drop`      | `0010 0100 0000 ssss` | Drops the top word of the stack pointed to by `ssss`.                                                                                                 | `drop`                                     |
-| `over`      | `0010 0101 0000 ssss` | Copies the second word to the top of the stack pointed to by `ssss`.                                                                                  | `over`                                     |
-| `rot`       | `0010 0110 0000 ssss` | Rotates the third word to the top of the stack pointed to by `ssss`.                                                                                  | `rot`                                      |
-| `sop`       | `0010 0111 aaaa ssss` | Applies the ALU operation `aaaa` to the stack pointed at by the `ssss` register.                                                                      | `sop add`                                  |
-| `pushi`     | `0010 1111 0000 ssss` | Pushes the value in the memory location after the instruction onto the top of the stack pointed to by `ssss`.                                         | `pushi 1024`                               |
+| Instruction | Form                  | Description                                                                                                                                           | Example                                   |
+|-------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------|
+| `push`      | `0010 0000 rrrr ssss` | Pushes the word value of `rrrr` onto the stack pointed at by `ssss`, `ssss` is decrement by 2 bytes and the value in `rrrr` is saved to that location | `push t0` (`sp` is implied)               |
+| `pop`       | `0010 0001 rrrr ssss` | Pops the word at the top of the stack pointed at by `ssss` into `rrrr`, `ssss` is incremented by 2 bytes.                                             | `pop ra t4` (explicit stack pointer `t4`) |
+| `dup`       | `0010 0010 0000 ssss` | Duplicates the word at the top of the stack pointed to by `ssss`.                                                                                     | `dup`                                     |
+| `swap`      | `0010 0011 0000 ssss` | Swaps the two words at the top of the stack pointed to by `ssss`.                                                                                     | `swap`                                    |
+| `drop`      | `0010 0100 0000 ssss` | Drops the top word of the stack pointed to by `ssss`.                                                                                                 | `drop`                                    |
+| `over`      | `0010 0101 0000 ssss` | Copies the second word to the top of the stack pointed to by `ssss`.                                                                                  | `over`                                    |
+| `rot`       | `0010 0110 0000 ssss` | Rotates the third word to the top of the stack pointed to by `ssss`.                                                                                  | `rot`                                     |
+| `sop`       | `0010 0111 aaaa ssss` | Applies the ALU operation `aaaa` to the stack pointed at by the `ssss` register.                                                                      | `sop add`                                 |
+| `pushi`     | `0010 1111 0000 ssss` | Pushes the value in the memory location after the instruction onto the top of the stack pointed to by `ssss`.                                         | `pushi 1024`                              |
 
 ### TEST
 
@@ -281,27 +281,27 @@ Assembly programmers may omit the offset:
 
 The address or value to load or store from is found in the word immediately after the instruction.
 
-| Instruction | Form                  | Description                                                                                                                      | Example                              |
-|-------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| `lw`        | `1000 0000 rrrr 0000` | Loads the word (16-bit) value at the address found immediately after the instruction into `rrrr`                                 | `lw t0 GLOBAL_VAR_1`                 |
-| `lwo`       | `1000 0001 rrrr oooo` | Loads the word (16-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr` | `lwo t0 GLOBAL_VAR_1 t1`             |
-| `lb`        | `1000 0010 rrrr 0000` | Loads the word (8-bit) value at the address found immediately after the instruction into `rrrr`                                  | `lb t0 GLOBAL_VAR_1`                 |
-| `lbo`       | `1000 0011 rrrr oooo` | Loads the word (8-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr`  | `lbo t0 GLOBAL_VAR_1 t1`             |
-| `sw`        | `1000 0100 rrrr 0000` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction                                   | `sw t0 GLOBAL_VAR_1`                 |
-| `swo`       | `1000 0101 rrrr oooo` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`    | `swo t0 GLOBAL_VAR_1 t1`             |
-| `sb`        | `1000 0110 rrrr 0000` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction                                    | `sb t0 GLOBAL_VAR_2`                 |
-| `sbo`       | `1000 0111 rrrr oooo` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo      | `sbo t0 GLOBAL_VAR_2 t1`             |
-| `li`        | `1000 1111 rrrr 0000` | Loads the word (16-bit) value found immediately after the instruction into `rrrr`. Can be used to load a memory addresses.       | `li t0 1024`, `li t0 MEM_ADDR_LABEL` |
-| `la` (alias)| `1000 1111 rrrr 0000` | Alias for `li`. Can be used when loading a memory addresses to clarify intent.                                                   | `la t0 MEM_ADDR_LABEL`               |
+| Instruction  | Form                  | Description                                                                                                                      | Example                              |
+|--------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
+| `lw`         | `1000 0000 rrrr 0000` | Loads the word (16-bit) value at the address found immediately after the instruction into `rrrr`                                 | `lw t0 GLOBAL_VAR_1`                 |
+| `lwo`        | `1000 0001 rrrr oooo` | Loads the word (16-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr` | `lwo t0 GLOBAL_VAR_1 t1`             |
+| `lb`         | `1000 0010 rrrr 0000` | Loads the word (8-bit) value at the address found immediately after the instruction into `rrrr`                                  | `lb t0 GLOBAL_VAR_1`                 |
+| `lbo`        | `1000 0011 rrrr oooo` | Loads the word (8-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr`  | `lbo t0 GLOBAL_VAR_1 t1`             |
+| `sw`         | `1000 0100 rrrr 0000` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction                                   | `sw t0 GLOBAL_VAR_1`                 |
+| `swo`        | `1000 0101 rrrr oooo` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`    | `swo t0 GLOBAL_VAR_1 t1`             |
+| `sb`         | `1000 0110 rrrr 0000` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction                                    | `sb t0 GLOBAL_VAR_2`                 |
+| `sbo`        | `1000 0111 rrrr oooo` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo      | `sbo t0 GLOBAL_VAR_2 t1`             |
+| `li`         | `1000 1111 rrrr 0000` | Loads the word (16-bit) value found immediately after the instruction into `rrrr`. Can be used to load a memory addresses.       | `li t0 1024`, `li t0 MEM_ADDR_LABEL` |
+| `la` (alias) | `1000 1111 rrrr 0000` | Alias for `li`. Can be used when loading a memory addresses to clarify intent.                                                   | `la t0 MEM_ADDR_LABEL`               |
 
 ### JUMP REGISTER
 
 The MTMC supports one jump command that uses a register as the address to jump to, `jr`
 
-| Instruction | Form                  | Description                                    | Example        |
-|-------------|-----------------------|------------------------------------------------|----------------|
-| `jr`        | `1000 0000 0000 rrrr` | Jumps to the location found in register `rrrr` | `jr ra`        |
-| `ret`(alias)| `1000 0000 0000 rrrr` | Alias for `jr ra`                              | `ret`          |
+| Instruction  | Form                  | Description                                    | Example |
+|--------------|-----------------------|------------------------------------------------|---------|
+| `jr`         | `1000 0000 0000 rrrr` | Jumps to the location found in register `rrrr` | `jr ra` |
+| `ret`(alias) | `1000 0000 0000 rrrr` | Alias for `jr ra`                              | `ret`   |
 
 ### JUMPS
 
@@ -333,19 +333,18 @@ after itself.
 ## MTMC IO
 
 The I/O register is used to track the state of gamepad controls with each bit
-representing the on/off state for a given button. 
+representing the on/off state for a given button.
 
-| Name     | Hex  | binary      | Keyboard      | Description                       |
-|----------|------|-------------|---------------|-----------------------------------|
-| `up`     | `80` | `1000 0000` | up arrow      | the up arrow key was pressed      |
-| `down`   | `40` | `0100 0000` | down arrow    | the down arrow key was pressed    |
-| `left`   | `20` | `0010 0000` | left arrow    | the left arrow key was pressed    |
-| `right`  | `10` | `0001 0000` | right arrow   | the right arrow key was pressed   |
-| `start`  | `08` | `0000 1000` | 'l' key       | the start button was pressed      |
-| `select` | `04` | `0000 0100` | spacebar      | the select button was pressed     |
-| `b`      | `02` | `0000 0010` | 'a' key       | the B button was pressed          |
-| `a`      | `01` | `0000 0001` | 's' key       | the A button was pressed          |
-
+| Name     | Hex  | binary      | Keyboard    | Description                     |
+|----------|------|-------------|-------------|---------------------------------|
+| `up`     | `80` | `1000 0000` | up arrow    | the up arrow key was pressed    |
+| `down`   | `40` | `0100 0000` | down arrow  | the down arrow key was pressed  |
+| `left`   | `20` | `0010 0000` | left arrow  | the left arrow key was pressed  |
+| `right`  | `10` | `0001 0000` | right arrow | the right arrow key was pressed |
+| `start`  | `08` | `0000 1000` | 'l' key     | the start button was pressed    |
+| `select` | `04` | `0000 0100` | spacebar    | the select button was pressed   |
+| `b`      | `02` | `0000 0010` | 'a' key     | the B button was pressed        |
+| `a`      | `01` | `0000 0001` | 's' key     | the A button was pressed        |
 
 ## System Calls
 
@@ -390,7 +389,7 @@ Here are the syscalls supported by MTOS:
 #### Directory Entries
 
 The `dirent` syscall provides a method of iterating through a list of files in a directory. Since
-directory entries are complex, the syscall is designed to respond to different commands and 
+directory entries are complex, the syscall is designed to respond to different commands and
 interact with data structures in memory.
 
 The `a0` argument always points to the path of the directory to read. The `a1`
@@ -398,18 +397,18 @@ argument contains the command to run.
 
 Here is a list of valid commands:
 
-| Command     | Hex  | Descrption                                                                                                                                                    |
-|-------------|------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `count`     | 0x00 | `rv` is set to  a count of files in the directory                                                                                                             |
-| `get entry` | 0x01 | Retrieves the directory entry specified by `a2` and saves it to the data structure specified by `a3`. Valid values for `a2` are 0 through `count`.            | 
+| Command     | Hex  | Descrption                                                                                                                                         |
+|-------------|------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `count`     | 0x00 | `rv` is set to  a count of files in the directory                                                                                                  |
+| `get entry` | 0x01 | Retrieves the directory entry specified by `a2` and saves it to the data structure specified by `a3`. Valid values for `a2` are 0 through `count`. | 
 
 A directory entry has the following in-memory structure:
 
-| Name    | Type    | Size         | Description                                                         |
-|---------|---------|--------------|---------------------------------------------------------------------|
-| `flags` | int     | 2 bytes      | Bit 0 is set to 1 if the entry is a directory, 0 if a regular file. |
-| `size`  | int     | 2 bytes      | The number of bytes allocated for the name of the entry.            |
-| `name`  | string  | `size` bytes | A null terminated string containing the name, padded out to `size`  |
+| Name    | Type   | Size         | Description                                                         |
+|---------|--------|--------------|---------------------------------------------------------------------|
+| `flags` | int    | 2 bytes      | Bit 0 is set to 1 if the entry is a directory, 0 if a regular file. |
+| `size`  | int    | 2 bytes      | The number of bytes allocated for the name of the entry.            |
+| `name`  | string | `size` bytes | A null terminated string containing the name, padded out to `size`  |
 
 In assembly, this structure can be allocated in the `.data` section like this:
 
@@ -429,11 +428,11 @@ bytes can be copied into `name`.
 The `rfile` syscall has special handling for files ending in the `.cells` extension. When
 reading such files, `a2` is the number of columns (width) to read and `a3` is the number
 of rows (height) to read. The total number of bytes written will be `a2 * a3 / 8` rounded
-up. 
+up.
 
 Rather than reading bytes directly, a 2 dimensional bitmap is encoded in a text file with
 the capital letter 'O' representing a 1 and a '.' representing a 0. Every four characters
-is one byte of data. 
+is one byte of data.
 
 Lines are read to a maximum of `a2` and a maximum of `a3` lines are read. Missing data on
 a line is automatically zero filled. Lines starting with `!` are ignored as comments.

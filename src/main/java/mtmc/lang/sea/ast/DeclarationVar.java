@@ -13,4 +13,8 @@ public final class DeclarationVar extends Declaration {
         this.name = name;
         this.initializer = initializer;
     }
+
+    public String name() {
+        return this.name.content();
+    }
 }

@@ -534,4 +534,44 @@ public class SeaCompilationTests {
                 """);
         assertEquals("name = dillon, age = 21\n from Bozeman, MT\nname = dillon, age = 22\n from Jamestown, ND\n", output);
     }
+
+    @Test
+    public void testMultiplyStack() {
+        var output = compileAndRun("""
+                int printf(char *s, ...);
+                
+                int square(int i) {
+                    return i * i;
+                }
+                
+                int main() {
+                    int x = square(3);
+                    printf("%d\\n", x);
+                    return 0;
+                }
+                """);
+
+        assertEquals("9\n", output);
+    }
+
+    @Test
+    public void argumenmtAssignment() {
+        var output = compileAndRun("""
+                int printf(char *s, ...);
+                
+                int double(int i) {
+                    i = i + i;
+                    return i;
+                }
+                
+                int main() {
+                    int x = double(3);
+                    printf("%d\\n", x);
+                    return 0;
+                }
+                
+                """);
+
+        assertEquals("6\n", output);
+    }
 }

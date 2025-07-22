@@ -7,6 +7,7 @@ import mtmc.lang.sea.ast.*;
 import mtmc.os.exec.Executable;
 import mtmc.util.StringEscapeUtils;
 
+import java.io.IOException;
 import java.util.*;
 
 public class SeaCompiler {
@@ -167,15 +168,14 @@ public class SeaCompiler {
             code.append("@line ").append(lineNo).append('\n');
             currentLineNo = lineNo;
         }
-        code.append("  push ra\n");
         code.append("  push fp\n");
         code.append("  mov fp sp\n");
 
-        var frame = new Frame();
-        int i = 0;
+        var frame = new Frame(func.params);
         for (DeclarationFunc.Param param : func.params.params()) {
-            frame.add(param.name.content(), 2);
-            code.append("  push a").append(i++).append("\n");
+            int typeSize = param.type.type().size();
+            assert typeSize == 2;
+            frame.add(param.name.content(), typeSize);
         }
 
         int maxLocalSize = calcMaxLocalSize(func.body);
@@ -376,7 +376,6 @@ public class SeaCompiler {
         }
         code.append("  mov sp fp\n");
         code.append("  pop fp\n");
-        code.append("  pop ra\n");
         code.append("  ret\n");
     }
 
@@ -488,7 +487,7 @@ public class SeaCompiler {
         int fieldOffset = 0;
         Expression base = expr;
         while (base instanceof ExpressionAccess acc) {
-            fieldOffset += getFieldOffset((SeaType.Struct) acc.value.type(), acc.ident.name());
+            fieldOffset += getFieldOffset((SeaType.Struct) acc.value.type(), acc.prop.content());
             base = acc.value;
         }
         if (!(base instanceof ExpressionIdent ident)) {
@@ -541,8 +540,8 @@ public class SeaCompiler {
                 LinkedList<String> nameParts = new LinkedList<>();
                 Expression base = bin.lhs;
                 while (base instanceof ExpressionAccess acc) {
-                    nameParts.addFirst(acc.ident.name());
-                    fieldOffset += getFieldOffset((SeaType.Struct) acc.value.type(), acc.ident.name());
+                    nameParts.addFirst(acc.prop.content());
+                    fieldOffset += getFieldOffset((SeaType.Struct) acc.value.type(), acc.prop.content());
                     base = acc.value;
                 }
                 if (fieldOffset > 0) {
@@ -578,6 +577,10 @@ public class SeaCompiler {
 
                     if (globalLabels.containsKey(name)) {
                         code.append("  sw t0 ").append(globalLabels.get(name)).append('\n');
+                    } else if (frame.hasParameter(name)) {
+                        assert fieldOffset == 0;
+                        var reg = frame.getParamRegister(name);
+                        code.append("  mov ").append(reg).append(" t0\n");
                     } else {
                         var offset = frame.get(name);
                         if (offset > 15) {
@@ -676,26 +679,41 @@ public class SeaCompiler {
         }
     }
 
+    // TODO push/pop ra
     void compileCall(ExpressionCall expr, Frame frame, String dst) {
         if (expr.functor instanceof ExpressionIdent ident) {
             var func = program.symbols.get(ident.name());
-            if (!(func.type() instanceof SeaType.Func f)) {
+            if (!(func.type instanceof SeaType.Func f)) {
                 throw new UnsupportedOperationException("cannot invoke non-function");
             }
+
+            int noParams = frame.parameters.size();
+            for (int i = 0; i < noParams; i++) {
+                code.append("  push a").append(i).append("\n");
+            }
+            code.append("  push ra\n");
 
             for (int i = 0; i < f.params().size(); i++) {
                 compile(expr.args.get(i), frame, "a" + i);
             }
-            code.append("  mov a").append(f.params().size()).append(" sp\n"); // move the starting pointer as the last hidden argument
-            for (int i = f.params().size(); i < expr.args.size(); i++) {
-                compile(expr.args.get(i), frame, null);
+            if (f.isVararg()) {
+                code.append("  mov a").append(f.params().size()).append(" sp\n"); // move the starting pointer as the last hidden argument
+                for (int i = f.params().size(); i < expr.args.size(); i++) {
+                    compile(expr.args.get(i), frame, null);
+                }
             }
 
             code.append("  jal ").append(ident.name()).append("\n");
+            code.append("  pop ra\n");
+            for (int i = noParams - 1; i >= 0; i--) {
+                code.append("  pop a").append(i).append("\n");
+            }
 
-            if (!func.type().resultType().isVoid()) {
+            if (!f.resultType().isVoid()) {
                 if (dst != null) {
-                    code.append("  mov ").append(dst).append(" rv\n");
+                    if (!dst.equals("rv")) {
+                        code.append("  mov ").append(dst).append(" rv\n");
+                    }
                 } else {
                     code.append("  push rv\n");
                 }
@@ -764,6 +782,13 @@ public class SeaCompiler {
                 code.append("  push t0\n");
             } else {
                 code.append("  ").append(insr).append(" ").append(dst).append(" ").append(label).append('\n');
+            }
+        } else if (frame.hasParameter(ident.name())) {
+            String reg = frame.getParamRegister(ident.name());
+            if (dst == null) {
+                code.append("  push ").append(reg).append('\n');
+            } else if (!dst.equals(reg)) {
+                code.append("  mov ").append(dst).append(' ').append(reg).append('\n');
             }
         } else {
             var offset = frame.get(ident.name());
@@ -1115,8 +1140,29 @@ public class SeaCompiler {
     }
 
     static class Frame {
+        private final LinkedHashMap<String, DeclarationFunc.Param> parameters = new LinkedHashMap<>();
+        private final LinkedHashMap<String, String> paramRegisters = new LinkedHashMap<>();
         private final LinkedHashMap<String, Integer> offsets = new LinkedHashMap<>();
         private int totalSize = 0;
+
+        Frame(DeclarationFunc.ParamList params) {
+            int i = 0;
+            for (var param : params.params()) {
+                int typeSize = param.type.type().size();
+                assert typeSize == 2;
+                parameters.put(param.name.content(), param);
+                paramRegisters.put(param.name.content(), "a" + i);
+                i += 1;
+            }
+        }
+
+        boolean hasParameter(String name) {
+            return parameters.containsKey(name);
+        }
+
+        String getParamRegister(String name) {
+            return paramRegisters.get(name);
+        }
 
         int get(String name) {
             return offsets.get(name);

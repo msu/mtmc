@@ -4,6 +4,7 @@ import mtmc.lang.ParseException;
 import mtmc.lang.ParseException.Message;
 import mtmc.lang.Span;
 import mtmc.lang.sea.ast.*;
+import mtmc.util.SafeClosable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,12 +18,9 @@ public class SeaParser {
     private final List<Token> tokens;
     private int index = 0;
 
+    // a list of "global" symbols
     private final LinkedHashMap<String, Symbol> symbols;
-    private Vector<LinkedHashMap<String, Symbol>> scope = new Vector<>();
-
-    {
-        scope.add(new LinkedHashMap<>());
-    }
+    private Scope scope = null;
 
     public SeaParser(String filename, String source, @NotNull List<Token> tokens) {
         this.filename = filename;
@@ -60,7 +58,7 @@ public class SeaParser {
             declarations.add(new DeclarationSyntaxError(Token.SOF, new ParseException(msg)));
         } else {
             var main = symbols.get("main");
-            var type = (SeaType.Func) main.type();
+            SeaType.Func type = (SeaType.Func) main.type;
             if (!type.params().isEmpty() && (type.params().size() != 1 || !type.params().getFirst().isAPointerTo(SeaType.CHAR))) {
                 var msg = new Message(Token.SOF, "no entrypoint, 'int main(char*)' or 'int main()' was defined");
                 declarations.add(new DeclarationSyntaxError(Token.SOF, new ParseException(msg)));
@@ -72,6 +70,7 @@ public class SeaParser {
 
     public DeclarationFunc.ParamList parseParamList() throws ParseException {
         var params = new ArrayList<DeclarationFunc.Param>();
+        var names = new HashMap<String, Token>();
         boolean isVararg = false;
         while (hasMoreTokens() && !match(RIGHT_PAREN)) {
             if (take(DOT3)) {
@@ -85,8 +84,23 @@ public class SeaParser {
                 throw new ParseException(new Message(paramType.span(), "expected parameter name after type declarator"));
             }
             var paramName = consume();
-
             paramType = parseCompoundType(paramType, paramName);
+
+            SeaType paramTy = paramType.type();
+            if (paramType.type().size() != 2) {
+                throw new ParseException(
+                    new Message(paramName, "parameters must be word-sized arguments, the type " + paramTy.repr() + " is in correctly sized!")
+                );
+            }
+
+            Token prevName = names.put(paramName.content(), paramName);
+            if (prevName != null) {
+                throw new ParseException(
+                        new Message(paramName, "the parameter name '" + paramName.content() + "' was used twice!"),
+                        new Message(prevName, "it was previously defined here")
+                );
+            }
+
             params.add(new DeclarationFunc.Param(paramType, paramName));
 
             if (!take(COMMA)) break;
@@ -135,7 +149,7 @@ public class SeaParser {
         }
 
         var typedef = new DeclarationTypedef(start, type, name, type.end.end() < name.end() ? name : type.end);
-        symbols.put(name.content(), new Symbol(name, typedef));
+        symbols.put(name.content(), new Symbol(typedef));
         return typedef;
     }
 
@@ -187,7 +201,7 @@ public class SeaParser {
         }
 
         var struct = new DeclarationStruct(start, name, fields, end);
-        symbols.put(name.content(), new Symbol(name, struct));
+        symbols.put(name.content(), new Symbol(struct));
         return struct;
     }
 
@@ -287,22 +301,14 @@ public class SeaParser {
                 }
             } else {
                 bodyBrace = peekToken();
-                scope = new Vector<>();
-                var paramScope = new LinkedHashMap<String, Symbol>();
-                scope.add(paramScope);
-                for (DeclarationFunc.Param param : paramList.params()) {
-                    if (!defineLocal(param.name, param.type.type())) {
-                        throw new ParseException(new Message(name, "the parameter name '" + name.content() + "' was used twice!"));
-                    }
-                }
+                scope = new Scope(paramList);
                 body = parseStatementBlock();
-                scope.removeLast();
                 scope = null;
                 bodyBrace = null;
             }
 
             var func = new DeclarationFunc(type, name, paramList, body, body == null ? lastToken() : body.end);
-            symbols.put(name.content(), new Symbol(name, func.type()));
+            symbols.put(name.content(), new Symbol(func));
             return func;
         } else {
             type = parseCompoundType(type, name);
@@ -317,7 +323,7 @@ public class SeaParser {
             }
 
             var decl = new DeclarationVar(type, name, init);
-            symbols.put(name.content(), new Symbol(name, type.type()));
+            symbols.put(name.content(), new Symbol(decl));
             return decl;
         }
     }
@@ -348,7 +354,7 @@ public class SeaParser {
         if (!match(LIT_IDENT)) return false;
         var ident = peekToken();
         if (!symbols.containsKey(ident.content())) return false;
-        return symbols.get(ident.content()).typedef() != null;
+        return symbols.get(ident.content()).typeDecl != null;
     }
 
     @NotNull
@@ -363,8 +369,8 @@ public class SeaParser {
         var tok = lastToken();
         if (symbols.containsKey(tok.content())) {
             var sym = symbols.get(tok.content());
-            if (sym.typedef() != null) {
-                return new TypeExprRef(tok, sym.typedef());
+            if (sym.typeDecl != null) {
+                return new TypeExprRef(tok, sym.typeDecl);
             } else {
                 throw new ParseException(new Message(tok, tok.content() + " is not a type"));
             }
@@ -491,50 +497,38 @@ public class SeaParser {
 
         if (!take(LEFT_PAREN)) throw new ParseException(new Message(lastToken(), "expected '(' after 'for'"));
 
-        scope.add(new LinkedHashMap<>());
-        Expression initExpr = null;
-        StatementVar initStmt = null;
-        if (peekTypeName()) {
-            initStmt = parseStatementVar();
-        } else {
-            initExpr = parseExpression();
-        }
-
-        if (!take(SEMICOLON)) {
-            throw new ParseException(new Message(peekToken(), "expected ';' after for initializer"));
-        }
-
-        @Nullable Expression condition = parseExpression();
-
-        if (!take(SEMICOLON)) throw new ParseException(new Message(peekToken(), "expected ';' after for condition"));
-        Expression incr = parseExpression();
-
-        if (!take(RIGHT_PAREN))
-            throw new ParseException(new Message(peekToken(), "expected ')' after for-loop condition"));
-
-        var body = parseStatement();
-
-        scope.removeLast();
-        return new StatementFor(start, initExpr, initStmt, condition, incr, body);
-    }
-
-    boolean defineLocal(Token token, SeaType type) {
-        for (var frame : scope) {
-            if (frame.containsKey(token.content())) {
-                return false;
+        try (var _frame = scope.push()) {
+            Expression initExpr = null;
+            StatementVar initStmt = null;
+            if (peekTypeName()) {
+                initStmt = parseStatementVar();
+            } else {
+                initExpr = parseExpression();
             }
-        }
 
-        scope.getLast().put(token.content(), new Symbol(token, type));
-        return true;
+            if (!take(SEMICOLON)) {
+                throw new ParseException(new Message(peekToken(), "expected ';' after for initializer"));
+            }
+
+            @Nullable Expression condition = parseExpression();
+
+            if (!take(SEMICOLON))
+                throw new ParseException(new Message(peekToken(), "expected ';' after for condition"));
+            Expression incr = parseExpression();
+
+            if (!take(RIGHT_PAREN))
+                throw new ParseException(new Message(peekToken(), "expected ')' after for-loop condition"));
+
+            var body = parseStatement();
+            return new StatementFor(start, initExpr, initStmt, condition, incr, body);
+        }
     }
 
     Symbol resolveSymbol(String name) {
         if (scope != null) {
-            for (var frame : scope) {
-                if (frame.containsKey(name)) {
-                    return frame.get(name);
-                }
+            Symbol symbol = scope.getOrNull(name);
+            if (symbol != null) {
+                return symbol;
             }
         }
         if (symbols.containsKey(name)) {
@@ -552,7 +546,7 @@ public class SeaParser {
         Token name = lastToken();
         type = parseCompoundType(type, name);
 
-        if (!defineLocal(name, type.type())) {
+        if (scope.has(name.content())) {
             throw new ParseException(new Message(name, "the symbol '" + name.content() + "' shadows a previously defined symbol"));
         }
 
@@ -571,7 +565,9 @@ public class SeaParser {
             }
         }
 
-        return new StatementVar(type, name, value);
+        var stmt = new StatementVar(type, name, value);
+        scope.define(stmt);
+        return stmt;
     }
 
     StatementWhile parseStatementWhile() throws ParseException {
@@ -668,28 +664,28 @@ public class SeaParser {
         if (!take(LEFT_BRACE)) return null;
         var start = lastToken();
 
-        scope.add(new LinkedHashMap<>());
-        var stmts = new ArrayList<Statement>();
-        while (hasMoreTokens() && !match(RIGHT_BRACE)) {
-            var before = peekToken();
-            try {
-                var stmt = parseStatement();
-                stmts.add(stmt);
-            } catch (ParseException e) {
-                var stmt = new StatementSyntaxError(before, e);
-                stmts.add(stmt);
-                recover(start);
-                if (peekToken() == before) break;
+        try (var ignoredLayer = scope.push()) {
+            var stmts = new ArrayList<Statement>();
+            while (hasMoreTokens() && !match(RIGHT_BRACE)) {
+                var before = peekToken();
+                try {
+                    var stmt = parseStatement();
+                    stmts.add(stmt);
+                } catch (ParseException e) {
+                    var stmt = new StatementSyntaxError(before, e);
+                    stmts.add(stmt);
+                    recover(start);
+                    if (peekToken() == before) break;
+                }
             }
-        }
-        scope.removeLast();
 
-        if (!take(RIGHT_BRACE)) {
-            var msg = new Message(lastToken(), "expected '}' after block statement");
-            throw new ParseException(msg);
-        }
+            if (!take(RIGHT_BRACE)) {
+                var msg = new Message(lastToken(), "expected '}' after block statement");
+                throw new ParseException(msg);
+            }
 
-        return new StatementBlock(start, stmts, lastToken());
+            return new StatementBlock(start, stmts, lastToken());
+        }
     }
 
     public Expression parseExpression() {
@@ -709,7 +705,7 @@ public class SeaParser {
                 rhs = new ExpressionSyntaxError(peekToken(), "expected right hand side of assignment expression");
             }
 
-            if (expr.valueKind() != Expression.ValueKind.LValue) {
+            if (valueKind(expr) != Expression.ValueKind.Addressable) {
                 expr = new ExpressionTypeError(expr, "cannot assign to rvalue");
             }
             try {
@@ -1122,7 +1118,7 @@ public class SeaParser {
                         expr = new ExpressionTypeError(expr, "prefix operator '" + op.content() + "' is undefined on the type " + exprTy.repr());
                         yield SeaType.INT;
                     }
-                    if (expr.valueKind() != Expression.ValueKind.LValue) {
+                    if (valueKind(expr) != Expression.ValueKind.Addressable) {
                         expr = new ExpressionTypeError(expr, "cannot modify rvalue");
                     }
                     yield exprTy;
@@ -1147,7 +1143,7 @@ public class SeaParser {
                     yield exprTy.componentType();
                 }
                 case "&" -> {
-                    if (expr.valueKind() != Expression.ValueKind.LValue) {
+                    if (valueKind(expr) != Expression.ValueKind.Addressable) {
                         expr = new ExpressionTypeError(expr, "cannot reference non-lvalue");
                     }
                     yield new SeaType.Pointer(expr.type());
@@ -1158,6 +1154,36 @@ public class SeaParser {
         }
 
         return expr;
+    }
+
+    public Expression.ValueKind valueKind(Expression expr) {
+        return switch (expr) {
+            case ExpressionAccess ignored -> Expression.ValueKind.Addressable;
+            case ExpressionBin ignored -> Expression.ValueKind.Immediate;
+            case ExpressionCall ignored -> Expression.ValueKind.Immediate;
+            case ExpressionCast ignored -> Expression.ValueKind.Immediate;
+            case ExpressionChar ignored -> Expression.ValueKind.Immediate;
+            case ExpressionIdent id -> {
+                if (!id.isAddressable) yield Expression.ValueKind.Immediate;
+                yield Expression.ValueKind.Addressable;
+            }
+            case ExpressionInitializer ignored -> Expression.ValueKind.Immediate;
+            case ExpressionIndex ignored -> Expression.ValueKind.Addressable;
+            case ExpressionInteger ignored -> Expression.ValueKind.Immediate;
+            case ExpressionParens expressionParens -> valueKind(expressionParens.inner);
+            case ExpressionPostfix ignored -> Expression.ValueKind.Immediate;
+            case ExpressionPrefix prefix -> {
+                if (prefix.op().equals("*")) {
+                    yield Expression.ValueKind.Addressable;
+                } else {
+                    yield Expression.ValueKind.Immediate;
+                }
+            }
+            case ExpressionString ignored -> Expression.ValueKind.Addressable;
+            case ExpressionSyntaxError ignored -> Expression.ValueKind.Immediate;
+            case ExpressionTernary ignored -> Expression.ValueKind.Immediate;
+            case ExpressionTypeError ignored -> valueKind(ignored.inner);
+        };
     }
 
     public Expression parsePostfixExpression() {
@@ -1171,7 +1197,7 @@ public class SeaParser {
                 if (!exprType.isIntegral()) {
                     expr = new ExpressionTypeError(expr, "cannot increment non-integer type " + exprType.repr());
                 }
-                if (expr.valueKind() != Expression.ValueKind.LValue) {
+                if (valueKind(expr) != Expression.ValueKind.Addressable) {
                     expr = new ExpressionTypeError(expr, "cannot modify rvalue");
                 }
 
@@ -1181,16 +1207,17 @@ public class SeaParser {
                 if (!take(LIT_IDENT)) {
                     return new ExpressionSyntaxError(lastToken(), "expected property name after accessor");
                 }
-                var prop = new ExpressionIdent(lastToken(), SeaType.INT);
+                var prop = lastToken();
 
                 SeaType type = SeaType.INT;
                 var parentTy = expr.type();
                 if (!(parentTy instanceof SeaType.Struct structType)) {
                     expr = new ExpressionTypeError(expr, "cannot access non-structure types");
-                } else if (!structType.fields().containsKey(prop.name())) {
-                    expr = new ExpressionTypeError(prop, "the struct " + parentTy.repr() + " has no field '" + prop.name() + "'");
+                } else if (!structType.fields().containsKey(prop.content())) {
+                    expr = new ExpressionAccess(expr, access, prop, SeaType.INT);
+                    return new ExpressionTypeError(expr, "the struct " + parentTy.repr() + " has no field '" + prop.content() + "'");
                 } else {
-                    type = structType.field(prop.name());
+                    type = structType.field(prop.content());
                 }
 
                 expr = new ExpressionAccess(expr, access, prop, type);
@@ -1296,15 +1323,7 @@ public class SeaParser {
         } else if (match(LIT_CHAR)) {
             return new ExpressionChar(consume());
         } else if (match(LIT_IDENT)) {
-            var ident = consume();
-            var sym = resolveSymbol(ident.content());
-
-            if (sym == null || sym.type() == null) {
-                var expr = new ExpressionIdent(ident, SeaType.INT);
-                return new ExpressionTypeError(expr, "undefined symbol '" + ident.content() + "'");
-            } else {
-                return new ExpressionIdent(ident, sym.type());
-            }
+            return parseIdentExpression();
         } else if (take(LEFT_PAREN)) {
             var start = lastToken();
             var inner = parseExpression();
@@ -1334,6 +1353,19 @@ public class SeaParser {
             return new ExpressionInitializer(start, values, end);
         } else {
             return null;
+        }
+    }
+
+    public Expression parseIdentExpression() {
+        if (!take(LIT_IDENT)) return null;
+        var ident = lastToken();
+        var sym = resolveSymbol(ident.content());
+
+        if (sym == null || sym.type == null) {
+            var expr = new ExpressionIdent(ident, SeaType.INT, false);
+            return new ExpressionTypeError(expr, "undefined symbol '" + ident.content() + "'");
+        } else {
+            return new ExpressionIdent(ident, sym.type, true);
         }
     }
 
@@ -1425,5 +1457,46 @@ public class SeaParser {
 
     public List<Token> remainingTokens() {
         return tokens.subList(index, tokens.size());
+    }
+
+    private static class Scope {
+        private final Vector<LinkedHashMap<String, Symbol>> layers = new Vector<>();
+
+        Scope(DeclarationFunc.ParamList params) {
+            var map = new LinkedHashMap<String, Symbol>();
+            for (var param : params.params()) {
+                map.put(param.name.content(), new Symbol(param));
+            }
+            layers.add(map);
+        }
+
+        public Symbol getOrNull(String name) {
+            for (var layer : layers.reversed()) {
+                if (layer.containsKey(name)) {
+                    return layer.get(name);
+                }
+            }
+            return null;
+        }
+
+        public SafeClosable push() {
+            var layer = new LinkedHashMap<String, Symbol>();
+            layers.add(layer);
+            return () -> {
+                var removed = layers.removeLast();
+                if (layer != removed) {
+                    throw new AssertionError("scope popped out of order!");
+                }
+            };
+        }
+
+        public boolean define(StatementVar stmt) {
+            layers.lastElement().put(stmt.name(), new Symbol(stmt));
+            return true;
+        }
+
+        public boolean has(String content) {
+            return getOrNull(content) != null;
+        }
     }
 }

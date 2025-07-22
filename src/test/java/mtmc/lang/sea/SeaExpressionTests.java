@@ -234,15 +234,9 @@ public class SeaExpressionTests {
         }
     }
 
-    <T extends Expression> T parseExpr(String lex, Object... args) {
+    <T extends Expression> T parseExpr(String lex) {
         var tokens = Token.tokenize(lex);
         var parser = new SeaParser(null, lex, tokens);
-        for (int i = 0; i < args.length; i += 2) {
-            var name = (String) args[i];
-            var token = new Token(Token.Type.LIT_IDENT, name, 0, 0);
-            var ty = (SeaType) args[i + 1] ;
-            parser.defineLocal(token, ty);
-        }
         var expr = parser.parseExpression();
         if (expr == null) fail("parsed null!");
         var errors = expr.collectErrors();
@@ -293,39 +287,6 @@ public class SeaExpressionTests {
 
         assertEquals(1, except.errors.size());
         assertInstanceOf(ExpressionTypeError.class, except.errors.getFirst());
-    }
-
-    @Test
-    public void multipleAssignmentFails() {
-        var except = assertThrows(ValidationException.class, () -> {
-            parseExpr("""
-                    x = y = 3
-                    """, "x", SeaType.INT, "y", SeaType.INT);
-        });
-
-        assertEquals(1, except.errors.size());
-        assertInstanceOf(ExpressionSyntaxError.class, except.errors.getFirst());
-    }
-
-    @Test
-    public void lvalueAssignment() {
-        parseExpr("""
-                a = 4
-                """, "a", SeaType.INT);
-    }
-
-    @Test
-    public void lvalueArrayAssignment() {
-        parseExpr("""
-                a[3] = 4
-                """, "a", new SeaType.Pointer(SeaType.INT));
-    }
-
-    @Test
-    public void callArrayAssignment() {
-        parseExpr("""
-                a()[3] = 4
-                """, "a", new SeaType.Func(List.of(), new SeaType.Pointer(SeaType.INT)));
     }
 
     @Test

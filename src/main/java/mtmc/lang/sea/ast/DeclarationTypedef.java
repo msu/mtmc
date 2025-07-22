@@ -15,6 +15,11 @@ public final class DeclarationTypedef extends Declaration implements TypeDeclara
     }
 
     @Override
+    public String name() {
+        return name.content();
+    }
+
+    @Override
     public SeaType type() {
         return type.type();
     }

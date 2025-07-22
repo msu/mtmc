@@ -1,18 +1,27 @@
 # MTMC Assembly Guide
 
-## Overview
+## What is Assembly Language (and why should I care?)
 
-MTMC assembly has a fairly large number of core instruction (37 or 52, depending on how you count them) split across seven types:
+When you use a computer, you’re running programs. Maybe it's a game, a calculator, or something that writes text. But deep inside, every program is just a long list of instructions the computer follows.
 
-* Miscellaneous Instructions
-* ALU Related Instructions
-* Stack Related Instructions
-* The Call Instruction
-* Jump Instructions
-* The Load Immediate Instruction
-* Load/Store Instructions
+These instructions are made of bits. Ones and zeros. Eight bits make a byte. And on the MTMC-16, two bytes make a word. A word is the basic size of data this computer understands. So when the MTMC-16 runs a program, it reads one word at a time and tries to follow the instruction it finds there.
 
-The MTMC computer is a 16-bit machine with 4k of memory and 2-byte words.  Most operations work on 2-byte words.  Two data-types are supported: 16-bit signed integers and bytes/characters, which follow the ASCII standard.  
+All these instructions, when put together, are called machine code. The machine code tells the computer exactly what to do—like adding numbers, showing text, or moving data around in memory. But machine code is just numbers. It’s very hard for people to read or understand.
+
+That’s why Assembly Language exists. Assembly is a way to write those same instructions using words instead of numbers. For example, instead of writing `0001001000110100`, you might write something like `add t0 t1`. Each Assembly instruction matches one machine instruction, and it’s much easier to read.
+
+Learning Assembly Language helps you see how the computer really works. You’ll learn how it stores data, how it does math, and how it runs functions. You’ll even write your own programs, one instruction at a time.
+
+This guide will teach you how to write Assembly for the MTMC-16—a simple, virtual computer made to help you learn. You’ll see how programs are built from the ground up, and you’ll understand what your computer is really doing behind the scenes.
+
+
+## Registers and Memory
+
+The brain of a computer is called the CPU. It runs programs by following instructions, one at a time. But just like a person solving a math problem, the CPU needs a place to store numbers and keep track of what it's doing. That’s what registers are for.
+
+Registers are small, fast storage spaces inside the CPU. On the MTMC-16, there are 16 of them. Each register holds one word (that’s 2 bytes) or 16 bits. Some registers are used to hold temporary values. Some are used for passing arguments to functions. Others help the CPU remember where it is in a program or where to find more data.
+
+Registers are the CPU’s short-term memory. They are very fast, but there are only a few of them.
 
 There are 16 user-facing registers usable by name in assembly: 
 
@@ -35,6 +44,47 @@ There are 16 user-facing registers usable by name in assembly:
 | 14    | `bp`   | break pointer, points to the top of the current heap space            |
 | 15    | `pc`   | program counter, points to the next instruction to execute            |
 
+
+What happens if a program needs to store more than 16 values? That’s where memory comes in.
+
+Memory is much bigger than the registers. The MTMC-16 has 4,096 bytes of memory. That’s 2,048 words. This memory lives outside the CPU, but the CPU can read from it and write to it. You can think of it like a notebook the CPU can use when it runs out of space in its head.
+
+To get data from memory, the CPU uses special instructions. It can load a value from memory into a register, or store a value from a register back into memory. This lets the CPU work with much more information than it can fit in its registers alone.
+
+In Assembly, you’ll learn how to move values between memory and registers. You’ll also learn how to use the right register for the right job. Like holding return values, passing function arguments, or keeping track of the program’s progress.
+
+Once you understand how registers and memory work together, you’ll be ready to write your first real instructions.
+
+
+## Instructions
+
+MTMC assembly has a fairly large number of core instruction (37 or 52, depending on how you count them) split across seven types:
+
+* Miscellaneous Instructions
+* ALU Related Instructions
+* Stack Related Instructions
+* The Call Instruction
+* Jump Instructions
+* The Load Immediate Instruction
+* Load/Store Instructions
+
+The MTMC computer is a 16-bit machine with 4k of memory and 2-byte words.  Most operations work on 2-byte words.  Two data-types are supported: 16-bit signed integers and bytes/characters. Characters are interpreted according to the ASCII standard.  
+
+Some common instructions you will need to get started are:
+
+| instruction | parameters              | description                                                           |
+|-------------|-------------------------|-----------------------------------------------------------------------|
+| `li`        | `register` `integer`    | Load a static word (16-bit) value into the specified register         | 
+| `la`        | `register` `address`    | Load a static memory address (16-bit) value into the specified register  | 
+| `lw`        | `register` `address`    | Load the word (16-bit) stored at the memory address given into the specified register |
+| `lb`        | `register` `address`    | Load the byte (8-bit) stored at the memory address given into the specified register |
+| `sw`        | `register` `address`    | Store the value of the register (16-bit) into the memory address specified |
+| `sb`        | `register` `address`    | Store the lower-half of the register (8-bit) into the memory address specified |
+| `add`       | `register` `register`   | Add the value of the second register into the first register          |
+| `sub`       | `register` `register`   | Subtract the value of the second register from the first register     |
+| `sys`       | `sys call name`         | Call an operating system feature like `exit` and `wstr` (write string)|
+
+The full list of instructions are in the [MTMC Specification](MTMC_SPECIFICATION.md) document. 
 
 ## MTMC Assembly Basics
 
@@ -67,10 +117,10 @@ Here is a sample program continuing with the data section above:
 
 ```asm
 .text
-  ldi t0, example_str # load address of the string
-  mv a0, t0           # move it into the arg reg
-  sys wstr            # write the string to the console
-  sys exit            # exit the program  
+  la  t0 example_str    # load address of the string into t0
+  mov a0 t0             # move the first general purpose register into the first argument register
+  sys wstr              # write the string to the console
+  sys exit              # exit the program  
 ```
 
 This program loads the address of the string into `t0` then moves it to `a0`, then invokes the `wstr` system call, asking the operating system to write the string to the console.  Finally, the program exits.

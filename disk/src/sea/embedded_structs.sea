@@ -1,0 +1,23 @@
+int printf(char *s, ...);
+
+struct Address {
+    char *city;
+    char *state;
+};
+
+struct Person {
+    char *name;
+    int age;
+    Address addr;
+};
+
+Person gc1 = {"ssorg nosrac", -1, {"Bozeman", "MT"}};
+
+int main() {
+    gc1.name = "carson gross";
+    gc1.age = 46;
+    gc1.addr = {"San Francisco", "CA"};
+    printf("%s %d from %s, %s\n", gc1.name, gc1.age,
+        gc1.addr.city, gc1.addr.state);
+    return 0;
+}

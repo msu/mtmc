@@ -7,8 +7,11 @@ import mtmc.lang.sea.ast.*;
 import mtmc.os.exec.Executable;
 import mtmc.util.StringEscapeUtils;
 
-import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static mtmc.lang.sea.SeaCompiler.MemLoc.*;
+import static mtmc.util.StringEscapeUtils.escapeString;
 
 public class SeaCompiler {
     protected Unit program;
@@ -57,7 +60,7 @@ public class SeaCompiler {
         String asm = "";
 
         if (this.program.filename != null) {
-            asm += "@file " + StringEscapeUtils.escapeString(this.program.filename) + "\n";
+            asm += "@file " + escapeString(this.program.filename) + "\n";
         }
 
         if (!data.isBlank()) {
@@ -300,7 +303,7 @@ public class SeaCompiler {
         currentLoopBreakLabel.pop();
 
         code.append(cond).append(":\n");
-        compile(stmt.condition, frame, "t0");
+        compile(stmt.condition, frame, T0);
         code.append("  eqi t0 1\n");
         code.append("  jnz ").append(head).append("\n");
         code.append(tail).append(":\n");
@@ -308,7 +311,7 @@ public class SeaCompiler {
 
     void compile(StatementExpression stmt, Frame frame) {
         code.append("# stmt expr\n");
-        compile(stmt.expression, frame, "t0");
+        compile(stmt.expression, frame, T0);
     }
 
     void compileFor(StatementFor stmt, Frame frame) {
@@ -318,14 +321,14 @@ public class SeaCompiler {
         String tail = "endFor" + label;
 
         if (stmt.initExpression != null) {
-            compile(stmt.initExpression, frame, "t0");
+            compile(stmt.initExpression, frame, T0);
         } else if (stmt.initStatement != null) {
             frame.add(stmt.initStatement.name(), stmt.initStatement.type.type().size());
             compile(stmt.initStatement, frame);
         }
 
         code.append(head).append(":\n");
-        compile(stmt.condition, frame, "t0");
+        compile(stmt.condition, frame, T0);
         code.append("  eqi t0 0\n");
         code.append("  jnz ").append(tail).append("\n");
 
@@ -337,7 +340,7 @@ public class SeaCompiler {
 
         if (stmt.inc != null) {
             code.append(cont).append(":\n");
-            compile(stmt.inc, frame, "t0");
+            compile(stmt.inc, frame, T0);
         }
         code.append("  j ").append(head).append("\n");
         code.append(tail).append(":\n");
@@ -355,7 +358,7 @@ public class SeaCompiler {
         String elseLabel = "ifElse" + labelNo++;
         String endLabel = "endIf" + labelNo++;
 
-        compile(stmt.condition, frame, "t0");
+        compile(stmt.condition, frame, T0);
         code.append("  eqi t0 0\n");
         if (stmt.elseBody != null) {
             code.append("  jnz ").append(elseLabel).append("\n");
@@ -372,7 +375,7 @@ public class SeaCompiler {
 
     void compile(StatementReturn stmt, Frame frame) {
         if (stmt.value != null) {
-            compile(stmt.value, frame, "rv");
+            compile(stmt.value, frame, RV);
         }
         code.append("  mov sp fp\n");
         code.append("  pop fp\n");
@@ -382,23 +385,14 @@ public class SeaCompiler {
     void compile(StatementVar stmt, Frame frame) {
         if (stmt.initValue != null) {
             code.append("# var ").append(stmt.name()).append('\n');
-            compile(stmt.initValue, frame, "t0");
-            var offset = frame.get(stmt.name());
-            int varSize = stmt.type.type().size();
-            if (varSize == 2) {
-//                if (offset > 15) {
-//                    String label = internConstant(-offset);
-//                    code.append("  lw t3 ").append(label).append('\n');
-//                } else {
-//                    code.append("  li t3 ").append(-offset).append("\n");
-//                }
-                code.append("  swo t0 fp ").append(-offset).append("\n");
+            int valueSize = stmt.type.type().size();
+            var offset = frame.getBaseOffset(stmt.name());
+            if (valueSize <= 2) {
+                compile(stmt.initValue, frame, T0);
+                storeToFrame(T0, offset, valueSize);
             } else {
-                code.append("  mov t0 sp\n");
-                code.append("  mov t1 fp\n");
-                subRegister("t1", offset + varSize);
-                code.append("  mcp t0 t1 ").append(varSize).append("\n");
-                addRegister("sp", varSize);
+                compile(stmt.initValue, frame, STACK);
+                storeToFrame(STACK, offset, valueSize);
             }
         }
     }
@@ -409,7 +403,7 @@ public class SeaCompiler {
         var tailLabel = "endWhile" + label;
 
         code.append(headLabel).append(":\n");
-        compile(stmt.condition, frame, "t0");
+        compile(stmt.condition, frame, T0);
         code.append("  eqi t0 0\n");
         code.append("  jnz ").append(tailLabel).append("\n");
         currentLoopContinueLabel.push(headLabel);
@@ -422,7 +416,7 @@ public class SeaCompiler {
 
     }
 
-    void compile(Expression expression, Frame frame, String dst) {
+    void compile(Expression expression, Frame frame, MemLoc dst) {
         int lineNo = Token.getLineAndOffset(program.source, expression.start.start())[0];
         if (currentLineNo != lineNo) {
             code.append("@line ").append(lineNo).append('\n');
@@ -459,31 +453,33 @@ public class SeaCompiler {
         return off;
     }
 
-    void addRegister(String reg, int value) {
+    void addRegister(MemLoc dst, int value) {
         assert value >= 0;
+        assert dst != null && dst != STACK;
         if (value == 0) return;
         if (value > 15) {
-            String tmp = reg.equals("t0") ? "t1" : "t0";
+            MemLoc tmp = dst == T0 ? T1 : T0;
             code.append("  li ").append(tmp).append(" ").append(value).append('\n');
-            code.append("  add ").append(reg).append(" t0").append('\n');
+            code.append("  add ").append(dst).append(" t0").append('\n');
         } else {
-            code.append("  inc ").append(reg).append(" ").append(value).append('\n');
+            code.append("  inc ").append(dst).append(" ").append(value).append('\n');
         }
     }
 
-    void subRegister(String reg, int value) {
+    void subRegister(MemLoc dst, int value) {
         assert value >= 0;
+        assert dst != null && dst != STACK;
         if (value == 0) return;
         if (value > 15) {
-            String tmp = reg.equals("t0") ? "t1" : "t0";
+            MemLoc tmp = dst == T0 ? T1 : T0;
             code.append("  li ").append(tmp).append(" ").append(value).append('\n');
-            code.append("  sub ").append(reg).append(" ").append(tmp).append('\n');
+            code.append("  sub ").append(dst).append(" t0").append('\n');
         } else {
-            code.append("  dec ").append(reg).append(" ").append(value).append('\n');
+            code.append("  dec ").append(dst).append(" ").append(value).append('\n');
         }
     }
 
-    void compileAccess(ExpressionAccess expr, Frame frame, String dst) {
+    void compileAccess(ExpressionAccess expr, Frame frame, MemLoc dst) {
         int fieldOffset = 0;
         Expression base = expr;
         while (base instanceof ExpressionAccess acc) {
@@ -499,17 +495,17 @@ public class SeaCompiler {
             if (globalLabels.containsKey(ident.name())) {
                 var label = globalLabels.get(ident.name());
                 code.append("  la t2 ").append(label).append('\n');
-                if (dst == null) {
-                    code.append("  lwo t0 t2 ").append(-fieldOffset).append('\n');
+                int off = -(fieldOffset + 2);
+                if (dst == STACK) {
+                    code.append("  lwo t0 t2 ").append(off).append('\n');
                     code.append("  push t0\n");
                 } else {
-                    code.append("  lwo ").append(dst).append(" ").append(-fieldOffset).append('\n');
+                    code.append("  lwo ").append(dst).append(" ").append(off).append('\n');
                 }
             } else {
-                int offset = frame.get(ident.name());
+                int offset = frame.getBaseOffset(ident.name());
                 int off = -(offset + fieldOffset + valueSize);
-//                code.append("  li t3 ").append().append('\n');
-                if (dst == null) {
+                if (dst == STACK) {
                     code.append("  lwo t0 fp ").append(off).append("\n");
                     code.append("  push t0\n");
                 } else {
@@ -517,22 +513,22 @@ public class SeaCompiler {
                 }
             }
         } else {
-            assert dst == null;
+            assert dst == STACK;
             if (globalLabels.containsKey(ident.name())) {
                 var label = globalLabels.get(ident.name());
                 code.append("  la t2 ").append(label).append('\n');
-                addRegister("t2", fieldOffset);
+                addRegister(T2, fieldOffset);
             } else {
-                var offset = frame.get(ident.name());
+                var offset = frame.getBaseOffset(ident.name());
                 code.append("  mov t2 fp\n");
-                addRegister("t2", offset + fieldOffset + valueSize);
+                addRegister(T2, offset + fieldOffset + valueSize);
             }
-            subRegister("sp", valueSize);
+            subRegister(SP, valueSize);
             code.append("  mcp t2 sp ").append(valueSize).append('\n');
         }
     }
 
-    void compileBin(ExpressionBin bin, Frame frame, String dst) {
+    void compileBin(ExpressionBin bin, Frame frame, MemLoc dst) {
         switch (bin.op()) {
             case "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=" -> {
                 int fieldOffset = 0;
@@ -544,9 +540,6 @@ public class SeaCompiler {
                     fieldOffset += getFieldOffset((SeaType.Struct) acc.value.type(), acc.prop.content());
                     base = acc.value;
                 }
-                if (fieldOffset > 0) {
-                    fieldOffset += valueSize; // i dunno man
-                }
                 if (!(base instanceof ExpressionIdent id)) {
                     throw new UnsupportedOperationException("cannot compile non-ident/access");
                 }
@@ -554,12 +547,12 @@ public class SeaCompiler {
                 code.append("# store ").append(String.join(".", nameParts)).append('\n');
 
                 String name = id.name();
-                if (valueSize == 2) {
+                if (valueSize <= 2) {
                     if (bin.op().equals("=")) {
-                        compile(bin.rhs, frame, "t0");
+                        compile(bin.rhs, frame, T0);
                     } else {
-                        compile(id, frame, "t0");
-                        compile(bin.rhs, frame, "t1");
+                        compile(id, frame, T0);
+                        compile(bin.rhs, frame, T1);
                         switch (bin.op()) {
                             case "+=" -> code.append("  add t0 t1\n");
                             case "-=" -> code.append("  sub t0 t1\n");
@@ -576,38 +569,31 @@ public class SeaCompiler {
                     }
 
                     if (globalLabels.containsKey(name)) {
-                        code.append("  sw t0 ").append(globalLabels.get(name)).append('\n');
+                        var label = globalLabels.get(name);
+                        storeGlobalValue(label, fieldOffset, valueSize, T0);
                     } else if (frame.hasParameter(name)) {
                         assert fieldOffset == 0;
-                        var reg = frame.getParamRegister(name);
-                        code.append("  mov ").append(reg).append(" t0\n");
+                        storeToRegister(T0, frame.getParamRegister(name));
                     } else {
-                        var offset = frame.get(name);
-//                        if (offset > 15) {
-//                            String label = internConstant(-(offset + fieldOffset));
-//                            code.append("  lw t1 ").append(label).append('\n');
-//                        } else {
-//                            code.append("  li t1 ").append(-(offset + fieldOffset)).append('\n');
-//                        }
-                        var off = -(offset + fieldOffset);
-                        code.append("  swo t0 fp ").append(off).append("\n");
+                        var offset = frame.getBaseOffset(name);
+                        storeToFrame(T0, offset + fieldOffset, 2);
                     }
                 } else {
                     assert bin.op().equals("=");
-                    // TODO: large assignment
-//                    compileLocation(bin.rhs, frame, "t2");
-//
-//                    if (globalLabels.containsKey(name)) {
-//
-//                    } else {
-//                        var offset = frame.get(name);
-//                        code.append("  mcp t2 t3 ").append(valueSize).append('\n');
-//                    }
+                    compile(bin.rhs, frame, STACK);
+
+                    if (globalLabels.containsKey(name)) {
+                        var label = globalLabels.get(name);
+                        storeGlobalValue(label, fieldOffset, valueSize, STACK);
+                    } else {
+                        var offset = frame.getBaseOffset(name);
+                        storeToFrame(STACK, offset + fieldOffset, valueSize);
+                    }
                 }
             }
             case "<", ">", "<=", ">=", "==", "!=" -> {
                 int label = labelNo++;
-                var insr = dst == null ? "pushi" : "li " + dst;
+                var insr = dst == STACK ? "pushi" : "li " + dst;
                 compileBranchingInstruction(
                         bin,
                         frame,
@@ -619,15 +605,15 @@ public class SeaCompiler {
             }
             case "&&" -> {
                 int label = labelNo++;
-                var insr = dst == null ? "pushi" : "li " + dst;
+                var insr = dst == STACK ? "pushi" : "li " + dst;
 
                 String falseLabel = "andFalse" + label;
                 String endLabel = "andEnd" + label;
 
-                compile(bin.lhs, frame, "t4");
+                compile(bin.lhs, frame, T4);
                 code.append("  eqi t4 0\n");
                 code.append("  jnz ").append(falseLabel).append('\n');
-                compile(bin.rhs, frame, "t4");
+                compile(bin.rhs, frame, T4);
                 code.append("  eqi t4 0\n");
                 code.append("  jnz ").append(falseLabel).append('\n');
                 code.append("  ").append(insr).append(" 1\n");
@@ -638,15 +624,15 @@ public class SeaCompiler {
             }
             case "||" -> {
                 int label = labelNo++;
-                var insr = dst == null ? "pushi" : "li " + dst;
+                var insr = dst == STACK ? "pushi" : "li " + dst;
 
                 String trueLabel = "orTrue" + label;
                 String endLabel = "orEnd" + label;
 
-                compile(bin.lhs, frame, "t4");
+                compile(bin.lhs, frame, T4);
                 code.append("  eqi t4 0\n");
                 code.append("  jz ").append(trueLabel).append('\n');
-                compile(bin.rhs, frame, "t4");
+                compile(bin.rhs, frame, T4);
                 code.append("  eqi t4 0\n");
                 code.append("  jz ").append(trueLabel).append('\n');
                 code.append("  ").append(insr).append(" 0\n");
@@ -656,8 +642,8 @@ public class SeaCompiler {
                 code.append(endLabel).append(":\n");
             }
             default -> {
-                compile(bin.lhs, frame, null);
-                compile(bin.rhs, frame, null);
+                compile(bin.lhs, frame, STACK);
+                compile(bin.rhs, frame, STACK);
                 code.append("  ");
                 switch (bin.op()) {
                     case "+" -> code.append("sadd");
@@ -673,7 +659,7 @@ public class SeaCompiler {
                     case String s -> throw new RuntimeException(" unimplemented, bin " + s);
                 }
                 code.append("\n");
-                if (dst != null) {
+                if (dst != STACK) {
                     code.append("  pop ").append(dst).append("\n");
                 }
             }
@@ -681,7 +667,7 @@ public class SeaCompiler {
     }
 
     // TODO push/pop ra
-    void compileCall(ExpressionCall expr, Frame frame, String dst) {
+    void compileCall(ExpressionCall expr, Frame frame, MemLoc dst) {
         if (expr.functor instanceof ExpressionIdent ident) {
             var func = program.symbols.get(ident.name());
             if (!(func.type instanceof SeaType.Func f)) {
@@ -695,12 +681,12 @@ public class SeaCompiler {
             code.append("  push ra\n");
 
             for (int i = 0; i < f.params().size(); i++) {
-                compile(expr.args.get(i), frame, "a" + i);
+                compile(expr.args.get(i), frame, MemLoc.of("a" + i));
             }
             if (f.isVararg()) {
                 code.append("  mov a").append(f.params().size()).append(" sp\n"); // move the starting pointer as the last hidden argument
                 for (int i = f.params().size(); i < expr.args.size(); i++) {
-                    compile(expr.args.get(i), frame, null);
+                    compile(expr.args.get(i), frame, STACK);
                 }
             }
 
@@ -711,8 +697,8 @@ public class SeaCompiler {
             }
 
             if (!f.resultType().isVoid()) {
-                if (dst != null) {
-                    if (!dst.equals("rv")) {
+                if (dst != STACK) {
+                    if (dst != RV) {
                         code.append("  mov ").append(dst).append(" rv\n");
                     }
                 } else {
@@ -725,7 +711,7 @@ public class SeaCompiler {
         }
     }
 
-    void compileCast(ExpressionCast ignoredExpr, Frame ignored, String ignoredDst) {
+    void compileCast(ExpressionCast ignoredExpr, Frame ignored, MemLoc ignoredDst) {
         throw new RuntimeException("unimplemented");
     }
 
@@ -742,7 +728,7 @@ public class SeaCompiler {
         switch (constant) {
             case String s -> {
                 label = "str" + Integer.toHexString(s.hashCode()).toUpperCase();
-                valueStr = StringEscapeUtils.escapeString(s);
+                valueStr = escapeString(s);
             }
             case Integer i -> {
                 label = "num" + (i < 0 ? "_" + -i : i);
@@ -756,62 +742,249 @@ public class SeaCompiler {
         return label;
     }
 
-    void compileChar(ExpressionChar expr, Frame ignored, String dst) {
+    void compileChar(ExpressionChar expr, Frame ignored, MemLoc dst) {
         var rune = (int) expr.content();
         if (rune >= 16) {
             String label = internConstant(rune);
-            if (dst != null) {
+            if (dst != STACK) {
                 code.append("  lw ").append(dst).append(" ").append(label).append('\n');
             } else {
                 code.append("  lw t0 ").append(label).append('\n');
                 code.append("  spush\n");
             }
-        } else if (dst == null) {
+        } else if (dst == STACK) {
             code.append("  pushi ").append(rune).append("\n");
         } else {
             code.append("  li ").append(dst).append(" ").append(rune).append("\n");
         }
     }
 
-    void compileIdent(ExpressionIdent ident, Frame frame, String dst) {
-        code.append("# load ").append(ident.name()).append("\n");
-        if (globalLabels.containsKey(ident.name())) {
-            var label = globalLabels.get(ident.name());
-            String insr = ident.type().isAPointerTo(SeaType.CHAR) ? "la" : "lw";
-            if (dst == null) {
-                code.append("  ").append(insr).append(" t0 ").append(label).append('\n');
-                code.append("  push t0\n");
-            } else {
-                code.append("  ").append(insr).append(" ").append(dst).append(" ").append(label).append('\n');
+    enum MemLoc {
+        A0("a0"),
+        T0("t0"),
+        T1("t1"),
+        T2("t2"),
+        T3("t3"),
+        T4("t4"),
+        T5("t5"),
+        SP("sp"),
+        RV("rv"),
+        STACK(null);
+
+        public final String label;
+
+        MemLoc(String label) {
+            this.label = label;
+        }
+
+        public static MemLoc of(String value) {
+            for (MemLoc l : values()) {
+                if (Objects.equals(value, l.label)) {
+                    return l;
+                }
             }
-        } else if (frame.hasParameter(ident.name())) {
-            String reg = frame.getParamRegister(ident.name());
-            if (dst == null) {
-                code.append("  push ").append(reg).append('\n');
-            } else if (!dst.equals(reg)) {
-                code.append("  mov ").append(dst).append(' ').append(reg).append('\n');
+            throw new IllegalArgumentException("invalid location %s\n".formatted(escapeString(value)));
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    void loadConstant(MemLoc dst, int value) {
+        code.append("  li %s %d\n".formatted(dst, value));
+    }
+
+    void loadGlobalValue(String label, int offset, int size, MemLoc dst) {
+        code.append("# load global %s\n".formatted(escapeString(label)));
+        if (size == 1) {
+            if (offset == 0) {
+                if (dst == STACK) {
+                    code.append(String.format("  lb t0 %s\n", label));
+                    code.append("  push t0\n");
+                } else {
+                    code.append(String.format("  lb %s %s\n", dst, label));
+                }
+            } else {
+                if (dst == STACK) {
+                    code.append(String.format("  lbo t0 %s %d\n", label, offset));
+                    code.append("  push t0\n");
+                } else {
+                    code.append(String.format("  lbo %s %s %d\n", dst, label, offset));
+                }
+            }
+        } else if (size == 2) {
+            if (offset == 0) {
+                if (dst == STACK) {
+                    code.append(String.format("  lw t0 %s\n", label));
+                    code.append("  push t0\n");
+                } else {
+                    code.append(String.format("  lw %s %s\n", dst, label));
+                }
+            } else {
+                if (dst == STACK) {
+                    code.append(String.format("  lwo t0 %s %d\n", label, offset));
+                    code.append("  push t0\n");
+                } else {
+                    code.append(String.format("  lwo %s %s %d\n", dst, label, offset));
+                }
             }
         } else {
-            var offset = frame.get(ident.name());
-            if (dst == null) {
-                code.append("  lwo t0 fp ").append(-offset).append('\n');
-                code.append("  push t0\n");
+            if (dst != STACK) {
+                throw new AssertionError("cannot load global %s to register %s".formatted(escapeString(label), dst));
+            }
+
+            code.append("  la t0 %s\n".formatted(label));
+            addRegister(T0, offset);
+            subRegister(SP, size);
+            code.append("  mcp sp t0 %d\n".formatted(size));
+        }
+        code.append("# end load global %s\n".formatted(escapeString(label)));
+    }
+
+    void storeGlobalValue(String label, int offset, int size, MemLoc src) {
+        if (size == 1) {
+            if (offset == 0) {
+                if (src == STACK) {
+                    code.append("  pop t0\n");
+                    code.append("  sb t0 %s\n".formatted(label));
+                } else {
+                    code.append("  sb %s %s\n".formatted(src, label));
+                }
             } else {
-                code.append("  lwo ").append(dst).append(" fp ").append(-offset).append('\n');
+                if (src == STACK) {
+                    code.append("  pop t0\n");
+                    code.append("  sbo t0 %s %d\n".formatted(label, offset));
+                } else {
+                    code.append("  sbo %s %s %d\n".formatted(src, label, offset));
+                }
+            }
+        } else if (size == 2) {
+            if (offset == 0) {
+                if (src == STACK) {
+                    code.append("  pop t0\n");
+                    code.append("  sw t0 %s\n".formatted(label));
+                } else {
+                    code.append("  sw %s %s\n".formatted(src, label));
+                }
+            } else {
+                if (src == STACK) {
+                    code.append("  pop t0\n");
+                    code.append("  swo t0 %s %d\n".formatted(label, offset));
+                } else {
+                    code.append("  swo %s %s %d\n".formatted(src, label, offset));
+                }
+            }
+        } else {
+            throw new UnsupportedOperationException("bye");
+        }
+    }
+
+    void loadGlobalAddress(String label, MemLoc dst) {
+        if (dst == STACK) {
+            loadGlobalAddress(label, T0);
+            code.append("  push t0\n");
+        } else {
+            code.append("  la %s %s\n".formatted(dst, label));
+        }
+    }
+
+    // TODO: value size + 2
+    void compileIdent(ExpressionIdent ident, Frame frame, MemLoc dst) {
+        int valueSize = ident.type().size();
+        if (globalLabels.containsKey(ident.name())) {
+            String label = globalLabels.get(ident.name());
+            // TODO: global array pointers here
+            if (ident.type().isAPointer()) {
+                loadGlobalAddress(label, dst);
+            } else {
+                loadGlobalValue(label, 0, valueSize, dst);
+            }
+        } else if (frame.hasParameter(ident.name())) {
+            assert valueSize == 2;
+            var reg = frame.getParamRegister(ident.name());
+            loadFromRegister(dst, reg);
+        } else {
+            var offset = frame.getBaseOffset(ident.name());
+            loadFromFrame(dst, offset, valueSize);
+        }
+    }
+
+    void loadFromRegister(MemLoc dst, MemLoc src) {
+        if (dst == src) return;
+        if (dst == STACK) {
+            code.append("  push %s\n".formatted(src));
+        } else {
+            code.append("  mov %s %s\n".formatted(dst, src));
+        }
+    }
+
+    void storeToRegister(MemLoc src, MemLoc dst) {
+        if (src == dst) return;
+        if (src == STACK) {
+            code.append("  pop %s\n".formatted(dst));
+        } else {
+            code.append("  mov %s %s\n".formatted(dst, src));
+        }
+    }
+
+    void storeToFrame(MemLoc src, int offset, int size) {
+        if (src == STACK) {
+            if (size <= 2) {
+                code.append("  pop t0\n");
+                storeToFrame(T0, offset, size);
+            } else {
+                // memcpy(fp - (offset + size), sp - size, size); sp += size;
+                code.append("  mov t1 fp\n");
+                subRegister(T1, offset + size);
+                code.append("  mov t2 sp\n");
+                code.append("  mcp t2 t1 %d\n".formatted(size));
+                addRegister(SP, size);
+            }
+        } else {
+            if (size == 1) {
+                code.append("  sbo %s fp %d\n".formatted(src, -(offset + 1)));
+            } else if (size == 2) {
+                code.append("  swo %s fp %d\n".formatted(src, -(offset + 2)));
+            } else {
+                throw new IllegalStateException("cannot store value to the stack of size > 2");
             }
         }
     }
 
-    void compileIndex(ExpressionIndex expr, Frame frame, String dst) {
-        compile(expr.array, frame, null);
-        compile(expr.index, frame, null);
-        code.append("  pop t2\n"); // load the offset into t2
+    void loadFromFrame(MemLoc dst, int offset, int size) {
+        if (dst == STACK) {
+            if (size <= 2) {
+                loadFromFrame(T0, offset, size);
+                code.append("  push t0\n");
+            } else {
+                subRegister(SP, size);
+                code.append("  mov t0 fp\n");
+                subRegister(T0, offset);
+                // memcopy(sp - size, fp + offset, size);
+                code.append("  mcp sp t0 %d\n".formatted(size));
+            }
+        } else {
+            if (size == 1) {
+                code.append("  lbo %s fp %d\n".formatted(dst, -(offset + 1)));
+            } else if (size == 2) {
+                code.append("  lwo %s fp %d\n".formatted(dst, -(offset + 2)));
+            } else {
+                throw new AssertionError("cannot load value from stack frame");
+            }
+        }
+    }
+
+    void compileIndex(ExpressionIndex expr, Frame frame, MemLoc dst) {
+        compile(expr.array, frame, STACK);
+        compile(expr.index, frame, T2);
         if (expr.array.type().size() != 1) {
             code.append("  li t0 ").append(expr.array.type().size()).append('\n');
             code.append("  mul t2 t2 t0\n");
         }
         code.append("  pop t1\n"); // load the pointer into t1
-        if (dst == null) {
+        if (dst == STACK) {
             code.append("  lwr t0 t1 t2\n");
             code.append("  push t0\n");
         } else {
@@ -819,17 +992,17 @@ public class SeaCompiler {
         }
     }
 
-    void compileInt(ExpressionInteger expr, Frame ignored, String dst) {
+    void compileInt(ExpressionInteger expr, Frame ignored, MemLoc dst) {
         int val = expr.value;
         if (val >= 0 && val < 16) {
-            if (dst == null) {
+            if (dst == STACK) {
                 code.append("  pushi ").append(val).append('\n');
             } else {
                 code.append("  li ").append(dst).append(' ').append(val).append('\n');
             }
         } else {
             String label = internConstant(val);
-            if (dst == null) {
+            if (dst == STACK) {
                 code.append("  lw t0 ").append(label).append('\n');
                 code.append("  push t0\n");
             } else {
@@ -838,7 +1011,7 @@ public class SeaCompiler {
         }
     }
 
-    void compileParens(ExpressionParens expr, Frame frame, String dst) {
+    void compileParens(ExpressionParens expr, Frame frame, MemLoc dst) {
         compile(expr.inner, frame, dst);
     }
 
@@ -847,8 +1020,8 @@ public class SeaCompiler {
     // load a[i]
     // (hook) : value is on the stack, do whatever, leave (stack-value, assign-value)
     // write a[i] from stack?
-    void compilePostfix(ExpressionPostfix expr, Frame frame, String dst) {
-        compile(expr.inner, frame, null);
+    void compilePostfix(ExpressionPostfix expr, Frame frame, MemLoc dst) {
+        compile(expr.inner, frame, dst);
         switch (expr.op()) {
 //            case "++" -> {
 //                compileWriteHooked(expr.inner, () -> {
@@ -865,13 +1038,13 @@ public class SeaCompiler {
         }
     }
 
-    void compilePrefix(ExpressionPrefix expr, Frame frame, String dst) {
+    void compilePrefix(ExpressionPrefix expr, Frame frame, MemLoc dst) {
         switch (expr.op()) {
             case "!" -> {
-                compile(expr.inner, frame, "t4");
+                compile(expr.inner, frame, T4);
                 String nt = "nottrue" + labelNo++;
                 String end = "endnot" + labelNo++;
-                String insr = dst == null ? "pushi" : "li " + dst;
+                String insr = dst == STACK ? "pushi" : "li " + dst;
                 code.append("  eqi t4 0\n");
                 code.append("  jnz ").append(nt).append('\n');
                 code.append("  ").append(insr).append(" 0\n");
@@ -882,7 +1055,7 @@ public class SeaCompiler {
             }
             case "-" -> {
                 compile(expr.inner, frame, dst);
-                if (dst == null) {
+                if (dst == STACK) {
                     code.append("  sneg\n");
                 } else {
                     code.append("  neg ").append(dst).append('\n');
@@ -892,10 +1065,10 @@ public class SeaCompiler {
         }
     }
 
-    void compileStr(ExpressionString expr, Frame frame, String dst) {
+    void compileStr(ExpressionString expr, Frame frame, MemLoc dst) {
         String content = expr.content();
         String label = internConstant(content);
-        if (dst == null) {
+        if (dst == STACK) {
             code.append("  la t0 ").append(label).append('\n');
             code.append("  push t0\n");
         } else {
@@ -903,19 +1076,19 @@ public class SeaCompiler {
         }
     }
 
-    void compileSyntaxError(ExpressionSyntaxError expr, Frame frame, String dst) {
+    void compileSyntaxError(ExpressionSyntaxError expr, Frame frame, MemLoc dst) {
         throw new UnsupportedOperationException("cannot compile errors");
     }
 
-    void compileTernary(ExpressionTernary expr, Frame frame, String dst) {
+    void compileTernary(ExpressionTernary expr, Frame frame, MemLoc dst) {
         int label = labelNo++;
         compileBranchingInstruction(
                 expr.cond,
                 frame,
                 "ternaryElse" + label,
                 "ternaryEnd" + label,
-                () -> compile(expr.then, frame, null),
-                () -> compile(expr.otherwise, frame, null)
+                () -> compile(expr.then, frame, dst),
+                () -> compile(expr.otherwise, frame, dst)
         );
     }
 
@@ -943,8 +1116,8 @@ public class SeaCompiler {
     ) {
         if (expression instanceof ExpressionBin bin) {
             if (BRANCHING_BIN_INSRS.contains(bin.op())) {
-                compile(bin.lhs, frame, "t4");
-                compile(bin.rhs, frame, "t5");
+                compile(bin.lhs, frame, T4);
+                compile(bin.rhs, frame, T5);
                 String insr = switch (bin.op()) {
                     case "<" -> "lt";
                     case ">" -> "gt";
@@ -998,7 +1171,7 @@ public class SeaCompiler {
         }
 
         String insr = negated ? "jz" : "jnz";
-        compile(expression, frame, "t4");
+        compile(expression, frame, T4);
         code.append("  eqi t4 0\n");
         code.append("  ").append(insr).append(" ").append(condFailedLabel).append('\n');
         trueBlock.run();
@@ -1010,13 +1183,14 @@ public class SeaCompiler {
         }
     }
 
-    void compileTypeError(ExpressionTypeError expr, Frame frame, String dst) {
+    void compileTypeError(ExpressionTypeError expr, Frame frame, MemLoc dst) {
         throw new UnsupportedOperationException();
     }
 
-    void compileInitializer(ExpressionInitializer expr, Frame frame, String dst) {
+    void compileInitializer(ExpressionInitializer expr, Frame frame, MemLoc dst) {
+        assert dst == STACK;
         for (var value : expr.values) {
-            compile(value, frame, null);
+            compile(value, frame, dst);
         }
     }
 
@@ -1129,6 +1303,14 @@ public class SeaCompiler {
                     yield evalConstant(expressionTernary.otherwise);
                 }
             }
+            case ExpressionInitializer expr -> {
+                var values = new ArrayList<>();
+                for (var val : expr.values) {
+                    var value = evalConstant(val);
+                    values.add(value);
+                }
+                yield values;
+            }
             default ->
                     throw new UnsupportedOperationException("invalid constant expression: " + expression.getClass().getSimpleName());
         };
@@ -1136,7 +1318,7 @@ public class SeaCompiler {
 
     static class Frame {
         private final LinkedHashMap<String, DeclarationFunc.Param> parameters = new LinkedHashMap<>();
-        private final LinkedHashMap<String, String> paramRegisters = new LinkedHashMap<>();
+        private final LinkedHashMap<String, MemLoc> paramRegisters = new LinkedHashMap<>();
         private final LinkedHashMap<String, Integer> offsets = new LinkedHashMap<>();
         private int totalSize = 0;
 
@@ -1146,7 +1328,7 @@ public class SeaCompiler {
                 int typeSize = param.type.type().size();
                 assert typeSize == 2;
                 parameters.put(param.name.content(), param);
-                paramRegisters.put(param.name.content(), "a" + i);
+                paramRegisters.put(param.name.content(), MemLoc.of("a" + i));
                 i += 1;
             }
         }
@@ -1155,11 +1337,11 @@ public class SeaCompiler {
             return parameters.containsKey(name);
         }
 
-        String getParamRegister(String name) {
+        MemLoc getParamRegister(String name) {
             return paramRegisters.get(name);
         }
 
-        int get(String name) {
+        int getBaseOffset(String name) {
             return offsets.get(name);
         }
 

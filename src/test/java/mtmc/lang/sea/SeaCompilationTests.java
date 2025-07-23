@@ -7,6 +7,7 @@ import mtmc.lang.CompilationException;
 import mtmc.lang.ParseException;
 import mtmc.lang.sea.ast.Unit;
 import mtmc.os.exec.Executable;
+import mtmc.web.WebServer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,6 +59,12 @@ public class SeaCompilationTests {
         var machine = new MonTanaMiniComputer();
         machine.load(exe.code(), exe.data(), exe.debugInfo());
         machine.run();
+//        var ws = new WebServer(machine);
+//        try {
+//            Thread.sleep(Long.MAX_VALUE);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
         assertEquals(MonTanaMiniComputer.ComputerStatus.FINISHED, machine.getStatus());
         return machine.getConsole().getOutput();
     }
@@ -522,13 +529,13 @@ public class SeaCompilationTests {
                 int main() {
                     Person dev = {"dillon", 21, {"Bozeman", "MT"}};
                     printf("name = %s, age = %d\\n", dev.name, dev.age);
-                    printf("  from %s, %s\\n", dev.addr.city, dev.addr.state);
+                    printf(" from %s, %s\\n", dev.addr.city, dev.addr.state);
                 
                     // summer 2025
                     dev.age = 22;
                     dev.addr = {"Jamestown", "ND"};
                     printf("name = %s, age = %d\\n", dev.name, dev.age);
-                    printf("  from %s, %s\\n", dev.addr.city, dev.addr.state);
+                    printf(" from %s, %s\\n", dev.addr.city, dev.addr.state);
                     return 0;
                 }
                 """);
@@ -573,5 +580,11 @@ public class SeaCompilationTests {
                 """);
 
         assertEquals("6\n", output);
+    }
+
+    @Test
+    public void testGlobalStructs() {
+        var output = compileAndRun("""
+                """);
     }
 }

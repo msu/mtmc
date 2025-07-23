@@ -98,16 +98,16 @@ Instruction types can be determined by looking at the four high-order bits (nibb
 
 Misc (miscellaneous) instructions start with the nibble `0000`.
 
-| Instruction | Form                  | Description                                                                         | Example        |
-|-------------|-----------------------|-------------------------------------------------------------------------------------|----------------|
-| `sys`       | `0000 0000 vvvv vvvv` | Issues syscall `vvvv vvvv`                                                          | `sys wstr`     |
-| `mov`       | `0000 0001 rrrr ssss` | Moves the value in register `ssss` to `rrrr`                                        | `mov a0 t0`    |
-| `inc`       | `0000 0010 rrrr vvvv` | Increments the value in register `rrrr` by the value `vvvv`                         | `inc t0`       |
-| `dec`       | `0000 0011 rrrr vvvv` | Decrements the value in register `rrrr` by the value `vvvv`                         | `dec t0 2`     |
-| `seti`      | `0000 0100 rrrr vvvv` | Sets the value in register `rrrr` to the value `vvvv`                               | `seti t0 2`    |
-| `mcp`       | `0000 0101 rrrr ssss` | Copy a value of (size) from the ptr `rrrr` to the ptr `ssss`, size is a double-word | `mcp t1 t0 16` |
-| `debug`     | `0000 1000 vvvv vvvv` | Prints the associated debug string to the console                                   | `debug "Here"` |
-| `nop`       | `0000 1111 1111 1111` | A no-op instruction                                                                 | `nop`          |
+| Instruction | Form                  | Description                                                                                                | Example        |
+|-------------|-----------------------|------------------------------------------------------------------------------------------------------------|----------------|
+| `sys`       | `0000 0000 vvvv vvvv` | Issues syscall `vvvv vvvv`                                                                                 | `sys wstr`     |
+| `mov`       | `0000 0001 rrrr ssss` | Moves the value in register `ssss` to `rrrr`                                                               | `mov a0 t0`    |
+| `inc`       | `0000 0010 rrrr vvvv` | Increments the value in register `rrrr` by the value `vvvv`                                                | `inc t0`       |
+| `dec`       | `0000 0011 rrrr vvvv` | Decrements the value in register `rrrr` by the value `vvvv`                                                | `dec t0 2`     |
+| `seti`      | `0000 0100 rrrr vvvv` | Sets the value in register `rrrr` to the value `vvvv`                                                      | `seti t0 2`    |
+| `mcp`       | `0000 0101 rrrr ssss` | Copy a value of (size) from the ptr `rrrr` to the ptr `ssss`, size is the next word after this instruction | `mcp t1 t0 16` |
+| `debug`     | `0000 1000 vvvv vvvv` | Prints the associated debug string to the console                                                          | `debug "Here"` |
+| `nop`       | `0000 1111 1111 1111` | A no-op instruction                                                                                        | `nop`          |
 
 ### ALU
 
@@ -290,7 +290,7 @@ The address or value to load or store from is found in the word immediately afte
 | `sw`         | `1000 0100 rrrr 0000` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction                                   | `sw t0 GLOBAL_VAR_1`                 |
 | `swo`        | `1000 0101 rrrr oooo` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`    | `swo t0 GLOBAL_VAR_1 t1`             |
 | `sb`         | `1000 0110 rrrr 0000` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction                                    | `sb t0 GLOBAL_VAR_2`                 |
-| `sbo`        | `1000 0111 rrrr oooo` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo      | `sbo t0 GLOBAL_VAR_2 t1`             |
+| `sbo`        | `1000 0111 rrrr oooo` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`     | `sbo t0 GLOBAL_VAR_2 t1`             |
 | `li`         | `1000 1111 rrrr 0000` | Loads the word (16-bit) value found immediately after the instruction into `rrrr`. Can be used to load a memory addresses.       | `li t0 1024`, `li t0 MEM_ADDR_LABEL` |
 | `la` (alias) | `1000 1111 rrrr 0000` | Alias for `li`. Can be used when loading a memory addresses to clarify intent.                                                   | `la t0 MEM_ADDR_LABEL`               |
 

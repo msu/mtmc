@@ -111,7 +111,7 @@ public class SeaCompiler {
         switch (func.name.content()) {
             case "printf" -> {
                 if (!func.returnType.type().isInt()) {
-                    throw new CompilationException("'printf' must return void", func.returnType.span());
+                    throw new CompilationException("'printf' must return int", func.returnType.span());
                 }
 
                 if (func.params.size() != 1 || !func.params.getParamType(0).isAPointerTo(SeaType.CHAR) || !func.params.isVararg()) {
@@ -121,6 +121,18 @@ public class SeaCompiler {
                 code.append("printf:\n");
                 code.append("  sys printf\n");
                 code.append("  mov sp a1\n"); // restore the stack
+                code.append("  ret\n");
+                return;
+            }
+            case "atoi" -> {
+                if (!func.returnType.type().isInt()) {
+                    throw new CompilationException("'atoi' must return int", func.returnType.span());
+                }
+                if (func.params.size() != 1 || !func.params.getParamType(0).isAPointerTo(SeaType.CHAR)) {
+                    throw new CompilationException("'atoi' must have signature (char *)", Span.of(func.name));
+                }
+                code.append("atoi:\n");
+                code.append("  sys atoi\n");
                 code.append("  ret\n");
                 return;
             }

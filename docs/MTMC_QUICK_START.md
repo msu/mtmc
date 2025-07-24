@@ -16,12 +16,12 @@ you can easily find it.
 and make the machine ready for use. However, you can also run the system from the 
 command-line by running `java -jar mtmc.jar`.
 
-1. Once `mtmc.jar` is running, open a web browser to [http://localhost:8081]. Note that
+1. Once `mtmc.jar` is running, open a web browser to [http://localhost:8080]. Note that
 a modern web browser like Chrome or Safari is required. 
 
 1. You should see the following interface and be ready to use the MTMC-16!
 
-**NOTE:** If port `8081` is already in use, the system will increment the port number until it finds a free port. In that case, try [http://localhost:8082] or look at the command line console to see what the correct URL is.
+**NOTE:** If port `8080` is already in use, the system will increment the port number until it finds a free port. In that case, try [http://localhost:8081] or look at the command line console to see what the correct URL is.
 
 
 <img width="1955" height="1137" alt="MTMC Components" src="https://github.com/user-attachments/assets/60247b4a-c0c4-4fa7-b22c-40359b52d645" />
@@ -71,3 +71,38 @@ sys wint
 ```
 
 <img width="1806" height="1272" alt="image" src="https://github.com/user-attachments/assets/08a698f2-22c7-4447-b578-d84e9002c6be" />
+
+## Hello World Program
+
+We can very easily create a program in Assembly that prints out `Hello World!` when run. 
+
+First we need to create a blank Assembly file.
+
+1. Click the `+ New File` icon in the File Explorer
+2. Make sure "Assembly Language" is selected and enter the filename of "hello".
+3. Click `Save` to create the file
+
+Next, copy/paste the following code into the editor:
+
+```
+.data
+  hello: "Hello world!\n"
+
+.text
+  li   a0 hello
+  sys  wstr
+
+  sys  exit
+```
+
+Click the Save floppy icon in the top-right to save your program. Or use the Ctrl+S (Command+S on macOS) keyboard shortcut. The floppy icon should go dark.
+
+Now type the following command in the Command Line Console to assemble your program into an executable:
+
+```
+asm hello.asm hello
+```
+
+Then type `hello` in the Command Line Console to run your program. 
+
+Congratulations! You've written your first assembly program. 

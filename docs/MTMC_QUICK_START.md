@@ -9,19 +9,19 @@ going through installation, setup, and your first programs.
 [adoptium.net](https://adoptium.net) to download a VM. The Eclipse Temurin VM is an
 implementation of OpenJDK and supports Java 21.
 
-1. Download a copy of `mtmc.jar` from [https://mtmc.cs.montana.edu]. Save it to a place
+1. Download a copy of `mtmc.jar` from [https://mtmc.cs.montana.edu](https://mtmc.cs.montana.edu). Save it to a place
 you can easily find it.
 
 1. In most cases simply double-clicking on the `mtmc.jar` file will launch the server
 and make the machine ready for use. However, you can also run the system from the 
 command-line by running `java -jar mtmc.jar`.
 
-1. Once `mtmc.jar` is running, open a web browser to [http://localhost:8080]. Note that
+1. Once `mtmc.jar` is running, open a web browser to [http://localhost:8080](http://localhost:8080). Note that
 a modern web browser like Chrome or Safari is required. 
 
 1. You should see the following interface and be ready to use the MTMC-16!
 
-**NOTE:** If port `8080` is already in use, the system will increment the port number until it finds a free port. In that case, try [http://localhost:8081] or look at the command line console to see what the correct URL is.
+**NOTE:** If port `8080` is already in use, the system will increment the port number until it finds a free port. In that case, try [http://localhost:8081](http://localhost:8081) or look at the command line console to see what the correct URL is.
 
 
 <img width="1955" height="1137" alt="MTMC Components" src="https://github.com/user-attachments/assets/60247b4a-c0c4-4fa7-b22c-40359b52d645" />

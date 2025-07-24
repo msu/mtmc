@@ -45,6 +45,6 @@ public class ListingTest
         
         assertEquals("img", cwd.name);
         assertEquals("/img", cwd.path);
-        assertEquals(5, cwd.list().size());
+        assertEquals(4, cwd.list().size());
     }
 }

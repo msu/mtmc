@@ -113,44 +113,6 @@ public class MTOS {
 
             computer.getConsole().print(sb.toString());
             computer.setRegisterValue(RV, sb.length());
-        } else if (syscallNumber == SysCall.getValue("rnd")) {
-        } else if (syscallNumber == SysCall.getValue("printf")) {
-            short pointer = computer.getRegisterValue(A0);
-            short initSP = computer.getRegisterValue(A1);
-            String fmtString = readStringFromMemory(pointer);
-            StringBuilder sb = new StringBuilder();
-            int stackOff = 0;
-            int i = 0;
-            while (i < fmtString.length()) {
-                char c = fmtString.charAt(i++);
-                if (c != '%') {
-                    sb.append(c);
-                    continue;
-                }
-
-                if (i >= fmtString.length()) break;
-                c = fmtString.charAt(i++);
-
-                if (c == 'd') {
-                    stackOff += 2;
-                    int v = computer.fetchWordFromMemory(initSP - stackOff);
-                    sb.append(v);
-                } else if (c == 'c') {
-                    stackOff += 2;
-                    char v = (char) computer.fetchWordFromMemory(initSP - stackOff);
-                    sb.append(v);
-                } else if (c == 's') {
-                    stackOff += 2;
-                    short valuePointer = computer.fetchWordFromMemory(initSP - stackOff);
-                    String s = readStringFromMemory(valuePointer);
-                    sb.append(s);
-                } else {
-                    sb.append('%').append(c);
-                }
-            }
-
-            computer.getConsole().print(sb.toString());
-            computer.setRegisterValue(RV, sb.length());
         } else if (syscallNumber == SysCall.getValue("atoi")) {
             short pointer = computer.getRegisterValue(A0);
             String string = readStringFromMemory(pointer);

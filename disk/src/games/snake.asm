@@ -101,7 +101,7 @@ init_game:
   jal  clear_buffer
   jal  draw_walls
   jal  place_food
-
+  
   pop  ra
   ret
 
@@ -540,14 +540,14 @@ place_food:
   push ra
 
 place_food_attempt:
-  lw   a0 1         # Screen is surrounded with a wall
+  li   a0 1         # Screen is surrounded with a wall
   lw   a1 width
   dec  a1           # Screen is surrounded with a wall
 
   sys  rnd
   mov  t0 rv        # random x coordinate
 
-  lw   a0 1         # Screen is surrounded with a wall
+  li   a0 1         # Screen is surrounded with a wall
   lw   a1 height
   dec  a1           # Screen is surrounded with a wall
 

@@ -106,3 +106,13 @@ asm hello.asm hello
 Then type `hello` in the Command Line Console to run your program. 
 
 Congratulations! You've written your first assembly program. 
+
+## Using the Step Debugger
+
+Make sure your `hello.asm` program is open in the editor. 
+
+Go to the Command Line Console and type `load hello`. This will load the program into memory and prepare for execution, but not start the execution of the program. 
+
+Note the line with the red highlight in the editor. This is the line the computer is about to execute.
+
+Click the `Step` button in the Execution Controls to see the effect of each line of code on the computer's state. If you're unsure what an instruction did, click `Back` to reverse the last instruction and examine the state changes again.

@@ -21,6 +21,8 @@ a modern web browser like Chrome or Safari is required.
 
 1. You should see the following interface and be ready to use the MTMC-16!
 
+**NOTE:** If port `8081` is already in use, the system will increment the port number until it finds a free port. In that case, try [http://localhost:8082] or look at the command line console to see what the correct URL is.
+
 
 <img width="1955" height="1137" alt="MTMC Components" src="https://github.com/user-attachments/assets/60247b4a-c0c4-4fa7-b22c-40359b52d645" />
 
@@ -46,3 +48,26 @@ A set of Unix-like utilities are provided in the `/bin` directory, including:
 - `ls` - Lists the contents of the current directory. You can pass in a path to list another directory.'
 - `pwd` - Print working directory. Tells you what directory you're in.
 - `rm` - Removes the file passed to the program. Note that directories must be empty to be deleted.
+
+The command line console also allows Assembly Instructions to be typed in for immediate execution. For example, typing `li t0 42` will load `42` into the the `t0` register.
+
+## Adding Two Numbers
+
+We can control the CPU from the command line to load two numbers and add them together. Type the following commands to try adding `42` and `47`:
+
+```
+li t0 42
+li t1 47
+add t0 t1
+```
+
+If you check the CPU state, you should find `89` in the `t0` register. 
+
+We can print this number out by moving the value to the `a0` register and making the `wint` syscall.
+
+```
+mov a0 t0
+sys wint
+```
+
+<img width="1806" height="1272" alt="image" src="https://github.com/user-attachments/assets/08a698f2-22c7-4447-b578-d84e9002c6be" />

@@ -9,6 +9,7 @@ import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileAlreadyExistsException;
@@ -20,8 +21,8 @@ import mtmc.os.fs.FileSystem;
 
 public class WebServer {
 
-    public static final int PORT = 8081;
-    public static final String SERVER_URL = "http://localhost:" + PORT;
+    public static final int IDEAL_PORT = 8080;
+    public static final String SERVER_URL = "http://localhost:" + IDEAL_PORT;
     private static WebServer instance;
 
     private final MonTanaMiniComputer computer;
@@ -208,7 +209,20 @@ public class WebServer {
                 });
 
         // start server
-        javalinApp.start(PORT);
+        int safePort = findSafePort();
+        javalinApp.start(safePort);
+    }
+
+    private int findSafePort() {
+        int port = IDEAL_PORT;
+        while (port < 0xFFFF) {
+            try(ServerSocket serverSocket = new ServerSocket(port)) {
+                return port;
+            } catch (IOException e) {
+                port = port + 1;
+            }
+        }
+        throw new IllegalStateException("Could not find a safe port!");
     }
 
     void sendEvent(String update, String data) {

@@ -1,0 +1,21 @@
+// stdlib functions
+int printf(char* str, ...);
+void putn(int i);
+int atoi(char* str);
+
+// square an integer
+int square(int x) {
+    return x * x;
+}
+
+// main program
+int main(char* arg) {
+    if(arg == 0) {
+        printf("usage: square <number>\n");
+        return -1;
+    }
+    int val = atoi(arg);
+    int result = square(val);
+    putn(result);
+    return 0;
+}

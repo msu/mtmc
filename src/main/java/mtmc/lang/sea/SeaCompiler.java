@@ -187,11 +187,6 @@ public class SeaCompiler {
         code.append("  mov fp sp\n");
 
         var frame = new Frame(func.params);
-        for (DeclarationFunc.Param param : func.params.params()) {
-            int typeSize = param.type.type().size();
-            assert typeSize == 2;
-            frame.add(param.name.content(), typeSize);
-        }
 
         int maxLocalSize = calcMaxLocalSize(func.body);
         if (maxLocalSize > 0) {

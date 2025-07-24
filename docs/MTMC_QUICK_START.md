@@ -34,3 +34,15 @@ The display contains the following components:
 - **CPU State** - Shows the state of CPU registers including the Stack Pointer and Program Counter. The currently decoded instruction is shown in the `ir` register while `flags` shows `test` and `error` states of the program. Registers are shown in both binary form and decimal form. Hovering over a register value will highlight that location in the memory viewer.
 - **Execution Controls** - The dropdown allows you to slow down and speed up the computer. The buttons are context sensitive and will provide a `run` option when a program is not executing, a `pause` option when the computer is executing, `step` and `back` buttons for stepping through program execution, and a `reset` button to return the computer to its default state.
 - **4 color display** - Games and other programs needing a graphical display will render their content into this window. There is an on-screen gamepad that can be used to control games, however the keyboard and an external gamepad are both supported as well.
+
+## Command Line Console
+
+The command-line console provides a simplified, Unix-like interface. Typing `?` will provide a list of built-in tools such as the assembler (`asm`) and `load` commands. Programs located in the `/bin` directory or in the current directory can be executed by typing their name. (e.g. `snake` to run the snake game).
+
+A set of Unix-like utilities are provided in the `/bin` directory, including:
+
+- `echo` - Echoes the text passed to the program back to the command line
+- `cd` - Changes the current directory to the one passed to the command
+- `ls` - Lists the contents of the current directory. You can pass in a path to list another directory.'
+- `pwd` - Print working directory. Tells you what directory you're in.
+- `rm` - Removes the file passed to the program. Note that directories must be empty to be deleted.

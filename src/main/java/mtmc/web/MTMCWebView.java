@@ -381,7 +381,7 @@ public class MTMCWebView {
                     filename += ".asm";
                     break;
                 case "text/x-csrc":
-                    filename += ".c";
+                    filename += ".sea";
                     break;
             }
         }

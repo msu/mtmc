@@ -150,6 +150,20 @@ public class MTMCDisplay {
         graphics.drawImage(graphic, x, y, null);
         graphics.dispose();
     }
+    
+    public void drawImage(int image, int x, int y, int width, int height) {
+        BufferedImage graphic = graphics[image];
+        Graphics graphics = buffer.getGraphics();
+        graphics.drawImage(graphic, x, y, width, height, null);
+        graphics.dispose();
+    }
+    
+    public void drawImage(int image, int sx, int sy, int sw, int sh, int dx, int dy, int dw, int dh) {
+        BufferedImage graphic = graphics[image];
+        Graphics graphics = buffer.getGraphics();
+        graphics.drawImage(graphic, dx, dy, dx+dw, dy+dh, sx, sy, sx+sw, sy+sh, null);
+        graphics.dispose();
+    }
 
     public void sync() {
         var baos = new ByteArrayOutputStream();

@@ -290,6 +290,43 @@ public class MTOS {
             
             computer.getDisplay().drawImage(image, x, y);
             computer.setRegisterValue(RV, 0);
+        } else if (syscallNumber == SysCall.getValue("drawimgsz")) {
+            short image = computer.getRegisterValue(A0);
+            short pointer = computer.getRegisterValue(A1);
+            short x = computer.fetchWordFromMemory(pointer);
+            short y = computer.fetchWordFromMemory(pointer + 2);
+            short width = computer.fetchWordFromMemory(pointer + 4);
+            short height = computer.fetchWordFromMemory(pointer + 6);
+            
+            if (!computer.getDisplay().hasGraphic(image)) {
+                computer.setRegisterValue(RV, 1);
+                return;
+            }
+            
+            computer.getDisplay().drawImage(image, x, y, width, height);
+            computer.setRegisterValue(RV, 0);
+        } else if (syscallNumber == SysCall.getValue("drawimgclip")) {
+            short image = computer.getRegisterValue(A0);
+            short source = computer.getRegisterValue(A1);
+            short destination = computer.getRegisterValue(A2);
+            
+            short sx = computer.fetchWordFromMemory(source);
+            short sy = computer.fetchWordFromMemory(source + 2);
+            short sw = computer.fetchWordFromMemory(source + 4);
+            short sh = computer.fetchWordFromMemory(source + 6);
+            
+            short dx = computer.fetchWordFromMemory(destination);
+            short dy = computer.fetchWordFromMemory(destination + 2);
+            short dw = computer.fetchWordFromMemory(destination + 4);
+            short dh = computer.fetchWordFromMemory(destination + 6);
+            
+            if (!computer.getDisplay().hasGraphic(image)) {
+                computer.setRegisterValue(RV, 1);
+                return;
+            }
+            
+            computer.getDisplay().drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
+            computer.setRegisterValue(RV, 0);
         } else if (syscallNumber == SysCall.getValue("dirent")) {
             short dirent = computer.getRegisterValue(A0);
             short command = computer.getRegisterValue(A1);

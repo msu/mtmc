@@ -23,7 +23,7 @@
     const syscalls = [
         'exit', 'wstr', 'rstr', 'wint', 'rint', 'wchr', 'rchr', 'drawimg', 
         'fbreset', 'fbflush', 'fbrect', 'fbline', 'rnd', 'sleep', 'timer', 
-        'joystick', 'scolor', 'memcopy', 'dfile'
+        'joystick', 'scolor', 'memcpy', 'dfile'
     ];
     
     function spacePad(value, length) {

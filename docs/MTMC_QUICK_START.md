@@ -1,6 +1,6 @@
 # MTMC - Quick Start Guide
 
-This guide will walk you through getting started with the MTMC-16 simualted computer,
+This guide will walk you through getting started with the MTMC-16 simulated computer,
 going through installation, setup, and your first programs.
 
 ## Installation

@@ -176,6 +176,7 @@ public class FileSystem {
         if(name.endsWith(".asm")) return "text/x-asm";
         if(name.endsWith(".c")) return "text/x-csrc";
         if(name.endsWith(".sea")) return "text/x-csrc";
+        if(name.endsWith(".h")) return "text/x-csrc";
         if(probed != null) return probed;
         
         return "application/octet-stream";

@@ -102,10 +102,11 @@ public class Shell {
                     if (result.errors().isEmpty()) {
                         byte[] code = result.code();
                         if (code.length == 4) {
-                            int data = (code[2] << 8) | code[3];
+                            int data = ((code[2] & 0xFF) << 8) | (code[3] & 0xFF);
                             computer.setRegisterValue(Register.DR, data);
                         }
-                        int inst = (code[0] << 8) | code[1];
+                        int inst = ((code[0] & 0xFF) << 8) | (code[1] & 0xFF);
+
                         DebugInfo originalDebugInfo = computer.getDebugInfo();
                         computer.setDebugInfo(result.debugInfo());
                         computer.execInstruction((short) inst);

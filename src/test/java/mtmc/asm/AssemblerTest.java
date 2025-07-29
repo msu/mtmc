@@ -181,6 +181,17 @@ public class AssemblerTest {
     }
 
     @Test
+    public void pushPopRv() {
+        var computer = assembleAndLoad("""
+                push rv
+                pop t0
+                """);
+        computer.setRegisterValue(RV, 20);
+        computer.run();
+        assertEquals(computer.getRegisterValue(T0), 20);
+    }
+
+    @Test
     public void pushPopWithCustomStackReg() {
         var computer = assembleAndLoad("""
                 push t0 t5

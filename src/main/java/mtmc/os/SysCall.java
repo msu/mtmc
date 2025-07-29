@@ -34,6 +34,8 @@ public enum SysCall {
     MEMCPY(0x40),
 
     DRAWIMG(0x50),
+    DRAWIMGSZ(0x51),
+    DRAWIMGCLIP(0x52),
     
     ERROR(0xFF);
 

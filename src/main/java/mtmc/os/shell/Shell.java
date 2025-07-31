@@ -107,11 +107,9 @@ public class Shell {
                             int data = (higher << 8) | lower;
                             computer.setRegisterValue(Register.DR, data);
                         }
-
                         int lower = code[1] & 0xFF;
                         int higher = code[0] & 0xFF;
                         int inst = (higher << 8) | lower;
-
                         DebugInfo originalDebugInfo = computer.getDebugInfo();
                         computer.setDebugInfo(result.debugInfo());
                         computer.execInstruction((short) inst);

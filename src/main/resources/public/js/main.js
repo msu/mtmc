@@ -397,6 +397,8 @@ async function startMonaco() {
     var text = await response.text();
     var stepHighlight = [];
     var viewerHighlight = [];
+    var breakpoints = [];
+    var ignoreChange = false;
     
     var theme = "vs";
     var language = "plaintext";
@@ -415,11 +417,18 @@ async function startMonaco() {
             break;
     }
     
+    function lineRenderer(line) {
+        if(breakpoints[line]) return "<span style=\"font-size: 60%;\">&#128308;</span>";
+        
+        return line;
+    }
+    
     var editor = monaco.editor.create(editor_div, {
         value: text,
         language: language,
         theme: theme,
-        automaticLayout: true
+        automaticLayout: true,
+	lineNumbers: lineRenderer
     });
     
     function save() {
@@ -441,6 +450,11 @@ async function startMonaco() {
     });
     
     editor.getModel().onDidChangeContent(function(event) {
+        if (ignoreChange) {
+            ignoreChange = false;
+            return;
+        }
+        
         editor_save.removeAttribute("disabled");
     });
     
@@ -449,6 +463,30 @@ async function startMonaco() {
         if (!editor_save.hasAttribute("disabled")) {
             evt.detail.cfg.confirm = () => confirm(message);
         }
+    });
+    
+    editor.onMouseDown(async function(event) {
+        var info = event.target;
+        var line = info.position.lineNumber;
+        var model = editor.getModel();
+        var content = model.getLineContent(line);
+
+        if (!content) return;
+        if (!("glyphMarginLeft" in info.detail)) return;
+        
+        breakpoints[line] = !breakpoints[line];
+        ignoreChange = true;
+
+        fetch("/breakpoint/" + line + "/" + breakpoints[line], {method: 'POST'});
+        
+        editor.executeEdits(
+            "force-re-render-" + line,
+            [{
+                identifier: {major: 0, minor: 0},
+                range: new monaco.Range(line, 1, line, model.getLineMaxColumn(line)),
+                text: content
+            }]
+        );
     });
     
     function renderHighlight(editor, highlight, line) {

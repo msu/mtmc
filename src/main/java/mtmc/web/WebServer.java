@@ -82,9 +82,8 @@ public class WebServer {
                 .post("/breakpoint/{line}/{active}", ctx -> {
                     int line = Integer.parseInt(ctx.pathParam("line"));
                     boolean active = Boolean.parseBoolean(ctx.pathParam("active"));
-                    
-                    computerView.setBreakpoint(line, active);
-                    ctx.html("");
+                    boolean set = computerView.setBreakpoint(line, active);
+                    ctx.html(String.valueOf(set));
                 })
                 .post("/cmd", ctx -> {
                     Map vals = json.fromJson(ctx.body(), Map.class);
@@ -132,6 +131,7 @@ public class WebServer {
                         sendEvent("console-ready", "mtmc$");
                     }
                     if (ctx.pathParam("action").equals("run")) {
+                        computerView.applyBreakpoints();
                         computer.run();
                     }
                     if (ctx.pathParam("action").equals("step")) {

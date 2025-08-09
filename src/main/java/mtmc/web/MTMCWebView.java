@@ -27,6 +27,7 @@ public class MTMCWebView {
     private String currentFile;
     private String currentFileMime;
     private String currentError;
+    private int[] breakpoints;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -369,6 +370,7 @@ public class MTMCWebView {
         
         this.currentFile = filename;
         this.currentFileMime = mime;
+        this.breakpoints = new int[256];
         
         if (filename.length() < 1) {
             this.currentError = "File name is required";
@@ -449,6 +451,7 @@ public class MTMCWebView {
 
         this.currentFile = fileToOpen;
         this.currentFileMime = computer.getFileSystem().getMimeType(fileToOpen);
+        this.breakpoints = new int[256];
         
         return true;
     }
@@ -457,6 +460,7 @@ public class MTMCWebView {
         currentFile = null;
         currentFileMime = null;
         currentError = null;
+        breakpoints = null;
     }
     
     public boolean hasDebugInfo() {
@@ -536,7 +540,7 @@ public class MTMCWebView {
         return lines;
     }
     
-    public void setBreakpoint(int line, boolean active) {
+    private void setMachineBreakpoint(int line, boolean active) {
         if (computer.getDebugInfo() == null) {
             return;
         }
@@ -555,6 +559,62 @@ public class MTMCWebView {
             if(debug[i] == line) {
                 computer.setBreakpoint(i, active);
                 break;
+            }
+        }
+    }
+    
+    public boolean setBreakpoint(int line, boolean active) {
+        if (breakpoints == null) {
+            return false;
+        }
+        
+        if (!active) {
+            for (int i=0; i<breakpoints.length; i++) {
+                if (breakpoints[i] == line) {
+                    breakpoints[i] = 0;
+                    setMachineBreakpoint(line, active);
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        for (int i=0; i<breakpoints.length; i++) {
+            if (breakpoints[i] == 0) {
+                breakpoints[i] = line;
+                setMachineBreakpoint(line, active);
+                return true;
+            }
+        }
+            
+        return false;
+    }
+    
+    public void applyBreakpoints() {
+        if (computer.getDebugInfo() == null || breakpoints == null) {
+            return;
+        }
+        
+        var debug = computer.getDebugInfo().originalLineNumbers();
+        var name = computer.getDebugInfo().originalFile();
+        
+        if (currentFileMime.equals("text/x-asm")) {
+            debug = computer.getDebugInfo().assemblyLineNumbers();
+            name = computer.getDebugInfo().assemblyFile();
+        } 
+
+        if (debug == null || !name.equals(this.currentFile)) {
+            return;
+        }
+
+        for (int index=0; index<breakpoints.length; index++) {
+            var line = breakpoints[index];
+            for (int i=0; i<debug.length; i++) {
+                if(debug[i] == line) {
+                    computer.setBreakpoint(i, true);
+                    break;
+                }
             }
         }
     }

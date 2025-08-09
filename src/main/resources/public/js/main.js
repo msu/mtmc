@@ -477,7 +477,12 @@ async function startMonaco() {
         breakpoints[line] = !breakpoints[line];
         ignoreChange = true;
 
-        fetch("/breakpoint/" + line + "/" + breakpoints[line], {method: 'POST'});
+        var response = await fetch("/breakpoint/" + line + "/" + breakpoints[line], {method: 'POST'});
+        var result = await response.text();
+        
+        if (result !== "true") {
+            breakpoints[line] = !breakpoints[line];
+        }
         
         editor.executeEdits(
             "force-re-render-" + line,

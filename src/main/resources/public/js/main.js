@@ -417,6 +417,10 @@ async function startMonaco() {
             break;
     }
     
+    for (var line of JSON.parse(editor_div.dataset.breakpoints)) {
+        breakpoints[line] = true;
+    }
+    
     function lineRenderer(line) {
         if(breakpoints[line]) return "<span style=\"font-size: 60%;\">&#128308;</span>";
         
@@ -480,9 +484,7 @@ async function startMonaco() {
         var response = await fetch("/breakpoint/" + line + "/" + breakpoints[line], {method: 'POST'});
         var result = await response.text();
         
-        if (result !== "true") {
-            breakpoints[line] = !breakpoints[line];
-        }
+        breakpoints[line] = (result === "true");
         
         editor.executeEdits(
             "force-re-render-" + line,

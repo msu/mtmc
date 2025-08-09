@@ -514,30 +514,39 @@ public class MTMCWebView {
         return computer.getDebugInfo().assemblySource();
     }
     
+    public String getBreakpointsJson() {
+        var breakpoints = getBreakpoints();
+        var output = "[";
+
+        for (int i=0; i<breakpoints.length; i++) {
+            if(i > 0) output += ',';
+            output += breakpoints[i];
+        }
+        
+        output += ']';
+        
+        return output;
+    }
+    
     public int[] getBreakpoints() {
-        if (computer.getDebugInfo() == null) {
+        if (breakpoints == null) {
             return new int[0];
         }
         
-        var breakpoints = computer.getBreakpoints();
-        var lines = new int[breakpoints.length];
-        var debug = computer.getDebugInfo().originalLineNumbers();
-        
-        if (currentFileMime.equals("text/x-asm")) {
-            debug = computer.getDebugInfo().assemblyLineNumbers();
-        }
-        
-        if (debug == null) {
-            return new int[0];
-        }
+        var count = 0;
         
         for (int i=0; i<breakpoints.length; i++) {
-            if (breakpoints[i] < debug.length) {
-                lines[i] = debug[breakpoints[i]];
-            }
+            if(breakpoints[i] > 0) count++;
+        }
+
+        var results = new int[count];
+        var index = 0;
+        
+        for (int i=0; i<breakpoints.length; i++) {
+            if(breakpoints[i] > 0) results[index++] = breakpoints[i];
         }
         
-        return lines;
+        return results;
     }
     
     private void setMachineBreakpoint(int line, boolean active) {
@@ -573,7 +582,6 @@ public class MTMCWebView {
                 if (breakpoints[i] == line) {
                     breakpoints[i] = 0;
                     setMachineBreakpoint(line, active);
-                    return true;
                 }
             }
             

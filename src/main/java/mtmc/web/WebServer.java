@@ -79,6 +79,13 @@ public class WebServer {
                     ctx.header("Content-Type", "image/png");
                     ctx.result(computer.getDisplay().toPng());
                 })
+                .post("/breakpoint/{line}/{active}", ctx -> {
+                    int line = Integer.parseInt(ctx.pathParam("line"));
+                    boolean active = Boolean.parseBoolean(ctx.pathParam("active"));
+                    
+                    computerView.setBreakpoint(line, active);
+                    ctx.html("");
+                })
                 .post("/cmd", ctx -> {
                     Map vals = json.fromJson(ctx.body(), Map.class);
                     String cmd = (String) vals.get("cmd");

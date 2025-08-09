@@ -23,6 +23,7 @@ public class MonTanaMiniComputer {
     // core model
     short[] registerFile; // 16 user visible + the instruction register
     byte[]  memory;
+    byte[] breakpoints;
     private ComputerStatus status = READY;
     private int speed = 1000000;
     private MTMCIO io = new MTMCIO();
@@ -48,6 +49,7 @@ public class MonTanaMiniComputer {
     public void initMemory() {
         registerFile = new short[Register.values().length];
         memory = new byte[MEMORY_SIZE];
+        breakpoints = new byte[MEMORY_SIZE];
         rewindSteps = null;
         setRegisterValue(SP, (short) MEMORY_SIZE);  // default the stack pointer to the top of memory
         rewindSteps = new LinkedList<>();
@@ -93,6 +95,10 @@ public class MonTanaMiniComputer {
         for (long i=0; i<instructions && status == EXECUTING; i++) {
             fetchAndExecute();
             count++;
+            
+            if(breakpoints[getRegisterValue(PC)] != 0) {
+                setStatus(BREAK);
+            }
         }
         
         return count;
@@ -115,7 +121,7 @@ public class MonTanaMiniComputer {
         this.status = status;
         this.notifyOfExecutionUpdate();
         
-        if (status == FINISHED) {
+        if (status == FINISHED || status == BREAK) {
             this.notifyOfStepExecution();
         }
     }
@@ -748,6 +754,25 @@ public class MonTanaMiniComputer {
     public short getRegisterValue(int register) {
         return registerFile[register];
     }
+    
+    public int[] getBreakpoints() {
+        var list = new ArrayList<Integer>();
+        
+        for(int i=0; i<breakpoints.length; i++)
+        {
+            if(breakpoints[i] != 0) list.add(i);
+        }
+        
+        var result = new int[list.size()];
+        
+        for(int i=0; i<result.length; i++) result[i] = list.get(i);
+        
+        return result;
+    }
+    
+    public void setBreakpoint(int address, boolean active) {
+        breakpoints[address] = (active ? (byte)1 : (byte)0);
+    }
 
     private void start() {
         console.start();                     // start the interactive console
@@ -923,7 +948,8 @@ public class MonTanaMiniComputer {
         EXECUTING,
         PERMANENT_ERROR,
         FINISHED,
-        WAITING
+        WAITING,
+        BREAK
     }
 
     public static void main(String[] args) {

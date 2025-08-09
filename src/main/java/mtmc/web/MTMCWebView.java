@@ -509,6 +509,55 @@ public class MTMCWebView {
         
         return computer.getDebugInfo().assemblySource();
     }
+    
+    public int[] getBreakpoints() {
+        if (computer.getDebugInfo() == null) {
+            return new int[0];
+        }
+        
+        var breakpoints = computer.getBreakpoints();
+        var lines = new int[breakpoints.length];
+        var debug = computer.getDebugInfo().originalLineNumbers();
+        
+        if (currentFileMime.equals("text/x-asm")) {
+            debug = computer.getDebugInfo().assemblyLineNumbers();
+        }
+        
+        if (debug == null) {
+            return new int[0];
+        }
+        
+        for (int i=0; i<breakpoints.length; i++) {
+            if (breakpoints[i] < debug.length) {
+                lines[i] = debug[breakpoints[i]];
+            }
+        }
+        
+        return lines;
+    }
+    
+    public void setBreakpoint(int line, boolean active) {
+        if (computer.getDebugInfo() == null) {
+            return;
+        }
+        
+        var debug = computer.getDebugInfo().originalLineNumbers();
+        
+        if (currentFileMime.equals("text/x-asm")) {
+            debug = computer.getDebugInfo().assemblyLineNumbers();
+        }
+        
+        if (debug == null || debug.length <= line) {
+            return;
+        }
+
+        for (int i=0; i<debug.length; i++) {
+            if(debug[i] == line) {
+                computer.setBreakpoint(i, active);
+                break;
+            }
+        }
+    }
 
     enum DisplayFormat {
         DYN,

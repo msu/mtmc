@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import mtmc.emulator.MTMCConsole;
 import mtmc.emulator.MTMCDisplay;
+import mtmc.os.MTOS;
 
 public class MTMCWebView {
 
@@ -24,10 +25,7 @@ public class MTMCWebView {
     private DisplayFormat memoryDisplayFormat = DisplayFormat.DYN;
 
     private Set<String> expandedPaths = new HashSet<>();
-    private String currentFile;
-    private String currentFileMime;
     private String currentError;
-    private int[] breakpoints;
 
     public MTMCWebView(MonTanaMiniComputer computer) {
         this.computer = computer;
@@ -131,11 +129,11 @@ public class MTMCWebView {
     }
 
     public String getCurrentFilename() {
-        return currentFile;
+        return computer.getOS().getCurrentFile();
     }
 
     public String getCurrentFileMime() {
-        return currentFileMime;
+        return computer.getOS().getCurrentFileMime();
     }
 
     public String getCurrentError() {
@@ -143,11 +141,11 @@ public class MTMCWebView {
     }
     
     public String selectEditor() {
-        if (currentFileMime.startsWith("text/")) {
+        if (getCurrentFileMime().startsWith("text/")) {
             return "templates/editors/monaco.html";
         }
         
-        if (currentFileMime.startsWith("image/")) {
+        if (getCurrentFileMime().startsWith("image/")) {
             return "templates/editors/image.html";
         }
         
@@ -362,15 +360,16 @@ public class MTMCWebView {
     }
     
     public boolean hasFileOpen() {
-        return this.currentFile != null;
+        return getCurrentFilename() != null;
     }
     
     public boolean createFile(String filename, String mime) throws IOException {
         FileSystem fs = computer.getFileSystem();
+        MTOS os = computer.getOS();
         
-        this.currentFile = filename;
-        this.currentFileMime = mime;
-        this.breakpoints = new int[256];
+        os.setCurrentFile(filename);
+        os.setCurrentFileMime(mime);
+        os.setBreakpoints(new int[256]);
         
         if (filename.length() < 1) {
             this.currentError = "File name is required";
@@ -405,16 +404,17 @@ public class MTMCWebView {
         
         fs.writeFile(filename, "");
         
-        this.currentFile = fs.getCWD() + "/" + filename;
-        this.currentFileMime = mime;
+        os.setCurrentFile(fs.getCWD() + "/" + filename);
+        os.setCurrentFileMime(mime);
         
         return true;
     }
     
     public boolean createDirectory(String filename) throws IOException {
         FileSystem fs = computer.getFileSystem();
+        MTOS os = computer.getOS();
         
-        this.currentFile = filename;
+        os.setCurrentFile(filename);
         
         if (filename.length() < 1) {
             this.currentError = "Directory name is required";
@@ -445,22 +445,26 @@ public class MTMCWebView {
     }
 
     public boolean openFile(String fileToOpen) throws IOException {
-        File file = computer.getOS().loadFile(fileToOpen);
+        MTOS os = computer.getOS();
+        File file = os.loadFile(fileToOpen);
         
         if (!file.exists() || !file.isFile()) return false;
-
-        this.currentFile = fileToOpen;
-        this.currentFileMime = computer.getFileSystem().getMimeType(fileToOpen);
-        this.breakpoints = new int[256];
+        
+        os.setCurrentFile(fileToOpen);
+        os.setCurrentFileMime(computer.getFileSystem().getMimeType(fileToOpen));
+        os.setBreakpoints(new int[256]);
         
         return true;
     }
 
     public void closeFile() {
-        currentFile = null;
-        currentFileMime = null;
+        MTOS os = computer.getOS();
+        
         currentError = null;
-        breakpoints = null;
+        
+        os.setCurrentFile(null);
+        os.setCurrentFileMime(null);
+        os.setBreakpoints(null);
     }
     
     public boolean hasDebugInfo() {
@@ -529,6 +533,9 @@ public class MTMCWebView {
     }
     
     public int[] getBreakpoints() {
+        MTOS os = computer.getOS();
+        int[] breakpoints = os.getBreakpoints();
+        
         if (breakpoints == null) {
             return new int[0];
         }
@@ -556,7 +563,7 @@ public class MTMCWebView {
         
         var debug = computer.getDebugInfo().originalLineNumbers();
         
-        if (currentFileMime.equals("text/x-asm")) {
+        if (getCurrentFileMime().equals("text/x-asm")) {
             debug = computer.getDebugInfo().assemblyLineNumbers();
         }
         
@@ -573,6 +580,9 @@ public class MTMCWebView {
     }
     
     public boolean setBreakpoint(int line, boolean active) {
+        MTOS os = computer.getOS();
+        int[] breakpoints = os.getBreakpoints();
+        
         if (breakpoints == null) {
             return false;
         }
@@ -600,31 +610,7 @@ public class MTMCWebView {
     }
     
     public void applyBreakpoints() {
-        if (computer.getDebugInfo() == null || breakpoints == null) {
-            return;
-        }
-        
-        var debug = computer.getDebugInfo().originalLineNumbers();
-        var name = computer.getDebugInfo().originalFile();
-        
-        if (currentFileMime.equals("text/x-asm")) {
-            debug = computer.getDebugInfo().assemblyLineNumbers();
-            name = computer.getDebugInfo().assemblyFile();
-        } 
-
-        if (debug == null || !name.equals(this.currentFile)) {
-            return;
-        }
-
-        for (int index=0; index<breakpoints.length; index++) {
-            var line = breakpoints[index];
-            for (int i=0; i<debug.length; i++) {
-                if(debug[i] == line) {
-                    computer.setBreakpoint(i, true);
-                    break;
-                }
-            }
-        }
+        computer.getOS().applyBreakpoints();
     }
 
     enum DisplayFormat {

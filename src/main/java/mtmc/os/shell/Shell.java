@@ -18,7 +18,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import mtmc.os.fs.FileSystem;
 
@@ -63,6 +62,7 @@ public class Shell {
         computer.load(exec.code(), exec.data(), exec.graphics(), exec.debugInfo());
         tokens.consume();
         String arg = command.substring(file.length()).strip();
+        computer.getOS().applyBreakpoints();
         computer.setArg(arg);
         computer.run();
     }

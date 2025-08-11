@@ -19,9 +19,66 @@ public class MTOS {
     private final MonTanaMiniComputer computer;
     private long timer = 0;
     Random random = new Random();
+    
+    // Editor support
+    private String currentFile;
+    private String currentFileMime;
+    private int[] breakpoints;
 
     public MTOS(MonTanaMiniComputer computer) {
         this.computer = computer;
+    }    
+
+    public String getCurrentFile() {
+        return currentFile;
+    }
+
+    public void setCurrentFile(String currentFile) {
+        this.currentFile = currentFile;
+    }
+
+    public String getCurrentFileMime() {
+        return currentFileMime;
+    }
+
+    public void setCurrentFileMime(String currentFileMime) {
+        this.currentFileMime = currentFileMime;
+    }
+
+    public int[] getBreakpoints() {
+        return breakpoints;
+    }
+
+    public void setBreakpoints(int[] breakpoints) {
+        this.breakpoints = breakpoints;
+    }
+    
+    public void applyBreakpoints() {
+        if (computer.getDebugInfo() == null || breakpoints == null) {
+            return;
+        }
+        
+        var debug = computer.getDebugInfo().originalLineNumbers();
+        var name = computer.getDebugInfo().originalFile();
+        
+        if (getCurrentFileMime().equals("text/x-asm")) {
+            debug = computer.getDebugInfo().assemblyLineNumbers();
+            name = computer.getDebugInfo().assemblyFile();
+        } 
+
+        if (debug == null || !name.equals(currentFile)) {
+            return;
+        }
+
+        for (int index=0; index<breakpoints.length; index++) {
+            var line = breakpoints[index];
+            for (int i=0; i<debug.length; i++) {
+                if(debug[i] == line) {
+                    computer.setBreakpoint(i, true);
+                    break;
+                }
+            }
+        }
     }
 
     public void handleSysCall(short syscallNumber) {

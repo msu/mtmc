@@ -397,7 +397,7 @@ argument contains the command to run.
 
 Here is a list of valid commands:
 
-| Command     | Hex  | Descrption                                                                                                                                         |
+| Command     | Hex  | Description                                                                                                                                         |
 |-------------|------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | `count`     | 0x00 | `rv` is set to  a count of files in the directory                                                                                                  |
 | `get entry` | 0x01 | Retrieves the directory entry specified by `a2` and saves it to the data structure specified by `a3`. Valid values for `a2` are 0 through `count`. | 
@@ -420,7 +420,7 @@ dir_entry:
 ```
 
 Make sure the `size` and number of bytes allocated for `name` both match. Note that
-size must be specified in the strucutre as the `dirent` call reads it to determine how many
+size must be specified in the structure as the `dirent` call reads it to determine how many
 bytes can be copied into `name`.
 
 #### Cell files (RFILE)

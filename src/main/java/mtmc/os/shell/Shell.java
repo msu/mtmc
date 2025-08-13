@@ -102,7 +102,9 @@ public class Shell {
                     if (result.errors().isEmpty()) {
                         byte[] code = result.code();
                         if (code.length == 4) {
-                            int data = (code[2] << 8) | code[3];
+                            int lower = code[2] & 0xFF;
+                            int higher = code[3] & 0xFF;
+                            int data = (higher << 8) | lower;
                             computer.setRegisterValue(Register.DR, data);
                         }
                         int lower = code[1] & 0xFF;

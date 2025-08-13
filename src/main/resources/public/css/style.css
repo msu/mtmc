@@ -516,32 +516,44 @@ ul {
     padding-bottom: 2px;
 }
 
+#visual-shell {
+    cursor: default;
+}
+
 .directory-details {
     display: block;
 }
 
-.directory-details[disabled] > summary::before {
-    opacity: 0;
-}
-
 .directory-details > summary::before {
-    content: "+";
+    /* TODO: this gotta be aligned with the bars too */
+    /*display: inline-flex;*/
+    /*width: 0.8em;*/
+    /*height: 0.8em;*/
+    /*aspect-ratio: 1 / 1;*/
+    /*align-items: center;*/
+    /*justify-content: center;*/
+
     font-family: monospace;
     font-weight: bolder;
     font-size: 1em;
     color: var(--filetree-gray);
+
+    /*padding: 0;*/
+    /*line-height: 1;*/
+    /*border: 2px solid var(--filetree-gray);*/
+
     user-select: none;
     -webkit-user-select: none;
+
+    content: "+";
 }
 
 .directory-details[open] > summary::before {
     content: "-";
-    font-family: monospace;
-    font-weight: bolder;
-    font-size: 1em;
-    color: var(--filetree-gray);
-    user-select: none;
-    -webkit-user-select: none;
+}
+
+.directory-details[disabled] > summary::before {
+    opacity: 0;
 }
 
 /* Hide the summary arrow */
@@ -728,6 +740,7 @@ ul {
     padding: 3px;
     position: relative;
     bottom: 0;
+    cursor: pointer;
 }
 
 #search-folder-icon {
@@ -756,6 +769,7 @@ ul {
 
 .file-entry {
     margin-top: 1px;
+    cursor: pointer;
 }
 
 .file-listing {
@@ -814,7 +828,6 @@ ul {
         min-width: 100dvw;
         width: 100dvw;
         max-width: 100dvw;
-        height: 100dvh;
         height: 100dvh;
         max-height: 100dvh;
         overflow: hidden;

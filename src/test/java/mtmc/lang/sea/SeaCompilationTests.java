@@ -1,6 +1,7 @@
 package mtmc.lang.sea;
 
 
+import mtmc.emulator.DebugInfo;
 import mtmc.emulator.MonTanaMiniComputer;
 import mtmc.emulator.Register;
 import mtmc.lang.CompilationException;
@@ -9,6 +10,8 @@ import mtmc.lang.sea.ast.Unit;
 import mtmc.os.exec.Executable;
 import mtmc.web.WebServer;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -52,6 +55,46 @@ public class SeaCompilationTests {
         machine.load(exe.code(), exe.data(), exe.debugInfo());
         machine.run();
         return machine;
+    }
+
+    String compileAndRun(boolean server, String src) {
+        var exe = compile(src);
+        exe = new Executable(exe.format(), exe.code(), exe.data(), exe.graphics(), "/src/test.sea", new DebugInfo(
+                exe.debugInfo().debugStrings(),
+                "/src/test.sea",
+                exe.debugInfo().assemblySource(),
+                exe.debugInfo().assemblyLineNumbers(),
+                "/src/test.sea",
+                exe.debugInfo().originalLineNumbers(),
+                exe.debugInfo().globals(),
+                exe.debugInfo().locals()
+        ));
+        var machine = new MonTanaMiniComputer();
+        if (!server) {
+            machine.load(exe.code(), exe.data(), exe.graphics(), exe.debugInfo());
+            machine.run();
+        } else {
+            var ws = new WebServer(machine);
+            var fs = ws.getComputerView().getFileSystem();
+
+            try {
+                fs.writeFile("/src/test.sea", src);
+                fs.writeFile("/bin/test", exe.dump());
+                machine.load(exe.code(), exe.data(), exe.graphics(), exe.debugInfo());
+                ws.getComputerView().openFile("/src/test.sea");
+                ws.getComputerView().applyBreakpoints();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        assertEquals(MonTanaMiniComputer.ComputerStatus.FINISHED, machine.getStatus());
+        return machine.getConsole().getOutput();
     }
 
     String compileAndRun(String src) {
@@ -583,8 +626,20 @@ public class SeaCompilationTests {
     }
 
     @Test
-    public void testGlobalStructs() {
-        var output = compileAndRun("""
+    public void globalArrayAssignment() {
+        var output = compileAndRun(true, """
+                int printf(char *s, ...);
+                
+                char s[4];
+                
+                int main() {
+                    s[0] = 'h';
+                    s[1] = 'e';
+                    s[2] = 'y';
+                    s[3] = 0;
+                    printf("%s\\n", s);
+                    return 0;
+                }
                 """);
     }
 }

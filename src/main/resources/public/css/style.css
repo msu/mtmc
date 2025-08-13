@@ -5,6 +5,7 @@
     --pdp-beige: #fdfddc;
     --pdp-white: #f1f1f6;
     --pdp-off-white: #F0EBCD;
+    --filetree-gray: #666;
 }
 
 html {
@@ -351,7 +352,7 @@ main {
     font-family: monospace;
     font-weight: bold;
     font-size: 16px;
-/*    overflow: auto;*/
+    /*    overflow: auto;*/
     padding: 4px;
 }
 
@@ -515,23 +516,47 @@ ul {
     padding-bottom: 2px;
 }
 
-/* Uncomment if you want +/- instead of arrows */
-/*details > summary::before {
+.directory-details {
+    display: block;
+}
+
+.directory-details[disabled] > summary::before {
+    opacity: 0;
+}
+
+.directory-details > summary::before {
     content: "+";
     font-family: monospace;
+    font-weight: bolder;
+    font-size: 1em;
+    color: var(--filetree-gray);
     user-select: none;
     -webkit-user-select: none;
 }
 
-details[open] > summary::before {
+.directory-details[open] > summary::before {
     content: "-";
     font-family: monospace;
+    font-weight: bolder;
+    font-size: 1em;
+    color: var(--filetree-gray);
     user-select: none;
     -webkit-user-select: none;
-}*/
+}
 
-.directory-details details.directory-details {
-    margin-left: -16px;
+/* Hide the summary arrow */
+.directory-details > summary {
+    list-style: none;
+}
+
+.directory-details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.directory-content {
+    margin-left: 1.5em;
+    padding-left: 0.5em;
+    border-left: 1px solid var(--filetree-gray);
 }
 
 .site {
@@ -560,13 +585,13 @@ details[open] > summary::before {
 }
 
 .file-system-nav-bar.editor-buttons {
-    display: flex; 
+    display: flex;
     align-items: center;
 }
 
 .file-system-nav-bar.editor-buttons .divider {
-    display: inline-block; 
-    border: 1px inset #3286ce; 
+    display: inline-block;
+    border: 1px inset #3286ce;
     height: 0.8lh;
 }
 
@@ -659,9 +684,9 @@ details[open] > summary::before {
 }
 
 .file-system-nav-bar button.nav-button .label {
-    display: inline-block; 
-    position: relative; 
-    top: -3px; 
+    display: inline-block;
+    position: relative;
+    top: -3px;
     padding-left: 2px;
     padding-right: 4px;
 }
@@ -699,7 +724,7 @@ details[open] > summary::before {
     width: calc(100% - 8px);
 }
 
-.directory-entry {
+.directory-name {
     padding: 3px;
     position: relative;
     bottom: 0;
@@ -714,7 +739,7 @@ details[open] > summary::before {
     margin: 2px;
 }
 
-.folder-icon {
+.directory-icon {
     position: relative;
     height: 20px;
     width: 20px;
@@ -780,11 +805,11 @@ details[open] > summary::before {
 }
 
 @media only screen and (max-width: 768px) and (orientation: portrait) {
-    
+
     html {
         overflow: hidden;
     }
-    
+
     body {
         min-width: 100dvw;
         width: 100dvw;
@@ -794,7 +819,7 @@ details[open] > summary::before {
         max-height: 100dvh;
         overflow: hidden;
     }
-    
+
     main {
         grid-template-columns: 100dvw 100dvw 100dvw;
         grid-gap: 0px;
@@ -805,7 +830,7 @@ details[open] > summary::before {
         height: 100dvh;
         touch-action: manipulation;
     }
-    
+
     #left, #center {
         min-width: 100dvw;
         width: 100dvw;
@@ -815,7 +840,7 @@ details[open] > summary::before {
         max-height: 100dvh;
         scroll-snap-align: center;
     }
-    
+
     #fs {
         min-width: calc(100dvw - 10px);
         width: calc(100dvw - 10px);
@@ -826,27 +851,27 @@ details[open] > summary::before {
         overflow: hidden;
         scroll-snap-align: center;
     }
-    
+
     #display {
         border: 0;
         padding: 0;
     }
-    
+
     #expand, #contract {
         display: none;
     }
-    
+
     .fullscreen #console, .fullscreen #console-input {
         font-size: unset;
     }
-    
+
     .fullscreen #console #contract-console {
         width: 16px;
         height: 16px;
         top: 8px;
         right: 8px;
     }
-    
+
     .file-system-nav-bar.editor-buttons .title {
         padding-top: 0px;
     }

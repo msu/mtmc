@@ -1,5 +1,5 @@
 
-## Frequently Asked Quesstions
+## Frequently Asked Questions
 
 ### What does MTMC stand for?
 

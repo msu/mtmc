@@ -73,7 +73,7 @@ public abstract class Instruction extends ASMElement {
         if (ls != null) {
             return ls;
         }
-        String jumpReg = JumpInstruction.disassemble(instruction);
+        String jumpReg = JumpRegisterInstruction.disassemble(instruction);
         if (jumpReg != null) {
             return jumpReg;
         }

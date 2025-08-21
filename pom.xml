@@ -15,6 +15,7 @@
                 <version>3.6.0</version>
                 <executions>
                     <execution>
+                        <id>webserver</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
@@ -32,14 +33,64 @@
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
+                    <!-- TemplateRenderer JAR - run manually with mvn assembly:single@template-renderer -->
+                    <execution>
+                        <id>template-renderer</id>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>mtmc.web.teavm.TemplateRenderer</mainClass>
+                                </manifest>
+                            </archive>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <finalName>mtmc-template-renderer</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
+            
+            <!-- TeaVM Plugin for Java to JavaScript compilation -->
+            <plugin>
+                <groupId>org.teavm</groupId>
+                <artifactId>teavm-maven-plugin</artifactId>
+                <version>${teavm.version}</version>
+                <executions>
+                    <!-- WebWorker execution -->
+                    <execution>
+                        <id>webworker</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>mtmc.web.teavm.WebWorker</mainClass>
+                            <target>javascript</target>
+                            <targetDirectory>${project.basedir}/dist/js</targetDirectory>
+                            <targetFileName>mtmc.js</targetFileName>
+                            <jsModuleType>NONE</jsModuleType>
+                            <debugInformationGenerated>true</debugInformationGenerated>
+                            <sourceMapsGenerated>true</sourceMapsGenerated>
+                            <minifying>false</minifying>
+                            <optimizationLevel>SIMPLE</optimizationLevel>
+                        </configuration>
+                    </execution>
+
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <teavm.version>0.12.3</teavm.version>
     </properties>
     <dependencies>
         <dependency>
@@ -72,6 +123,30 @@
             <groupId>org.webjars.npm</groupId>
             <artifactId>monaco-editor</artifactId>
             <version>0.52.2</version>
+        </dependency>
+        
+        <!-- TeaVM Class Library for JavaScript compilation -->
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-classlib</artifactId>
+            <version>${teavm.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- TeaVM JavaScript Object Interop -->
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-jso</artifactId>
+            <version>${teavm.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- TeaVM JavaScript Interop APIs -->
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-jso-apis</artifactId>
+            <version>${teavm.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

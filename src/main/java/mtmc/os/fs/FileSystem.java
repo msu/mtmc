@@ -13,7 +13,7 @@ import java.util.zip.ZipInputStream;
 import mtmc.emulator.MonTanaMiniComputer;
 
 public class FileSystem {
-    private String cwd = "/home";
+    private String cwd = "/";
     private MonTanaMiniComputer computer;
     static final Path DISK_PATH = Path.of(System.getProperty("user.dir"), "disk").toAbsolutePath();
     

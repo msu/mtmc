@@ -284,13 +284,13 @@ The address or value to load or store from is found in the word immediately afte
 | Instruction  | Form                  | Description                                                                                                                      | Example                              |
 |--------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
 | `lw`         | `1000 0000 rrrr 0000` | Loads the word (16-bit) value at the address found immediately after the instruction into `rrrr`                                 | `lw t0 GLOBAL_VAR_1`                 |
-| `lwo`        | `1000 0001 rrrr oooo` | Loads the word (16-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr` | `lwo t0 GLOBAL_VAR_1 t1`             |
+| `lwo`        | `1000 0001 rrrr oooo` | Loads the word (16-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr` | `lwo t0 t1 GLOBAL_VAR_1`             |
 | `lb`         | `1000 0010 rrrr 0000` | Loads the word (8-bit) value at the address found immediately after the instruction into `rrrr`                                  | `lb t0 GLOBAL_VAR_1`                 |
-| `lbo`        | `1000 0011 rrrr oooo` | Loads the word (8-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr`  | `lbo t0 GLOBAL_VAR_1 t1`             |
+| `lbo`        | `1000 0011 rrrr oooo` | Loads the word (8-bit) value at the address found immediately after the instruction, offset by the value in `oooo`, into `rrrr`  | `lbo t0 t1 GLOBAL_VAR_1`             |
 | `sw`         | `1000 0100 rrrr 0000` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction                                   | `sw t0 GLOBAL_VAR_1`                 |
-| `swo`        | `1000 0101 rrrr oooo` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`    | `swo t0 GLOBAL_VAR_1 t1`             |
+| `swo`        | `1000 0101 rrrr oooo` | Saves the word (16-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`    | `swo t0 t1 GLOBAL_VAR_1`             |
 | `sb`         | `1000 0110 rrrr 0000` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction                                    | `sb t0 GLOBAL_VAR_2`                 |
-| `sbo`        | `1000 0111 rrrr oooo` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`     | `sbo t0 GLOBAL_VAR_2 t1`             |
+| `sbo`        | `1000 0111 rrrr oooo` | Saves the byte (8-bit) value in `rrrr` to the address found immediately after the instruction, offset by the value in `oooo`     | `sbo t0 t1 GLOBAL_VAR_2`             |
 | `li`         | `1000 1111 rrrr 0000` | Loads the word (16-bit) value found immediately after the instruction into `rrrr`. Can be used to load a memory addresses.       | `li t0 1024`, `li t0 MEM_ADDR_LABEL` |
 | `la` (alias) | `1000 1111 rrrr 0000` | Alias for `li`. Can be used when loading a memory addresses to clarify intent.                                                   | `la t0 MEM_ADDR_LABEL`               |
 

@@ -4,6 +4,9 @@
     <meta name="viewport" content="minimal-ui, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    {% if environment %}
+    <meta name="mtmc-environment" content="{{ environment }}">
+    {% endif %}
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="webjars/monaco-editor/0.52.2/min/vs/editor/editor.main.css">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">

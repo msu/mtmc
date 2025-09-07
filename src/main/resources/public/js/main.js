@@ -1,5 +1,81 @@
-// connect to sse endpoint
-const sseSource = new EventSource("/sse", {withCredentials: true});
+// Global worker reference for event routing
+let mtmcWorker = null;
+let workerEventSource = null;
+
+const envMeta = document.querySelector('meta[name="mtmc-environment"]');
+window.tea = envMeta && envMeta.content === 'tea';
+
+function maybeCreateWorker() {
+    if (!window.tea) return;
+    try {
+        mtmcWorker = new Worker('/js/mtmc-worker.js');
+        
+        mtmcWorker.onmessage = function(event) {
+            const { type, payload } = event.data;
+            console.log('Message from MTMC worker:', type, payload);
+            
+            // Route worker events to the emulated EventSource
+            if (workerEventSource && type.startsWith('sse:')) {
+                const eventType = type.substring(4); // Remove 'sse:' prefix
+                workerEventSource._dispatchEvent(eventType, payload);
+            }
+        };
+        
+        mtmcWorker.onerror = function(error) {
+            console.error('MTMC worker error:', error);
+            mtmcWorker = null;
+            workerEventSource = null;
+        };
+        
+        // Test connection with ping
+        for (let i = 0; i < 5; i++) {
+            mtmcWorker.postMessage({ type: 'ping', payload: 'Connection test' });
+        }
+    } catch (error) {
+        console.error('Error creating MTMC worker:', error);
+    }
+}
+
+// EventSource wrapper that routes through MTMC worker when available
+function createEventSource(url, options, mtmcWorker) {
+    if (window.tea && mtmcWorker) {
+        // Emulated EventSource through MTMC worker
+        const emulatedEventSource = {
+            addEventListener: function(type, listener) {
+                // Store event listeners for when worker sends events
+                if (!this._listeners) this._listeners = {};
+                if (!this._listeners[type]) this._listeners[type] = [];
+                this._listeners[type].push(listener);
+                
+                // Register with worker to receive events of this type
+                mtmcWorker.postMessage({ 
+                    type: 'sse-register', 
+                    payload: JSON.stringify({ eventType: type, url: url }) 
+                });
+            },
+            onerror: null,
+            _dispatchEvent: function(type, data) {
+                if (this._listeners && this._listeners[type]) {
+                    const event = { data: data, type: type };
+                    this._listeners[type].forEach(listener => listener(event));
+                }
+                if (this.onerror && type === 'error') {
+                    this.onerror(event);
+                }
+            }
+        };
+        
+        // Store reference for event routing
+        workerEventSource = emulatedEventSource;
+        return emulatedEventSource;
+    } else {
+        // Real EventSource
+        return new EventSource(url, options);
+    }
+}
+
+maybeCreateWorker();
+const sseSource = createEventSource("/sse", {withCredentials: true}, mtmcWorker);
 let buttons = 0x00;
 let gamepad = null;
 

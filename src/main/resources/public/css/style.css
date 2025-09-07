@@ -191,6 +191,7 @@ main {
 
 #display-img {
     width: 340px;
+    image-rendering: pixelated;
 }
 
 #display-control-wrapper {

@@ -1,5 +1,5 @@
 
-## Frequently Asked Quesstions
+## Frequently Asked Questions
 
 ### What does MTMC stand for?
 
@@ -17,13 +17,13 @@ The 16 is a reference to the MTMC being a 16-bit computer. This means that
 integers are 2 bytes or 16 bits wide. 
 
 This is known as the "word size" of the computer and is based upon the size 
-of the *Arithmatic Logic Unit* (ALU) in the CPU. The ALU is the part of the 
+of the *Arithmetic Logic Unit* (ALU) in the CPU. The ALU is the part of the 
 CPU that does math like addition, subtraction, and boolean operations. 
 
 ### What is assembly language?
 
 Computer CPUs "decode" binary instructions to activate different parts of the CPU
-like the *Arithmatic Logic Unit* (ALU) and memory *Control Unit* (CU) for instruction
+like the *Arithmetic Logic Unit* (ALU) and memory *Control Unit* (CU) for instruction
 execution. These components work together to complete the instruction.
 
 Assembly language prevents programmers from having to manually encode instructions
@@ -47,8 +47,8 @@ side effects like setting a *zero flag* that could be used to determine a
 conditional jump.
 
 CISC was more efficient in the early days as it required fewer instructions to
-accomplish the same work. While a CISC design would have been more represetative
-of early processors, they're harder to understnad and not representative of 
+accomplish the same work. While a CISC design would have been more representative
+of early processors, they're harder to understand and not representative of 
 how modern CPUs work. 
 
 ### Why is the code section in assembly called `.text`?

@@ -494,7 +494,7 @@ set_direction:
   sw t3 direction
 
 check_timer:
-  lw  a0 0
+  li  a0 0
   sys timer
 
   eqi rv 0

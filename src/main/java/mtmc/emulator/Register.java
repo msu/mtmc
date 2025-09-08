@@ -17,7 +17,7 @@ public enum Register {
     RA,  // return address
     FP, // frame pointer
     SP, // stack pointer
-    BP, // break pointer
+    BP, // base pointer
     PC,
 
     //=== non-user-facing registers

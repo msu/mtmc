@@ -41,7 +41,7 @@ There are 16 user-facing registers usable by name in assembly:
 | 11    | `ra`   | return address register, holds the return address for a function call |
 | 12    | `fp`   | frame pointer, points to the top of the current function frame        |
 | 13    | `sp`   | stack pointer, points to the bottom of the current function frame     |
-| 14    | `bp`   | break pointer, points to the top of the current heap space            |
+| 14    | `bp`   | base pointer, points to the top of the current heap space             |
 | 15    | `pc`   | program counter, points to the next instruction to execute            |
 
 
@@ -105,7 +105,7 @@ Labels must be the first token on a line and must end with a colon.  If you wish
 
 Note that strings will be implicitly zero terminated.
 
-The above data will be placed after the code segment in memory, in a data segment.  The break pointer will point to the next memory cell after the data segment.
+The above data will be placed after the code segment in memory, in a data segment.  The base pointer will point to the next memory cell after the data segment.
 
 Also note that the `#` character can be used for line comments.
 

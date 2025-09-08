@@ -50,7 +50,7 @@ The MTMC has a total of 16 user-facing register. They are outlined below.
 | 11    | `ra` | return address register, holds the return address for a function call |
 | 12    | `fp` | frame pointer, points to the top of the current function frame        |
 | 13    | `sp` | stack pointer, points to the bottom of the current function frame     |
-| 14    | `bp` | break pointer, points to the top of the current heap space            |
+| 14    | `bp` | base pointer, points to the top of the current heap space             |
 | 15    | `pc` | program counter, points to the next instruction to execute            |
 
 In addition to these registers, there are the following non-user facing registers:

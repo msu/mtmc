@@ -44,6 +44,7 @@ export const Opcode = {
   DEC_MEMR: 0x2C,      // DEC [base+offset]
   LOAD_INDEXED: 0x2D,  // MOV reg, [base+index]
   STORE_INDEXED: 0x2E, // MOV [base+index], reg
+  STOREI_REL: 0x2F,    // MOV [base+offset], imm8
 
   // Logical & Bitwise
   AND_REG_REG: 0x30,
@@ -122,12 +123,13 @@ export const Syscall = {
 export const RegCode = {
   AX: 0, BX: 1, CX: 2, DX: 3,
   EX: 4, FX: 5, SP: 6, FP: 7,
+  BK: 8,
   AL: 0, BL: 1, CL: 2, DL: 3,
   EL: 4, FL: 5,
 }
 
 // Code to register name mapping
-export const RegName = ['AX', 'BX', 'CX', 'DX', 'EX', 'FX', 'SP', 'FP']
+export const RegName = ['AX', 'BX', 'CX', 'DX', 'EX', 'FX', 'SP', 'FP', 'BK']
 
 // ============================================================================
 // Registers
@@ -783,6 +785,14 @@ export function decodeFromBytes(bytes) {
     return result
   }
 
+  // Store immediate to register-relative (base, offset, imm8)
+  if (opcode === Opcode.STOREI_REL) {
+    result.base = byte1
+    result.offset = signExtend8(byte2)
+    result.imm = byte3  // 8-bit immediate (0-255)
+    return result
+  }
+
   return result
 }
 
@@ -849,6 +859,7 @@ export function getInstructionName(opcode) {
     [Opcode.DEC_MEMR]: 'DEC',
     [Opcode.LOAD_INDEXED]: 'MOV',
     [Opcode.STORE_INDEXED]: 'MOV',
+    [Opcode.STOREI_REL]: 'MOV',
     [Opcode.AND_REG_REG]: 'AND',
     [Opcode.AND_REG_IMM]: 'AND',
     [Opcode.OR_REG_REG]: 'OR',
@@ -897,14 +908,14 @@ export class CPU {
   }
 
   /**
-   * Get register value by register code (0-7)
+   * Get register value by register code (0-8)
    */
   getReg(code) {
     return this.registers[RegName[code]] || 0
   }
 
   /**
-   * Set register value by register code (0-7)
+   * Set register value by register code (0-8)
    */
   setReg(code, value) {
     const name = RegName[code]
@@ -1373,6 +1384,14 @@ export class CPU {
         const addr = (base + index) & 0xFFFF
         const value = this.getReg(instr.reg)
         this.writeMemory(addr, value)
+        this.incPC(instr.size)
+        break
+      }
+
+      case Opcode.STOREI_REL: {
+        const base = this.getReg(instr.base)
+        const addr = (base + instr.offset) & 0xFFFF
+        this.writeMemory(addr, instr.imm)
         this.incPC(instr.size)
         break
       }

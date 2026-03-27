@@ -3321,6 +3321,10 @@ export async function initUI() {
     if (debugMode) consolePrint('[Program exited]')
   })
 
+  os.setInputCallback(() => {
+    return prompt('Enter input:')
+  })
+
   // Check if file system is empty (first time) and load from manifest
   const files = await fs.listFiles()
   if (files.length === 0) {

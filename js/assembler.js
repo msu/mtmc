@@ -106,12 +106,13 @@ export function tokenize(source) {
       continue
     }
 
-    // Parse instruction (preserve character and string literals)
+    // Parse instruction (preserve character/string literals and bracket contents)
     {
       const parts = []
       let current = ''
       let inString = false
       let inChar = false
+      let inBracket = false
 
       for (let i = 0; i < line.length; i++) {
         const ch = line[i]
@@ -122,7 +123,13 @@ export function tokenize(source) {
         } else if (ch === "'" && (i === 0 || line[i-1] !== '\\')) {
           inChar = !inChar
           current += ch
-        } else if ((ch === ' ' || ch === '\t' || ch === ',') && !inString && !inChar) {
+        } else if (ch === '[' && !inString && !inChar) {
+          inBracket = true
+          current += ch
+        } else if (ch === ']' && !inString && !inChar) {
+          inBracket = false
+          current += ch
+        } else if ((ch === ' ' || ch === '\t' || ch === ',') && !inString && !inChar && !inBracket) {
           if (current) {
             parts.push(current)
             current = ''
@@ -192,7 +199,9 @@ function parseDataDirective(directive, data, lineNum) {
     items.push(current.trim())
   }
 
-  // Process each item
+  // Process each item, tracking label references for later resolution
+  const labelFixups = []  // {offset, label} pairs
+
   for (const item of items) {
     // Check for DUP (e.g., "256 DUP(0)")
     const dupMatch = item.match(/^(\d+)\s+DUP\s*\((.+)\)$/i)
@@ -208,9 +217,13 @@ function parseDataDirective(directive, data, lineNum) {
 
     // Regular value
     const value = parseDataValue(item, directive, lineNum)
+    if (value.labelRef) {
+      labelFixups.push({ offset: bytes.length, label: value.labelRef })
+    }
     bytes.push(...value)
   }
 
+  bytes.labelFixups = labelFixups
   return bytes
 }
 
@@ -263,6 +276,20 @@ function parseDataValue(item, directive, lineNum) {
     // Invalid character literal
     const prefix = lineNum ? `Line ${lineNum}: ` : ''
     throw new Error(`${prefix}Invalid character literal: ${item}`)
+  }
+
+  // Check if it's a label reference (not a number, not starting with a digit)
+  if (!/^[-+]?\d/.test(item) && !item.startsWith('0x') && !item.startsWith('0X')
+      && !item.startsWith('0b') && !item.startsWith('0B')) {
+    // This is a label reference - return a placeholder with metadata
+    if (directive === 'DW') {
+      const placeholder = [0x00, 0x00]
+      placeholder.labelRef = item
+      return placeholder
+    } else {
+      const prefix = lineNum ? `Line ${lineNum}: ` : ''
+      throw new Error(`${prefix}Cannot use label reference in DB directive: ${item}`)
+    }
   }
 
   // Numeric value
@@ -542,6 +569,13 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
       } else if (dst.type === 'memory_indexed' && src.type === 'register') {
         // MOV [BX+CX], AX -> STORE_INDEXED
         encode4Byte(Opcode.STORE_INDEXED, src.value, dst.base, dst.index)
+      } else if (dst.type === 'memory_relative' && src.type === 'immediate') {
+        // MOV [BX+2], 42 -> STOREI_REL
+        const imm = src.value
+        if (imm < 0 || imm > 255) {
+          throwError(`MOV [reg+offset], imm requires immediate value 0-255, got ${imm}. Use: MOV reg, ${imm}; MOV ${formatOperand(dst)}, reg`)
+        }
+        encode4Byte(Opcode.STOREI_REL, dst.base, dst.offset & 0xFF, imm & 0xFF)
       } else {
         throwError(`Invalid MOV operands: MOV ${formatOperand(dst)}, ${formatOperand(src)}`)
       }
@@ -1019,8 +1053,20 @@ export function assemble(source, filename = null) {
   const bytecode = []
   const lineMap = []  // Array of {pc, line} objects
 
-  // Emit data directives
+  // Emit data directives, resolving label references
   for (const dir of directives) {
+    // Patch any label references now that all labels are known
+    if (dir.bytes.labelFixups) {
+      for (const fixup of dir.bytes.labelFixups) {
+        if (!(fixup.label in labels)) {
+          throw new Error(`Line ${dir.line}: Undefined label in data: ${fixup.label}`)
+        }
+        const addr = labels[fixup.label]
+        dir.bytes[fixup.offset] = (addr >> 8) & 0xFF      // high byte
+        dir.bytes[fixup.offset + 1] = addr & 0xFF          // low byte
+      }
+    }
+
     for (let i = 0; i < dir.bytes.length; i++) {
       bytecode[dir.address + i] = dir.bytes[i]
     }
@@ -1042,8 +1088,9 @@ export function assemble(source, filename = null) {
 
   // Calculate memory layout
   const codeEnd = codeAddress      // End of code segment
-  const dataEnd = dataAddress      // End of data segment (also the break pointer)
-  const sectionsOffset = dataEnd   // Sections start after data
+  const dataEnd = dataAddress      // End of data segment
+  const breakPointer = (dataEnd + 1) & ~1  // Word-align BK for heap allocations
+  const sectionsOffset = dataEnd           // Sections start after data
 
   // Generate debug info section
   const debugSection = generateDebugSection(lineMap, labels, filename)
@@ -1089,9 +1136,9 @@ export function assemble(source, filename = null) {
   header[0x000E] = (sectionsOffset >> 8) & 0xFF
   header[0x000F] = sectionsOffset & 0xFF
 
-  // 0x0010-0x0011: Break pointer (BK) - end of data segment (big-endian, 16-bit)
-  header[0x0010] = (dataEnd >> 8) & 0xFF
-  header[0x0011] = dataEnd & 0xFF
+  // 0x0010-0x0011: Break pointer (BK) - word-aligned end of data segment (big-endian, 16-bit)
+  header[0x0010] = (breakPointer >> 8) & 0xFF
+  header[0x0011] = breakPointer & 0xFF
 
   // 0x0012-0x0013: Code boundary (CB) - end of code segment (big-endian, 16-bit)
   header[0x0012] = (codeEnd >> 8) & 0xFF

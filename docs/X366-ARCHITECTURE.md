@@ -58,8 +58,10 @@ MOV CL, [addr]      ; Load byte from memory into CL (zero-extended)
 SP - Stack Pointer (grows downward from end of memory)
 FP - Frame Pointer (base pointer for stack frames)
 BK - Break Pointer (end of heap/start of free memory)
-PC - Program Counter (instruction pointer)
+PC - Program Counter (not directly accessible)
 ```
+
+SP, FP, and BK are directly accessible in instructions (e.g., `MOV BX, BK`, `ADD BK, AX`). PC is maintained internally and cannot be used as an operand.
 
 ### Flags Register
 
@@ -283,6 +285,8 @@ Internal-only (no register code):
 - **0x1B**: STOREI [base], imm - `[0x1B][base][imm_hi][imm_lo]` (store immediate to [reg])
 - **0x1C**: STOREI_DIRECT [addr], byte_imm - `[0x1C][addr_hi][addr_lo][byte_imm]` (store byte immediate to direct address)
 - **0x2D**: LOAD_INDEXED reg, [base+index] - `[0x2D][dst][base][index]` (load from base+index)
+- **0x2E**: STORE_INDEXED [base+index], reg - `[0x2E][src][base][index]` (store to base+index)
+- **0x2F**: STOREI_REL [base+offset], byte_imm - `[0x2F][base][offset][byte_imm]` (store byte immediate to base+offset)
 - **0x2E**: STORE_INDEXED [base+index], reg - `[0x2E][src][base][index]` (store to base+index)
 
 **Byte Operations:**
@@ -527,30 +531,30 @@ fill_loop:
 
 **System Call Table:**
 
-| Code | Name         | Arguments      | Returns | Description                  |
-|------|--------------|----------------|---------|------------------------------|
-| 0    | EXIT         | -              | -       | Terminate program            |
-| 1    | PRINT_CHAR   | AX=char        | -       | Print character              |
-| 2    | PRINT_STRING | AX=addr        | -       | Print null-terminated string |
-| 3    | PRINT_INT    | AX=int         | -       | Print signed integer         |
-| 4    | READ_CHAR    | -              | AX=char | Read character               |
-| 5    | READ_INT     | -              | AX=int  | Read integer                 |
-| 6    | READ_STRING  | AX=buf, BX=max | AX=len  | Read string                  |
-| 7    | ATOI         | AX=str         | AX=int, BX=ptr | Parse integer from string    |
-| 8    | SBRK         | AX=increment   | AX=old_BK | Allocate heap memory         |
-| 9    | SCREEN       | -              | -       | Show/initialize screen window |
-| 10   | SET_COLOR    | AX=color       | -       | Set draw color (0-15)        |
-| 11   | DRAW_PIXEL   | AX=x, BX=y     | -       | Draw pixel at coordinates    |
-| 12   | DRAW_LINE    | AX=x1, BX=y1, CX=x2, DX=y2 | - | Draw line between points |
-| 13   | DRAW_RECT    | AX=x, BX=y, CX=width, DX=height | - | Draw filled rectangle |
-| 14   | DRAW_CIRCLE  | AX=x, BX=y, CX=radius | - | Draw filled circle       |
-| 15   | CLEAR_SCREEN | -              | -       | Clear screen to current color |
-| 16   | DRAW_TEXT    | AX=x, BX=y, CX=addr | - | Draw text at coordinates |
-| 17   | PAINT_DISPLAY | -              | -       | Update screen display        |
-| 18   | SLEEP        | AX=milliseconds | -      | Sleep for specified time     |
-| 19   | READ_FILE    | AX=filename, BX=buffer, CX=maxlen | AX=bytes_read | Read file contents |
-| 20   | MALLOC       | AX=size        | AX=ptr  | Allocate memory block (optional, not implemented) |
-| 21   | FREE         | AX=ptr         | -       | Free allocated memory block (optional, not implemented) |
+| Code | Name          | Arguments                         | Returns        | Description                                             |
+|------|---------------|-----------------------------------|----------------|---------------------------------------------------------|
+| 0    | EXIT          | -                                 | -              | Terminate program                                       |
+| 1    | PRINT_CHAR    | AX=char                           | -              | Print character                                         |
+| 2    | PRINT_STRING  | AX=addr                           | -              | Print null-terminated string                            |
+| 3    | PRINT_INT     | AX=int                            | -              | Print signed integer                                    |
+| 4    | READ_CHAR     | -                                 | AX=char        | Read character                                          |
+| 5    | READ_INT      | -                                 | AX=int         | Read integer                                            |
+| 6    | READ_STRING   | AX=buf, BX=max                    | AX=len         | Read string                                             |
+| 7    | ATOI          | AX=str                            | AX=int, BX=ptr | Parse integer from string                               |
+| 8    | SBRK          | AX=increment                      | AX=old_BK      | Allocate heap memory                                    |
+| 9    | SCREEN        | -                                 | -              | Show/initialize screen window                           |
+| 10   | SET_COLOR     | AX=color                          | -              | Set draw color (0-15)                                   |
+| 11   | DRAW_PIXEL    | AX=x, BX=y                        | -              | Draw pixel at coordinates                               |
+| 12   | DRAW_LINE     | AX=x1, BX=y1, CX=x2, DX=y2        | -              | Draw line between points                                |
+| 13   | DRAW_RECT     | AX=x, BX=y, CX=width, DX=height   | -              | Draw filled rectangle                                   |
+| 14   | DRAW_CIRCLE   | AX=x, BX=y, CX=radius             | -              | Draw filled circle                                      |
+| 15   | CLEAR_SCREEN  | -                                 | -              | Clear screen to current color                           |
+| 16   | DRAW_TEXT     | AX=x, BX=y, CX=addr               | -              | Draw text at coordinates                                |
+| 17   | PAINT_DISPLAY | -                                 | -              | Update screen display                                   |
+| 18   | SLEEP         | AX=milliseconds                   | -              | Sleep for specified time                                |
+| 19   | READ_FILE     | AX=filename, BX=buffer, CX=maxlen | AX=bytes_read  | Read file contents                                      |
+| 20   | MALLOC        | AX=size                           | AX=ptr         | Allocate memory block (optional, not implemented)       |
+| 21   | FREE          | AX=ptr                            | -              | Free allocated memory block (optional, not implemented) |
 
 **Examples:**
 ```asm
@@ -1493,7 +1497,7 @@ Offset     Size  Content
 - **Signature (0x0000-0x0007):** "Go Cats!" identifies X366 binaries
 - **Memory Size (0x0009-0x000A):** Required memory in bytes (1024, 2048, 4096, 8192, or 16384)
 - **Sections Offset (0x000C-0x000F):** Byte offset where optional sections begin (0 if no sections)
-- **Break Pointer (0x0010-0x0011):** End of data segment, initial value for heap allocation
+- **Break Pointer (0x0010-0x0011):** End of data segment, _word-aligned_ (rounded up to even address) for heap allocations
 - **Code Boundary (0x0012-0x0013):** End of code segment, start of data segment
 - **Code Segment (0x0020+):** Executable instructions starting at 0x0020
 - **Data Segment:** DB/DW declarations placed after code

@@ -1312,3 +1312,509 @@ end:
     expect(labels).toContain('end')
   })
 })
+
+// ============================================================================
+// Label References in Data Directives
+// ============================================================================
+
+describe('DW Label References', () => {
+  it('should resolve forward label reference in DW', () => {
+    const bytecode = assemble(`
+ptr: DW target
+target: DW 42
+MOV AX, 0
+    `)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    // ptr should contain the address of target
+    const ptrAddr = mem.readWord(0x0024) // data starts after code (MOV AX, 0 = 4 bytes at 0x0020)
+    const targetAddr = 0x0024 + 2 // target is 2 bytes after ptr
+    expect(ptrAddr).toBe(targetAddr)
+
+    // target should contain 42
+    expect(mem.readWord(targetAddr)).toBe(42)
+  })
+
+  it('should resolve backward label reference in DW', () => {
+    const bytecode = assemble(`
+first: DW 99
+second: DW first
+MOV AX, 0
+    `)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    // second should contain the address of first
+    const codeSize = 4 // MOV AX, 0
+    const firstAddr = 0x0020 + codeSize
+    const secondAddr = firstAddr + 2
+    const secondValue = mem.readWord(secondAddr)
+    expect(secondValue).toBe(firstAddr)
+  })
+
+  it('should resolve multiple label references in a single DW', () => {
+    const bytecode = assemble(`
+node1: DW 10, node2
+node2: DW 20, node3
+node3: DW 30, 0
+MOV AX, 0
+    `)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    // Data starts after code (MOV AX, 0 = 4 bytes)
+    const codeSize = 4
+    const node1Addr = 0x0020 + codeSize
+    const node2Addr = node1Addr + 4  // 2 words per node
+    const node3Addr = node2Addr + 4
+
+    // node1: data=10, next=address of node2
+    expect(mem.readWord(node1Addr)).toBe(10)
+    expect(mem.readWord(node1Addr + 2)).toBe(node2Addr)
+
+    // node2: data=20, next=address of node3
+    expect(mem.readWord(node2Addr)).toBe(20)
+    expect(mem.readWord(node2Addr + 2)).toBe(node3Addr)
+
+    // node3: data=30, next=0 (null)
+    expect(mem.readWord(node3Addr)).toBe(30)
+    expect(mem.readWord(node3Addr + 2)).toBe(0)
+  })
+
+  it('should resolve label in DW used by code (linked list traversal)', () => {
+    const bytecode = assemble(`
+node1: DW 10, node2
+node2: DW 20, 0
+
+    MOV BX, node1
+    MOV AX, [BX]
+    MOV CX, AX
+    MOV AX, [BX+2]
+    MOV BX, AX
+    MOV AX, [BX]
+    MOV DX, AX
+    HALT
+    `)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    while (cpu.step()) {}
+
+    expect(cpu.registers.CX).toBe(10)
+    expect(cpu.registers.DX).toBe(20)
+  })
+})
+
+// ============================================================================
+// BK Register Tests
+// ============================================================================
+
+describe('BK Register', () => {
+  it('should encode MOV BX, BK (register-to-register)', () => {
+    const bytecode = assemble('MOV BX, BK')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.MOV_REG_REG)
+    expect(mem.readByte(0x0021)).toBe(1)  // BX
+    expect(mem.readByte(0x0022)).toBe(8)  // BK
+  })
+
+  it('should encode MOV BK, AX (register-to-register)', () => {
+    const bytecode = assemble('MOV BK, AX')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.MOV_REG_REG)
+    expect(mem.readByte(0x0021)).toBe(8)  // BK
+    expect(mem.readByte(0x0022)).toBe(0)  // AX
+  })
+
+  it('should encode ADD BK, AX', () => {
+    const bytecode = assemble('ADD BK, AX')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.ADD_REG_REG)
+    expect(mem.readByte(0x0021)).toBe(8)  // BK
+    expect(mem.readByte(0x0022)).toBe(0)  // AX
+  })
+
+  it('should execute MOV BX, BK to read break pointer', () => {
+    const source = `
+MOV BX, BK
+HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    while (cpu.step()) {}
+
+    // BK should be set to end of data segment (no data, so same as code end)
+    expect(cpu.registers.BX).toBe(cpu.registers.BK)
+  })
+
+  it('should execute heap allocation pattern with BK', () => {
+    const source = `
+MOV BX, BK
+MOV AX, 20
+ADD BK, AX
+MOV [BX], 42
+HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    const oldBK = cpu.registers.BK
+    while (cpu.step()) {}
+
+    expect(cpu.registers.BX).toBe(oldBK)
+    expect(cpu.registers.BK).toBe(oldBK + 20)
+    expect(mem.readWord(oldBK)).toBe(42)
+  })
+})
+
+// ============================================================================
+// STOREI_REL Tests (MOV [reg+offset], immediate)
+// ============================================================================
+
+describe('STOREI_REL (MOV [reg+offset], imm)', () => {
+  it('should encode MOV [BX+2], 20', () => {
+    const bytecode = assemble('MOV [BX+2], 20')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.STOREI_REL)
+    expect(mem.readByte(0x0021)).toBe(1)   // BX
+    expect(mem.readByte(0x0022)).toBe(2)   // offset +2
+    expect(mem.readByte(0x0023)).toBe(20)  // immediate
+  })
+
+  it('should encode MOV [FP-2], 100', () => {
+    const bytecode = assemble('MOV [FP-2], 100')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.STOREI_REL)
+    expect(mem.readByte(0x0021)).toBe(7)    // FP
+    expect(mem.readByte(0x0022)).toBe(254)  // offset -2 (two's complement)
+    expect(mem.readByte(0x0023)).toBe(100)  // immediate
+  })
+
+  it('should reject MOV [BX+2], imm > 255', () => {
+    expect(() => assemble('MOV [BX+2], 256')).toThrow(/0-255/)
+  })
+
+  it('should execute MOV [BX+offset], imm pattern (structure fields)', () => {
+    const source = `
+data: DW 0, 0, 0
+  MOV BX, data
+  MOV [BX], 150
+  MOV [BX+2], 250
+  HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    while (cpu.step()) {}
+
+    const dataAddr = cpu.registers.BX
+    expect(mem.readWord(dataAddr)).toBe(150)
+    expect(mem.readWord(dataAddr + 2)).toBe(250)
+  })
+
+  it('should execute malloc-style array fill', () => {
+    const source = `
+buf: DW 0, 0, 0, 0, 0
+  MOV BX, buf
+  MOV [BX], 10
+  MOV [BX+2], 20
+  MOV [BX+4], 30
+  MOV [BX+6], 40
+  MOV [BX+8], 50
+  HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    while (cpu.step()) {}
+
+    const base = cpu.registers.BX
+    expect(mem.readWord(base)).toBe(10)
+    expect(mem.readWord(base + 2)).toBe(20)
+    expect(mem.readWord(base + 4)).toBe(30)
+    expect(mem.readWord(base + 6)).toBe(40)
+    expect(mem.readWord(base + 8)).toBe(50)
+  })
+})
+
+// ============================================================================
+// Bracket Whitespace Tests
+// ============================================================================
+
+describe('Bracket Whitespace Handling', () => {
+  it('should handle spaces in [BX + 2]', () => {
+    const bytecode = assemble('MOV AX, [BX + 4]')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.LOADR)
+    expect(mem.readByte(0x0021)).toBe(0)  // AX
+    expect(mem.readByte(0x0022)).toBe(1)  // BX
+    expect(mem.readByte(0x0023)).toBe(4)  // offset
+  })
+
+  it('should handle spaces in [FP - 2]', () => {
+    const bytecode = assemble('MOV AX, [FP - 2]')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.LOADR)
+    expect(mem.readByte(0x0022)).toBe(7)    // FP
+    expect(mem.readByte(0x0023)).toBe(254)  // -2
+  })
+
+  it('should handle spaces in store [BX + 2], AX', () => {
+    const bytecode = assemble('MOV [BX + 2], AX')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.STORER)
+  })
+
+  it('should handle spaces in [BX + CX]', () => {
+    const bytecode = assemble('MOV AX, [BX + CX]')
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+
+    expect(mem.readByte(0x0020)).toBe(Opcode.LOAD_INDEXED)
+  })
+})
+
+// ============================================================================
+// Lecture Slide Integration Tests
+// ============================================================================
+
+describe('Lecture Slide Integration', () => {
+  it('should execute array iteration with count from memory', () => {
+    const source = `
+arr: DW 10, 20, 30, 40, 50
+count: DW 5
+  MOV BX, arr
+  MOV CX, [count]
+  MOV DX, 0
+loop:
+  CMP CX, 0
+  JE done
+  MOV AX, [BX]
+  ADD DX, AX
+  ADD BX, 2
+  DEC CX
+  JMP loop
+done:
+  HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    let steps = 0
+    while (cpu.step() && steps++ < 200) {}
+
+    expect(cpu.registers.DX).toBe(150)  // 10+20+30+40+50
+    expect(cpu.registers.CX).toBe(0)
+  })
+
+  it('should execute array indexing (numbers[3])', () => {
+    const source = `
+numbers: DW 10, 20, 30, 40, 50
+  MOV BX, numbers
+  MOV CX, 3
+  SHL CX, 1
+  ADD BX, CX
+  MOV AX, [BX]
+  HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    while (cpu.step()) {}
+
+    expect(cpu.registers.AX).toBe(40)
+  })
+
+  it('should execute structure access (point fields)', () => {
+    const source = `
+point1: DW 100, 200
+  MOV BX, point1
+  MOV AX, [BX]
+  MOV CX, [BX+2]
+  HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    while (cpu.step()) {}
+
+    expect(cpu.registers.AX).toBe(100)
+    expect(cpu.registers.CX).toBe(200)
+  })
+
+  it('should execute non-sequential linked list traversal', () => {
+    const source = `
+; Nodes deliberately out of order
+node3: DW 30, node4
+node1: DW 10, node2
+node4: DW 40, 0
+node2: DW 20, node3
+
+  MOV BX, node1
+  MOV DX, 0
+loop:
+  CMP BX, 0
+  JE done
+  MOV AX, [BX]
+  ADD DX, AX
+  MOV BX, [BX+2]
+  JMP loop
+done:
+  HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    let steps = 0
+    while (cpu.step() && steps++ < 200) {}
+
+    expect(cpu.registers.DX).toBe(100)  // 10+20+30+40
+  })
+
+  it('should execute stack frame pattern', () => {
+    const source = `
+  MOV AX, 10
+  MOV BX, 20
+  MOV CX, 30
+  CALL function
+  HALT
+function:
+  PUSH FP
+  MOV FP, SP
+  SUB SP, 6
+  MOV [FP-2], AX
+  MOV [FP-4], BX
+  MOV [FP-6], CX
+  MOV AX, [FP-2]
+  MOV BX, [FP-4]
+  MOV CX, [FP-6]
+  ADD SP, 6
+  POP FP
+  RET
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    let steps = 0
+    while (cpu.step() && steps++ < 200) {}
+
+    expect(cpu.registers.AX).toBe(10)
+    expect(cpu.registers.BX).toBe(20)
+    expect(cpu.registers.CX).toBe(30)
+    expect(cpu.halted).toBe(true)
+  })
+
+  it('should execute 2D array access (matrix[1][2])', () => {
+    const source = `
+matrix: DW 1,2,3,4, 5,6,7,8, 9,10,11,12
+cols: DW 4
+  MOV AX, 1
+  MOV BX, [cols]
+  MUL BX
+  ADD AX, 2
+  SHL AX, 1
+  MOV BX, matrix
+  ADD BX, AX
+  MOV CX, [BX]
+  HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(1024)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    let steps = 0
+    while (cpu.step() && steps++ < 200) {}
+
+    expect(cpu.registers.CX).toBe(7)
+  })
+
+  it('should execute malloc + loop fill pattern', () => {
+    const source = `
+.MEMORY 2K
+  JMP main
+malloc:
+  SHL AX, 1
+  MOV BX, BK
+  ADD AX, BX
+  CMP AX, SP
+  JGE failed
+  MOV BK, AX
+  MOV AX, BX
+  RET
+failed:
+  MOV AX, 0
+  RET
+
+main:
+  MOV AX, 5
+  CALL malloc
+  MOV BX, AX
+  MOV CX, 5
+  MOV DX, 10
+fill:
+  CMP CX, 0
+  JE done
+  MOV [BX], DX
+  ADD DX, 10
+  ADD BX, 2
+  DEC CX
+  JMP fill
+done:
+  HALT
+    `
+    const bytecode = assemble(source)
+    const mem = new Memory(2048)
+    mem.load(bytecode)
+    const cpu = new CPU(mem)
+
+    let steps = 0
+    while (cpu.step() && steps++ < 200) {}
+
+    // Find where the array was allocated (BK started at code end)
+    // BX advanced past the array, so subtract back
+    const arrayStart = cpu.registers.BX - 10  // 5 words * 2 bytes
+    expect(mem.readWord(arrayStart)).toBe(10)
+    expect(mem.readWord(arrayStart + 2)).toBe(20)
+    expect(mem.readWord(arrayStart + 4)).toBe(30)
+    expect(mem.readWord(arrayStart + 6)).toBe(40)
+    expect(mem.readWord(arrayStart + 8)).toBe(50)
+  })
+})

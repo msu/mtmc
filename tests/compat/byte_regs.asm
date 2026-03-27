@@ -1,5 +1,5 @@
 ; Cross-Platform Test 02: Byte Registers
-; Tests that byte registers (AL, BL, CL, DL, EL, FL) work correctly
+; Tests that byte registers (AL, BL, CL, DL, SIL, DIL) work correctly
 ; Expected output: Should print 'A', 'B', 'C', 'D', 'E', 'F' then exit
 
 ; Test byte register access - load immediate bytes into AL

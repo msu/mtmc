@@ -1,7 +1,9 @@
 // Monaco Editor setup and x366-asm language definition
 
 let monacoEditor = null;
+let cmmMonacoEditor = null;
 let breakpointChangeCallback = null;
+let cmmExecutionLineDecoration = [];
 
 export function getEditor() {
   return monacoEditor;
@@ -24,8 +26,9 @@ export function initializeMonaco() {
       monaco.languages.setMonarchTokensProvider('x366-asm', {
         keywords: [
           'MOV', 'MOVB', 'ADD', 'SUB', 'MUL', 'DIV', 'INC', 'DEC',
-          'AND', 'OR', 'XOR', 'NOT', 'SHL', 'SHR',
+          'AND', 'OR', 'XOR', 'NOT', 'NEG', 'SHL', 'SHR',
           'CMP', 'TEST',
+          'SETE', 'SETNE', 'SETL', 'SETG', 'SETLE', 'SETGE',
           'JMP', 'JE', 'JNE', 'JZ', 'JNZ', 'JG', 'JGE', 'JL', 'JLE', 'JA', 'JAE', 'JB', 'JBE',
           'PUSH', 'POP', 'CALL', 'RET',
           'SYSCALL', 'NOP', 'HLT',
@@ -33,8 +36,8 @@ export function initializeMonaco() {
         ],
 
         registers: [
-          'AX', 'BX', 'CX', 'DX', 'EX', 'FX', 'SP', 'FP',
-          'AL', 'BL', 'CL', 'DL', 'EL', 'FL'
+          'AX', 'BX', 'CX', 'DX', 'SI', 'DI', 'SP', 'BP',
+          'AL', 'BL', 'CL', 'DL', 'SIL', 'DIL'
         ],
 
         syscalls: [
@@ -66,10 +69,10 @@ export function initializeMonaco() {
             [/\b(?:EXIT|PRINT_CHAR|PRINT_INT|PRINT_STRING|READ_CHAR|READ_INT|READ_STRING|CLEAR_SCREEN|DRAW_PIXEL|DRAW_RECT|DRAW_LINE|READ_PIXEL|FLUSH_SCREEN|SBRK|MALLOC|FREE|ATOI|SLEEP|OPEN_FILE|READ_FILE|WRITE_FILE|CLOSE_FILE)\b/i, 'keyword.syscall'],
 
             // Instructions
-            [/\b(?:MOV|MOVB|ADD|SUB|MUL|DIV|INC|DEC|AND|OR|XOR|NOT|SHL|SHR|CMP|TEST|JMP|JE|JNE|JZ|JNZ|JG|JGE|JL|JLE|JA|JAE|JB|JBE|PUSH|POP|CALL|RET|SYSCALL|NOP|HLT|DB|DW|DUP)\b/i, 'keyword'],
+            [/\b(?:MOV|MOVB|ADD|SUB|MUL|DIV|INC|DEC|AND|OR|XOR|NOT|SHL|SHR|CMP|TEST|SETE|SETNE|SETL|SETG|SETLE|SETGE|JMP|JE|JNE|JZ|JNZ|JG|JGE|JL|JLE|JA|JAE|JB|JBE|PUSH|POP|CALL|RET|SYSCALL|NOP|HLT|DB|DW|DUP)\b/i, 'keyword'],
 
             // Registers
-            [/\b(?:AX|BX|CX|DX|EX|FX|SP|FP|AL|BL|CL|DL|EL|FL)\b/i, 'variable.predefined'],
+            [/\b(?:AX|BX|CX|DX|SI|DI|SP|BP|AL|BL|CL|DL|SIL|DIL)\b/i, 'variable.predefined'],
 
             // Memory addressing [...]
             [/\[/, { token: 'delimiter.bracket', next: '@memoryAccess' }],
@@ -84,7 +87,7 @@ export function initializeMonaco() {
           memoryAccess: [
             [/0x[0-9A-Fa-f]+/, 'number.hex'],
             [/\b\d+\b/, 'number'],
-            [/\b(?:AX|BX|CX|DX|EX|FX|SP|FP)\b/i, 'variable.predefined'],
+            [/\b(?:AX|BX|CX|DX|SI|DI|SP|BP)\b/i, 'variable.predefined'],
             [/\+/, 'operator'],
             [/\]/, { token: 'delimiter.bracket', next: '@pop' }],
           ]
@@ -97,8 +100,9 @@ export function initializeMonaco() {
           const suggestions = [
             // Instructions
             ...['MOV', 'MOVB', 'ADD', 'SUB', 'MUL', 'DIV', 'INC', 'DEC',
-                'AND', 'OR', 'XOR', 'NOT', 'SHL', 'SHR',
+                'AND', 'OR', 'XOR', 'NOT', 'NEG', 'SHL', 'SHR',
                 'CMP', 'TEST',
+                'SETE', 'SETNE', 'SETL', 'SETG', 'SETLE', 'SETGE',
                 'JMP', 'JE', 'JNE', 'JZ', 'JNZ', 'JG', 'JGE', 'JL', 'JLE', 'JA', 'JAE', 'JB', 'JBE',
                 'PUSH', 'POP', 'CALL', 'RET',
                 'SYSCALL', 'NOP', 'HLT'].map(kw => ({
@@ -108,8 +112,8 @@ export function initializeMonaco() {
             })),
 
             // Registers
-            ...['AX', 'BX', 'CX', 'DX', 'EX', 'FX', 'SP', 'FP',
-                'AL', 'BL', 'CL', 'DL', 'EL', 'FL'].map(reg => ({
+            ...['AX', 'BX', 'CX', 'DX', 'SI', 'DI', 'SP', 'BP',
+                'AL', 'BL', 'CL', 'DL', 'SIL', 'DIL'].map(reg => ({
               label: reg,
               kind: monaco.languages.CompletionItemKind.Variable,
               insertText: reg,
@@ -146,6 +150,8 @@ export function initializeMonaco() {
           { token: 'number.binary', foreground: 'B5CEA8' },
           { token: 'variable.predefined', foreground: '4FC1FF' },
           { token: 'type.identifier', foreground: '4EC9B0' },
+          { token: 'keyword.type', foreground: '4EC9B0' },
+          { token: 'keyword.builtin', foreground: 'DCDCAA' },
         ],
         colors: {
           'editor.background': '#1e1e1e',
@@ -154,6 +160,26 @@ export function initializeMonaco() {
           'editorLineNumber.foreground': '#858585',
           'editorLineNumber.activeForeground': '#c6c6c6',
           'editorCursor.foreground': '#aeafad',
+        }
+      });
+
+      // Register C-- language
+      monaco.languages.register({ id: 'cmm' });
+      monaco.languages.setMonarchTokensProvider('cmm', {
+        tokenizer: {
+          root: [
+            [/\/\/.*$/, 'comment'],
+            [/"[^"]*"/, 'string'],
+            [/'[^']*'/, 'string'],
+            [/\b(?:int|char)\b/, 'keyword.type'],
+            [/\b(?:if|else|while|return)\b/, 'keyword'],
+            [/\b(?:print_int|print_char|print_string|read_int|read_char|exit)\b/, 'keyword.builtin'],
+            [/\b0x[0-9a-fA-F]+\b/, 'number.hex'],
+            [/\b\d+\b/, 'number'],
+            [/[a-zA-Z_]\w*/, 'identifier'],
+            [/[{}()\[\];,]/, 'delimiter'],
+            [/[+\-*/%=<>!&|]+/, 'operator'],
+          ]
         }
       });
 
@@ -321,4 +347,51 @@ export function setExecutionLine(lineNumber) {
 
 export function clearExecutionLine() {
   setExecutionLine(null);
+}
+
+// C-- Editor support
+export function getCmmEditor() {
+  return cmmMonacoEditor;
+}
+
+export function createCmmEditor(container) {
+  cmmMonacoEditor = monaco.editor.create(container, {
+    value: '',
+    language: 'cmm',
+    theme: 'x366-dark',
+    minimap: { enabled: false },
+    readOnly: false,
+    lineNumbers: 'on',
+    glyphMargin: true,
+    folding: false,
+    fontSize: 13,
+    fontFamily: "'Cascadia Mono', 'Fira Code', monospace",
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+  });
+  return cmmMonacoEditor;
+}
+
+export function setCmmExecutionLine(lineNumber) {
+  if (!cmmMonacoEditor) return;
+
+  if (lineNumber === null) {
+    cmmExecutionLineDecoration = cmmMonacoEditor.deltaDecorations(cmmExecutionLineDecoration, []);
+    return;
+  }
+
+  const newDecorations = [{
+    range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+    options: {
+      isWholeLine: true,
+      className: 'cmm-execution-line'
+    }
+  }];
+
+  cmmExecutionLineDecoration = cmmMonacoEditor.deltaDecorations(cmmExecutionLineDecoration, newDecorations);
+  cmmMonacoEditor.revealLineInCenter(lineNumber);
+}
+
+export function clearCmmExecutionLine() {
+  setCmmExecutionLine(null);
 }

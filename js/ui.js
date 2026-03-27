@@ -6,7 +6,7 @@ import { assemble } from './assembler.js'
 import { FileSystem } from './filesystem.js'
 import { OS } from './os.js'
 import { Display } from './display.js'
-import { initializeMonaco, getEditor, setExecutionLine, clearExecutionLine, getBreakpoints, setBreakpointChangeCallback } from './monaco-setup.js'
+import { initializeMonaco, getEditor, setExecutionLine, clearExecutionLine, getBreakpoints, setBreakpointChangeCallback, createCmmEditor, getCmmEditor, setCmmExecutionLine, clearCmmExecutionLine } from './monaco-setup.js'
 
 // ============================================================================
 // State
@@ -25,7 +25,13 @@ let debugMode = false  // Debug mode toggle
 // Backward stepping support
 let undoHistory = []
 const MAX_HISTORY = 100
-let breakpointPCMap = null  // Runtime PC-to-breakpoint map (lazily initialized)
+let breakpointIPMap = null  // Runtime IP-to-breakpoint map (lazily initialized)
+
+// C-- dual editor state
+let cmmEditor = null           // Monaco instance for C-- editor
+let cmmSource = null           // C-- source text (null when in asm mode)
+let cmmLineMap = null          // Map: assembly line number -> C-- line number (from @LINE markers)
+let isDualMode = false         // Whether we're in C--/asm dual view
 
 // Terminal state
 let commandHistory = []
@@ -69,7 +75,7 @@ function updateRegisterLEDs(regName, value) {
         const instr = decodeFromBytes(bytes)
 
         // Use the full disassembler from memory display
-        const fullInstruction = disassembleInstruction(cpu.registers.PC)
+        const fullInstruction = disassembleInstruction(cpu.registers.IP)
         valueEl.textContent = fullInstruction
         valueEl.title = 'Next instruction to execute'
       } catch (e) {
@@ -174,12 +180,12 @@ function updateRegisters() {
   updateRegisterLEDs('bx', cpu.registers.BX)
   updateRegisterLEDs('cx', cpu.registers.CX)
   updateRegisterLEDs('dx', cpu.registers.DX)
-  updateRegisterLEDs('ex', cpu.registers.EX)
-  updateRegisterLEDs('fx', cpu.registers.FX)
+  updateRegisterLEDs('si', cpu.registers.SI)
+  updateRegisterLEDs('di', cpu.registers.DI)
   updateRegisterLEDs('sp', cpu.registers.SP)
-  updateRegisterLEDs('fp', cpu.registers.FP)
-  updateRegisterLEDs('bk', cpu.registers.BK)
-  updateRegisterLEDs('pc', cpu.registers.PC)
+  updateRegisterLEDs('bp', cpu.registers.BP)
+  updateRegisterLEDs('hp', cpu.registers.HP)
+  updateRegisterLEDs('ip', cpu.registers.IP)
   updateRegisterLEDs('cb', cpu.registers.CB)
   updateRegisterLEDs('ir', cpu.registers.IR)
   updateRegisterLEDs('dr', cpu.registers.DR)
@@ -189,7 +195,7 @@ function updateRegisters() {
 
 // Setup hover highlighting for register values
 function setupRegisterHoverHighlight() {
-  const registerNames = ['ax', 'bx', 'cx', 'dx', 'ex', 'fx', 'sp', 'fp', 'bk', 'pc', 'cb', 'ir', 'dr']
+  const registerNames = ['ax', 'bx', 'cx', 'dx', 'si', 'di', 'sp', 'bp', 'hp', 'ip', 'cb', 'ir', 'dr']
 
   registerNames.forEach(regName => {
     const valueEl = document.getElementById(`${regName}-value`)
@@ -203,8 +209,8 @@ function setupRegisterHoverHighlight() {
       let address = null
 
       if (regName === 'ir') {
-        // IR shows instruction at PC
-        address = cpu.registers.PC
+        // IR shows instruction at IP
+        address = cpu.registers.IP
       } else if (regName === 'dr') {
         // DR might contain an address - decode to check
         try {
@@ -241,7 +247,7 @@ function setupRegisterHoverHighlight() {
       let address = null
 
       if (regName === 'ir') {
-        address = cpu.registers.PC
+        address = cpu.registers.IP
       } else if (regName === 'dr') {
         // Get address from DR if it contains one
         try {
@@ -308,14 +314,14 @@ function classifyMemoryAddress(addr) {
 
   if (addr >= cpu.registers.SP) {
     return 'sta'  // Stack
-  } else if (addr === cpu.registers.PC) {
+  } else if (addr === cpu.registers.IP) {
     return 'curr'  // Current instruction
   } else if (addr >= 0x20 && addr < cpu.registers.CB) {
     return 'code'  // Code segment (0x20 to CB)
-  } else if (addr < cpu.registers.BK) {
-    return 'data'  // Data segment (CB to BK)
+  } else if (addr < cpu.registers.HP) {
+    return 'data'  // Data segment (CB to HP)
   } else {
-    return 'heap'  // Heap segment (BK+)
+    return 'heap'  // Heap segment (HP+)
   }
 }
 
@@ -475,7 +481,7 @@ function getOpcodeName(opcode) {
 
 // Get register name
 function getRegisterName(regCode) {
-  const names = ['AX', 'BX', 'CX', 'DX', 'EX', 'FX', 'SP', 'FP']
+  const names = ['AX', 'BX', 'CX', 'DX', 'SI', 'DI', 'SP', 'BP']
   return names[regCode] || '??'
 }
 
@@ -575,8 +581,8 @@ function updateMemoryView(scrollToAddr = null) {
     // Base cell style
     let cellStyle = 'padding: 1px; text-align: center; white-space: nowrap;'
 
-    // Bold cells at PC, BK, or SP
-    if (i === cpu.registers.PC || i === cpu.registers.BK || i === cpu.registers.SP) {
+    // Bold cells at IP, HP, or SP
+    if (i === cpu.registers.IP || i === cpu.registers.HP || i === cpu.registers.SP) {
       cellStyle += ' font-weight: bold; border: 2px solid black;'
     }
 
@@ -798,6 +804,7 @@ async function handleConsoleInput(inputText) {
     'cat': cmdCat,
     'open': cmdOpen,
     'compile': cmdCompile,
+    'cc': cmdCc,
     'asm': cmdAsm,
     'load': cmdLoad,
     'set': cmdSet,
@@ -914,14 +921,14 @@ async function handleConsoleInput(inputText) {
     const instr = decodeFromBytes(instructionBytes)
 
     // Save state before execution
-    const savedPC = cpu.registers.PC
+    const savedIP = cpu.registers.IP
     const savedSP = cpu.registers.SP
 
-    // Execute instruction (this will modify PC)
+    // Execute instruction (this will modify IP)
     cpu.executeInstruction(instr)
 
-    // Restore PC
-    cpu.registers.PC = savedPC
+    // Restore IP
+    cpu.registers.IP = savedIP
 
     // Prefetch next instruction for display
     cpu.prefetchInstruction()
@@ -1077,13 +1084,14 @@ async function cmdOpen(args) {
   }
 }
 
-// Compile assembly file to binary
+// Compile assembly or C-- file to binary
 async function cmdCompile(args) {
   if (args.length === 0) {
-    consolePrint('Usage: compile <source.asm> [output.x366]')
+    consolePrint('Usage: compile <source.asm|source.c> [output.x366]')
     consolePrint('Examples:')
-    consolePrint('  compile /examples/hello.asm')
-    consolePrint('  compile /examples/hello.asm /bin/hello.x366')
+    consolePrint('  compile /src/hello.asm')
+    consolePrint('  compile /src/factorial.c')
+    consolePrint('  compile /src/hello.asm /bin/hello.x366')
     return
   }
 
@@ -1092,7 +1100,7 @@ async function cmdCompile(args) {
 
   // If no output specified, generate one in /bin
   if (!outputFile) {
-    const baseName = fs.basename(sourceFile).replace(/\.asm$/, '')
+    const baseName = fs.basename(sourceFile).replace(/\.(asm|c)$/, '')
     outputFile = `/bin/${baseName}.x366`
   }
 
@@ -1100,8 +1108,20 @@ async function cmdCompile(args) {
     // Read source
     const source = await fs.readFile(sourceFile)
 
+    // If C-- file, compile to assembly first
+    let asmSource = source
+    if (sourceFile.endsWith('.c')) {
+      const { compileCmm } = await import('./cmm-compiler.js')
+      const result = compileCmm(source)
+      if (result.error) {
+        consolePrint(`compile: ${result.error}`)
+        return
+      }
+      asmSource = result.assembly
+    }
+
     // Assemble to bytecode
-    const bytecode = assemble(source)
+    const bytecode = assemble(asmSource)
 
     // Ensure /bin directory exists
     const binExists = await fs.exists('/bin')
@@ -1168,6 +1188,51 @@ async function cmdAsm(args) {
   }
 }
 
+// Compile C-- source to binary
+async function cmdCc(args) {
+  let sourceFile
+  let outputFile = 'a.bin'
+
+  if (args.length === 0) {
+    if (isInEditorMode && selectedFile && selectedFile.endsWith('.c')) {
+      sourceFile = selectedFile
+    } else {
+      consolePrint('Usage: cc <source.c> [output]')
+      consolePrint('  or open a .c file in editor and type "cc"')
+      consolePrint('  Default output: a.bin')
+      return
+    }
+  } else {
+    sourceFile = args[0]
+    if (args.length > 1) {
+      outputFile = args[1]
+      if (!outputFile.includes('.')) {
+        outputFile += '.bin'
+      }
+    }
+  }
+
+  try {
+    const source = await fs.readFile(sourceFile)
+    const { compileCmm } = await import('./cmm-compiler.js')
+    const result = compileCmm(source)
+
+    if (result.error) {
+      consolePrint(`cc: ${result.error}`)
+      return
+    }
+
+    const bytecode = assemble(result.assembly)
+    await fs.writeFile(outputFile, bytecode)
+
+    consolePrint(`[Compiled ${sourceFile} -> ${outputFile}]`)
+    consolePrint(`[Binary size: ${bytecode.length} bytes]`)
+    await renderFileList()
+  } catch (err) {
+    consolePrint(`cc: ${err.message}`)
+  }
+}
+
 // Load file into memory
 async function cmdLoad(args) {
   if (args.length === 0) {
@@ -1175,7 +1240,7 @@ async function cmdLoad(args) {
     consolePrint('Examples:')
     consolePrint('  load hello')
     consolePrint('  load /bin/hello')
-    consolePrint('  load /examples/hello.asm')
+    consolePrint('  load /src/hello.asm')
     consolePrint('  load echo "arg1 arg2 arg3"')
     return
   }
@@ -1231,8 +1296,8 @@ async function cmdLoad(args) {
     const result = memory.loadBinary(bytecode)
     cpu.reset()
 
-    // Set BK and CB from binary header
-    cpu.registers.BK = result.breakPointer
+    // Set HP and CB from binary header
+    cpu.registers.HP = result.breakPointer
     cpu.registers.CB = result.codeBase
     debugInfo = result.debugInfo
 
@@ -1242,21 +1307,21 @@ async function cmdLoad(args) {
       memorySelect.value = memory.size
     }
 
-    // Update breakpoint PC map after loading program
-    updateBreakpointPCMap()
+    // Update breakpoint IP map after loading program
+    updateBreakpointIPMap()
 
     // If command line arguments provided, append them to memory
     if (programArgs) {
       const argBytes = new TextEncoder().encode(programArgs + '\0')
-      const argStart = cpu.registers.BK
+      const argStart = cpu.registers.HP
 
-      // Write argument string to memory at BK
+      // Write argument string to memory at HP
       for (let i = 0; i < argBytes.length; i++) {
         memory.writeByte(argStart + i, argBytes[i])
       }
 
-      // Update BK to point past the argument string
-      cpu.registers.BK = argStart + argBytes.length
+      // Update HP to point past the argument string
+      cpu.registers.HP = argStart + argBytes.length
 
       // Set AX to point to the argument string
       cpu.registers.AX = argStart
@@ -1347,7 +1412,7 @@ function cmdSet(args) {
   const targetUpper = target.toUpperCase()
 
   // Check if target is a register
-  const registers = ['AX', 'BX', 'CX', 'DX', 'EX', 'FX', 'SP', 'FP', 'BK', 'PC']
+  const registers = ['AX', 'BX', 'CX', 'DX', 'SI', 'DI', 'SP', 'BP', 'HP', 'IP']
   if (registers.includes(targetUpper)) {
     // Set register value
     try {
@@ -1436,7 +1501,7 @@ async function handleTabCompletion() {
     // List of available commands
     const commands = [
       'pwd', 'cd', 'ls', 'mkdir', 'rm', 'cat', 'open',
-      'compile', 'asm', 'load', 'set', 'help', 'clear', 'reset', 'debug'
+      'compile', 'cc', 'asm', 'load', 'set', 'help', 'clear', 'reset', 'debug'
     ]
 
     // Get executables from /bin
@@ -1505,7 +1570,7 @@ async function handleTabCompletion() {
     const lastPart = parts[parts.length - 1]
 
     // Commands that take file arguments
-    const fileCommands = ['cd', 'ls', 'cat', 'open', 'compile', 'asm', 'load', 'rm']
+    const fileCommands = ['cd', 'ls', 'cat', 'open', 'compile', 'cc', 'asm', 'load', 'rm']
 
     if (fileCommands.includes(cmd)) {
       // Get directory and partial filename
@@ -1604,7 +1669,8 @@ function cmdHelp(args) {
   consolePrint('  open <file>      - Open file in editor')
   consolePrint('')
   consolePrint('Program Commands:')
-  consolePrint('  compile <src> [out]  - Compile .asm to .x366 binary')
+  consolePrint('  compile <src> [out]  - Compile .asm or .c to .x366 binary')
+  consolePrint('  cc <file> [out]      - Compile C-- .c to .bin (default: a.bin)')
   consolePrint('  asm <file> [out]     - Assemble .asm to .bin (default: a.bin)')
   consolePrint('  load <file> [args]   - Load and run (.asm/.bin) with optional args')
   consolePrint('  <name> [args]        - Run executable from /bin (e.g., hello, echo)')
@@ -1666,7 +1732,7 @@ function beginDelta() {
     registers: new Map(),
     flags: new Map(),
     memory: new Map(),
-    pc: cpu.registers.PC
+    pc: cpu.registers.IP
   }
 }
 
@@ -1723,8 +1789,8 @@ function stepBackward() {
     memory.writeByte(addr, oldValue)
   }
 
-  // Restore PC
-  cpu.registers.PC = delta.pc
+  // Restore IP
+  cpu.registers.IP = delta.pc
 
   updateUI()
   updateEditorExecutionLine()
@@ -1797,7 +1863,9 @@ function executionLoop() {
         }
         document.getElementById('btn-run').textContent = 'run'
         clearExecutionLine()
+        if (isDualMode) clearCmmExecutionLine()
         updateUI()  // Update immediately on halt
+        if (isDualMode) handleEdit()
         break
       }
 
@@ -1866,6 +1934,7 @@ function executionLoopSlow() {
     }
     updateUI()
     clearExecutionLine()
+    if (isDualMode) clearCmmExecutionLine()
     return
   }
 
@@ -2014,6 +2083,8 @@ function handleStep() {
     cpu.currentUndoList = null
     if (debugMode) consolePrint('[CPU halted]')
     clearExecutionLine()
+    if (isDualMode) clearCmmExecutionLine()
+    if (isDualMode) handleEdit()
   }
 }
 
@@ -2026,7 +2097,7 @@ function handleStepBack() {
     undoList[i]()
   }
 
-  // Clear cached instruction since PC has changed
+  // Clear cached instruction since IP has changed
   cpu.cachedInstruction = null
 
   updateUI()
@@ -2055,30 +2126,36 @@ function handleQuit() {
   // Simulate EXIT syscall
   cpu.halted = true
   clearExecutionLine()
+  if (isDualMode) clearCmmExecutionLine()
   updateUI()
   consolePrint('[Program terminated]')
+
+  // Revert to edit mode
+  if (isDualMode) {
+    handleEdit()
+  }
 }
 
 async function updateEditorExecutionLine() {
   // Only highlight if we have debug info and editor is open
   if (!debugInfo || !debugInfo.lineMap) {
     clearExecutionLine()
+    if (isDualMode) clearCmmExecutionLine()
     return
   }
 
-  // Check if the current file matches the source filename in debug info
-  if (debugInfo.sourceFilename) {
+  // In dual mode, always highlight (the asm editor shows generated code)
+  if (!isDualMode && debugInfo.sourceFilename) {
     const currentFile = await fs.getCurrentFile()
     const currentFilename = currentFile ? currentFile.split('/').pop() : null
 
     if (currentFilename !== debugInfo.sourceFilename) {
-      // Filename doesn't match, don't highlight
       clearExecutionLine()
       return
     }
   }
 
-  const pc = cpu.registers.PC
+  const pc = cpu.registers.IP
 
   // lineMap is array of {pc, line} objects - find matching entry
   const entry = debugInfo.lineMap.find(e => e.pc === pc)
@@ -2086,22 +2163,109 @@ async function updateEditorExecutionLine() {
 
   if (sourceLine !== undefined && sourceLine > 0) {
     setExecutionLine(sourceLine)
+
+    // If in dual mode, also highlight the corresponding C-- line
+    if (isDualMode && cmmLineMap && cmmLineMap[sourceLine]) {
+      setCmmExecutionLine(cmmLineMap[sourceLine])
+    } else if (isDualMode) {
+      clearCmmExecutionLine()
+    }
   } else {
     clearExecutionLine()
+    if (isDualMode) clearCmmExecutionLine()
   }
 }
 
-function updateBreakpointPCMap() {
-  // Update the runtime PC-to-breakpoint map from source line breakpoints
+function buildCmmLineMap(assembly) {
+  const map = {}  // asmLineNumber -> cmmLineNumber
+  const lines = assembly.split('\n')
+  let currentCmmLine = null
+
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^; @LINE (\d+)/)
+    if (match) {
+      currentCmmLine = parseInt(match[1])
+    }
+    if (currentCmmLine !== null) {
+      map[i + 1] = currentCmmLine  // Monaco lines are 1-based
+    }
+  }
+  return map
+}
+
+function showCmmErrorMarker(editorInstance, errorMessage) {
+  if (!editorInstance) return
+  const model = editorInstance.getModel()
+  if (!model) return
+
+  // Parse line number from error message (e.g., "Line 5: Expected ';'")
+  const match = errorMessage.match(/Line (\d+):?\s*(.*)/)
+  const line = match ? parseInt(match[1]) : 1
+  const message = match ? match[2] : errorMessage
+
+  monaco.editor.setModelMarkers(model, 'cmm', [{
+    startLineNumber: line,
+    startColumn: 1,
+    endLineNumber: line,
+    endColumn: model.getLineLength(line) + 1,
+    message: message,
+    severity: monaco.MarkerSeverity.Error
+  }])
+
+  // Scroll to the error line
+  editorInstance.revealLineInCenter(line)
+}
+
+function clearCmmErrorMarkers(editorInstance) {
+  if (!editorInstance) return
+  const model = editorInstance.getModel()
+  if (model) monaco.editor.setModelMarkers(model, 'cmm', [])
+}
+
+function showDualEditors() {
+  isDualMode = true
+  document.getElementById('cmm-editor-container').style.display = 'flex'
+  document.getElementById('asm-editor-label').style.display = ''
+
+  // Create C-- editor if not yet created
+  if (!cmmEditor) {
+    cmmEditor = createCmmEditor(document.getElementById('cmm-editor'))
+  }
+
+  // Layout both editors
+  setTimeout(() => {
+    if (cmmEditor) cmmEditor.layout()
+    const editor = getEditor()
+    if (editor) editor.layout()
+  }, 0)
+}
+
+function hideDualEditors() {
+  isDualMode = false
+  cmmSource = null
+  cmmLineMap = null
+  document.getElementById('cmm-editor-container').style.display = 'none'
+  document.getElementById('asm-editor-label').style.display = 'none'
+  clearCmmExecutionLine()
+
+  const editor = getEditor()
+  if (editor) {
+    editor.updateOptions({ readOnly: false })
+    editor.layout()
+  }
+}
+
+function updateBreakpointIPMap() {
+  // Update the runtime IP-to-breakpoint map from source line breakpoints
   if (!debugInfo || !debugInfo.lineMap || !memory) return
 
   // Lazy initialization
-  if (!breakpointPCMap) {
-    breakpointPCMap = new Uint8Array(memory.size)
+  if (!breakpointIPMap) {
+    breakpointIPMap = new Uint8Array(memory.size)
   }
 
   // Clear map
-  breakpointPCMap.fill(0)
+  breakpointIPMap.fill(0)
 
   // Get line numbers with breakpoints
   const breakpointLines = getBreakpoints()
@@ -2111,18 +2275,18 @@ function updateBreakpointPCMap() {
   for (let i = 0; i < debugInfo.lineMap.length; i++) {
     const entry = debugInfo.lineMap[i]
     if (breakpointLines.includes(entry.line)) {
-      if (entry.pc < breakpointPCMap.length) {
-        breakpointPCMap[entry.pc] = 1
+      if (entry.pc < breakpointIPMap.length) {
+        breakpointIPMap[entry.pc] = 1
       }
     }
   }
 }
 
 function checkBreakpoint() {
-  // Fast O(1) PC lookup
-  if (!breakpointPCMap) return false
-  const pc = cpu.registers.PC
-  return pc < breakpointPCMap.length && breakpointPCMap[pc] === 1
+  // Fast O(1) IP lookup
+  if (!breakpointIPMap) return false
+  const pc = cpu.registers.IP
+  return pc < breakpointIPMap.length && breakpointIPMap[pc] === 1
 }
 
 function handleReset() {
@@ -2145,10 +2309,30 @@ function handleReset() {
 
   updateUI()
   clearExecutionLine()
+  if (isDualMode) clearCmmExecutionLine()
   consolePrint('[Emulator reset]')
 }
 
 async function handleEdit() {
+  // If in dual mode, reset to allow editing C-- source
+  if (isDualMode) {
+    const savedCmmSource = cmmEditor ? cmmEditor.getValue() : cmmSource
+    clearCmmErrorMarkers(cmmEditor)
+    hideDualEditors()
+    // Restore the C-- source to the main editor with cmm language
+    const editor = getEditor()
+    if (editor && savedCmmSource) {
+      clearCmmErrorMarkers(editor)
+      const model = editor.getModel()
+      if (model) monaco.editor.setModelLanguage(model, 'cmm')
+      editor.setValue(savedCmmSource)
+      editor.updateOptions({ readOnly: false })
+    }
+    clearExecutionLine()
+    consolePrint('[Edit mode - modify C-- source and Load to recompile]')
+    return
+  }
+
   // Open the source file from debug info
   if (!debugInfo || !debugInfo.sourceFilename) {
     consolePrint('[No source file information available]')
@@ -2239,8 +2423,8 @@ function handleMemorySizeChange(e) {
   }
 
   try {
-    // Get current BK and SP values before resize
-    const currentBK = cpu.registers.BK
+    // Get current HP and SP values before resize
+    const currentBK = cpu.registers.HP
     const currentSP = cpu.registers.SP
 
     // Resize memory (preserves heap and stack)
@@ -2553,10 +2737,10 @@ async function showEditorView() {
   const currentFile = await fs.getCurrentFile()
 
   // Show/hide buttons based on file type
-  const isAsmFile = currentFile.endsWith('.asm')
+  const isLoadable = currentFile.endsWith('.asm') || currentFile.endsWith('.c')
   document.getElementById('btn-save').style.display = ''
-  document.getElementById('btn-load-program').style.display = isAsmFile ? '' : 'none'
-  document.getElementById('btn-run-program').style.display = isAsmFile ? '' : 'none'
+  document.getElementById('btn-load-program').style.display = isLoadable ? '' : 'none'
+  document.getElementById('btn-run-program').style.display = isLoadable ? '' : 'none'
 
   document.getElementById('current-path').textContent = currentFile
 }
@@ -2565,6 +2749,11 @@ async function showExplorerView() {
   // Save file before going back
   if (isInEditorMode) {
     await saveCurrentFile(false)
+  }
+
+  // Reset dual editor mode
+  if (isDualMode) {
+    hideDualEditors()
   }
 
   isInEditorMode = false
@@ -2793,6 +2982,15 @@ async function loadCurrentFile() {
   const content = await fs.getCurrentContent()
 
   if (editor) {
+    // Set language mode based on file extension
+    const model = editor.getModel()
+    if (model && filePath) {
+      if (filePath.endsWith('.c')) {
+        monaco.editor.setModelLanguage(model, 'cmm')
+      } else {
+        monaco.editor.setModelLanguage(model, 'x366-asm')
+      }
+    }
     editor.setValue(content)
   }
   if (currentPathEl) {
@@ -2802,7 +3000,13 @@ async function loadCurrentFile() {
 
 async function saveCurrentFile(showMessage = true) {
   const editor = getEditor()
-  const content = editor ? editor.getValue() : ''
+  // In dual mode, save the C-- source (not the generated assembly)
+  let content
+  if (isDualMode && cmmEditor) {
+    content = cmmEditor.getValue()
+  } else {
+    content = editor ? editor.getValue() : ''
+  }
 
   try {
     await fs.saveCurrentContent(content)
@@ -3171,35 +3375,9 @@ async function handleResetFileSystem() {
     // Small delay to ensure database is fully closed
     await new Promise(resolve => setTimeout(resolve, 100))
 
-    // Recreate file system
-    consolePrint('Creating new file system...')
-    fs = new FileSystem()
-    await fs.ready
-
-    // Load from manifest
-    consolePrint('Loading files from disk...')
-    await fs.loadManifest('disk/manifest.json')
-
-    // Fetch and store new version
-    try {
-      const response = await fetch('disk/manifest.json')
-      if (response.ok) {
-        const manifest = await response.json()
-        if (manifest._version) {
-          await fs.setMeta('disk_version', manifest._version)
-          consolePrint(`Updated to disk version ${manifest._version}`)
-        }
-      }
-    } catch (err) {
-      console.error('Error updating disk version:', err)
-    }
-
-    // Reload UI
-    consolePrint('Updating file browser...')
-    await renderFileList()
-    expandedFolders = new Set(['/'])
-
-    consolePrint('File system reset complete!')
+    // Reload the page — initUI will detect empty filesystem and load from manifest
+    consolePrint('Reloading...')
+    window.location.reload()
   } catch (err) {
     consolePrint(`Error resetting file system: ${err.message}`)
   }
@@ -3211,17 +3389,83 @@ async function handleResetFileSystem() {
 
 async function handleLoadProgram() {
   const editor = getEditor()
-  const source = editor ? editor.getValue() : ''
   const currentFilePath = await fs.getCurrentFile()
   const filename = currentFilePath ? currentFilePath.split('/').pop() : null
 
+  let asmSource
+
+  // Detect C-- files and compile
+  if (filename && filename.endsWith('.c')) {
+    try {
+      // In dual mode, the C-- source is in the cmm editor; otherwise in the main editor
+      const cmmSrc = isDualMode && cmmEditor ? cmmEditor.getValue() : (editor ? editor.getValue() : '')
+
+      const { compileCmm } = await import('./cmm-compiler.js')
+      const result = compileCmm(cmmSrc)
+
+      if (result.error) {
+        consolePrint('[C-- compilation error]')
+        consolePrint(result.error)
+        clearExecutionLine()
+        clearCmmExecutionLine()
+
+        // Show error marker in the editor
+        const sourceEditor = isDualMode && cmmEditor ? cmmEditor : editor
+        showCmmErrorMarker(sourceEditor, result.error)
+        return
+      }
+
+      // Clear any previous error markers
+      clearCmmErrorMarkers(isDualMode && cmmEditor ? cmmEditor : editor)
+
+      // Switch to dual mode
+      cmmSource = cmmSrc
+      asmSource = result.assembly
+
+      // Show dual editors
+      showDualEditors()
+
+      // Set the C-- editor with the source (read-only during debug)
+      if (cmmEditor) {
+        cmmEditor.setValue(cmmSrc)
+        cmmEditor.updateOptions({ readOnly: true })
+      }
+
+      // Put generated assembly in the asm editor (set language to asm)
+      const model = editor.getModel()
+      if (model) monaco.editor.setModelLanguage(model, 'x366-asm')
+      editor.setValue(asmSource)
+      editor.updateOptions({ readOnly: true })
+
+      // Build the C-- line map from @LINE markers
+      cmmLineMap = buildCmmLineMap(asmSource)
+
+      consolePrint('[C-- compiled successfully]')
+    } catch (err) {
+      consolePrint('[C-- compilation error]')
+      consolePrint(err.message)
+      clearExecutionLine()
+
+      // Show error marker in the editor
+      const sourceEditor = isDualMode && cmmEditor ? cmmEditor : editor
+      showCmmErrorMarker(sourceEditor, err.message)
+      return
+    }
+  } else {
+    // Assembly mode - hide dual editors if showing
+    if (isDualMode) {
+      hideDualEditors()
+    }
+    asmSource = editor ? editor.getValue() : ''
+  }
+
   try {
-    const bytecode = assemble(source, filename)
+    const bytecode = assemble(asmSource, filename)
     const result = memory.loadBinary(bytecode)
     cpu.reset()
 
-    // Set BK and CB from binary header
-    cpu.registers.BK = result.breakPointer
+    // Set HP and CB from binary header
+    cpu.registers.HP = result.breakPointer
     cpu.registers.CB = result.codeBase
     debugInfo = result.debugInfo
 
@@ -3231,16 +3475,16 @@ async function handleLoadProgram() {
       memorySelect.value = memory.size
     }
 
-    // Update breakpoint PC map after loading program
-    updateBreakpointPCMap()
+    // Update breakpoint IP map after loading program
+    updateBreakpointIPMap()
 
     // Clear undo history on new program load
     undoHistory = []
 
-    // Set AX to point to empty string at BK (no command line args from editor)
-    memory.writeByte(cpu.registers.BK, 0)  // Write null terminator
-    cpu.registers.AX = cpu.registers.BK
-    cpu.registers.BK++  // Move BK past the null terminator
+    // Set AX to point to empty string at HP (no command line args from editor)
+    memory.writeByte(cpu.registers.HP, 0)  // Write null terminator
+    cpu.registers.AX = cpu.registers.HP
+    cpu.registers.HP++  // Move HP past the null terminator
 
     if (debugMode) {
       consolePrint('[Assembly successful]')
@@ -3256,6 +3500,7 @@ async function handleLoadProgram() {
     consolePrint('[Assembly error]')
     consolePrint(err.message)
     clearExecutionLine()
+    if (isDualMode) clearCmmExecutionLine()
   }
 }
 
@@ -3273,12 +3518,32 @@ async function handleRunProgram() {
 // Initialization
 // ============================================================================
 
+function showLoadingOverlay() {
+  const overlay = document.getElementById('loading-overlay')
+  if (overlay) overlay.style.display = 'flex'
+}
+
+function updateLoadingOverlay(message, percent) {
+  const fill = document.getElementById('loading-progress-fill')
+  const log = document.getElementById('loading-log')
+  if (fill) fill.style.width = percent + '%'
+  if (log) log.textContent = message
+}
+
+function hideLoadingOverlay() {
+  const overlay = document.getElementById('loading-overlay')
+  if (overlay) {
+    overlay.classList.add('hidden')
+    setTimeout(() => overlay.remove(), 500)
+  }
+}
+
 export async function initUI() {
   // Initialize Monaco Editor
   await initializeMonaco()
 
   // Set up breakpoint change callback
-  setBreakpointChangeCallback(updateBreakpointPCMap)
+  setBreakpointChangeCallback(updateBreakpointIPMap)
 
   // Create display
   display = new Display('display-canvas')
@@ -3318,6 +3583,7 @@ export async function initUI() {
     running = false
     document.getElementById('btn-run').textContent = 'run'
     clearExecutionLine()
+    if (isDualMode) clearCmmExecutionLine()
     if (debugMode) consolePrint('[Program exited]')
   })
 
@@ -3327,10 +3593,12 @@ export async function initUI() {
 
   // Check if file system is empty (first time) and load from manifest
   const files = await fs.listFiles()
-  if (files.length === 0) {
-    consolePrint('Loading file system from disk...')
+  const needsLoad = files.length === 0
+  if (needsLoad) {
+    showLoadingOverlay()
+    updateLoadingOverlay('Loading file system from disk...', 5)
     try {
-      await fs.loadManifest('disk/manifest.json')
+      await fs.loadManifest('disk/manifest.json', updateLoadingOverlay)
       consolePrint('File system loaded.')
     } catch (err) {
       consolePrint(`Failed to load file system: ${err.message}`)
@@ -3343,6 +3611,8 @@ export async function initUI() {
     fs.cwd = savedCwd
   }
 
+  if (needsLoad) updateLoadingOverlay('Loading splash screen...', 95)
+
   // Load splash screen image
   try {
     const splashData = await fs.readFile('/img/mtmc-splash.png')
@@ -3353,6 +3623,11 @@ export async function initUI() {
   } catch (err) {
     // Splash screen is optional, don't error if missing
     console.log('Splash screen not found:', err.message)
+  }
+
+  if (needsLoad) {
+    updateLoadingOverlay('Ready', 100)
+    hideLoadingOverlay()
   }
 
   // Wire up controls
@@ -3595,8 +3870,8 @@ export async function initUI() {
   document.addEventListener('f8-pressed', () => {
     if (!isInEditorMode) return
 
-    // Check if a program is loaded by checking if BK is beyond the header
-    const isProgramLoaded = cpu.registers.BK > 0x20
+    // Check if a program is loaded by checking if HP is beyond the header
+    const isProgramLoaded = cpu.registers.HP > 0x20
 
     if (!isProgramLoaded) {
       // No program loaded, load it

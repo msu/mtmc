@@ -510,18 +510,20 @@ export class FileSystem {
   }
 
   // Load manifest from server
-  async loadManifest(manifestUrl) {
+  async loadManifest(manifestUrl, onProgress) {
     await this.ready
 
     try {
+      if (onProgress) onProgress('Fetching manifest...', 0)
       const response = await fetch(manifestUrl)
       const manifest = await response.json()
 
       // Create directory structure
       const dirs = new Set()
-      for (const path of Object.keys(manifest)) {
-        // Skip metadata keys
+      const fileEntries = []
+      for (const [path, relativeUrl] of Object.entries(manifest)) {
         if (path.startsWith('_')) continue
+        fileEntries.push([path, relativeUrl])
 
         let dir = this.dirname(path)
         while (dir !== '/') {
@@ -531,6 +533,7 @@ export class FileSystem {
       }
 
       // Create all directories
+      if (onProgress) onProgress('Creating directories...', 5)
       const sortedDirs = Array.from(dirs).sort()
       for (const dir of sortedDirs) {
         const exists = await this.exists(dir)
@@ -541,19 +544,21 @@ export class FileSystem {
 
       // Load all files
       const baseUrl = manifestUrl.substring(0, manifestUrl.lastIndexOf('/'))
-      for (const [path, relativeUrl] of Object.entries(manifest)) {
-        // Skip metadata keys
-        if (path.startsWith('_')) continue
+      const total = fileEntries.length
+      for (let i = 0; i < total; i++) {
+        const [path, relativeUrl] = fileEntries[i]
+        const pct = 10 + Math.round((i / total) * 85)
+        if (onProgress) onProgress(`Loading ${path}`, pct)
+
         const fileUrl = `${baseUrl}/${relativeUrl}`
         const response = await fetch(fileUrl)
 
-        // Determine if this is a binary file
         const isBinary = path.match(/\.(png|jpg|jpeg|gif|bin|x366|exe)$/i)
-
         const content = isBinary ? await response.arrayBuffer() : await response.text()
         await this.writeFile(path, content)
       }
 
+      if (onProgress) onProgress('File system ready', 100)
       console.log('File system loaded from manifest')
     } catch (err) {
       console.error('Failed to load manifest:', err)
@@ -563,7 +568,7 @@ export class FileSystem {
 
   // Compatibility methods for existing code
   async getCurrentFile() {
-    return await this.getMetadata('currentFile') || '/examples/hello.asm'
+    return await this.getMetadata('currentFile') || '/src/hello.asm'
   }
 
   async setCurrentFile(path) {

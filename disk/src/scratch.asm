@@ -1,0 +1,7 @@
+; Scratch pad - write your x366 assembly here
+
+MOV AX, 42
+SYSCALL PRINT_INT
+MOV AX, 10
+SYSCALL PRINT_CHAR
+SYSCALL EXIT

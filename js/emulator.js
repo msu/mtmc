@@ -56,6 +56,9 @@ export const Opcode = {
   NOT: 0x36,
   SHL: 0x37,
   SHR: 0x38,
+  TEST_REG_REG: 0x39,
+  TEST_REG_IMM: 0x3A,
+  NEG: 0x3B,
 
   // Aliases for backwards compatibility with tests
   INC: 0x24,  // Alias for INC_REG
@@ -64,6 +67,8 @@ export const Opcode = {
   AND_IMM: 0x31,  // Alias for AND_REG_IMM
   OR_REG: 0x32,
   XOR_REG: 0x34,
+  TEST_REG: 0x39,
+  TEST_IMM: 0x3A,
   ADD_MEM_REL: 0x29,
   SUB_MEM_REL: 0x2B,
   INC_MEM_REL: 0x1F,
@@ -75,6 +80,7 @@ export const Opcode = {
   CMP_REG_IMM: 0x41,
   CMP_MEM: 0x42,       // CMP reg, [addr]
   CMP_MEMR: 0x43,      // CMP reg, [base+offset]
+  SETE: 0x44, SETNE: 0x45, SETL: 0x46, SETG: 0x47, SETLE: 0x48, SETGE: 0x49,
   JMP: 0x50,
   JE: 0x51,
   JNE: 0x52,
@@ -122,14 +128,14 @@ export const Syscall = {
 // Register name to code mapping
 export const RegCode = {
   AX: 0, BX: 1, CX: 2, DX: 3,
-  EX: 4, FX: 5, SP: 6, FP: 7,
-  BK: 8,
+  SI: 4, DI: 5, SP: 6, BP: 7,
+  HP: 8,
   AL: 0, BL: 1, CL: 2, DL: 3,
-  EL: 4, FL: 5,
+  SIL: 4, DIL: 5,
 }
 
 // Code to register name mapping
-export const RegName = ['AX', 'BX', 'CX', 'DX', 'EX', 'FX', 'SP', 'FP', 'BK']
+export const RegName = ['AX', 'BX', 'CX', 'DX', 'SI', 'DI', 'SP', 'BP', 'HP']
 
 // ============================================================================
 // Registers
@@ -142,14 +148,14 @@ export class Registers {
     this.BX = 0
     this.CX = 0
     this.DX = 0
-    this.EX = 0
-    this.FX = 0
+    this.SI = 0
+    this.DI = 0
 
     // Special purpose registers
     this.SP = 0  // Stack Pointer
-    this.FP = 0  // Frame Pointer
-    this.BK = 0  // Break Pointer (end of heap)
-    this.PC = 0  // Program Counter
+    this.BP = 0  // Base Pointer
+    this.HP = 0  // Heap Pointer (end of heap)
+    this.IP = 0  // Instruction Pointer
 
     // Internal registers (not user-accessible)
     this.CB = 0  // Code Boundary (end of code segment)
@@ -165,7 +171,7 @@ export class Registers {
 
   /**
    * Get register value by name
-   * Supports: AX, BX, CX, DX, EX, FX, AL, BL, CL, DL, EL, FL, SP, FP, BK, PC
+   * Supports: AX, BX, CX, DX, SI, DI, AL, BL, CL, DL, SIL, DIL, SP, BP, HP, IP
    */
   get(name) {
     name = name.toUpperCase()
@@ -175,8 +181,8 @@ export class Registers {
     if (name === 'BL') return this.BX & 0xFF
     if (name === 'CL') return this.CX & 0xFF
     if (name === 'DL') return this.DX & 0xFF
-    if (name === 'EL') return this.EX & 0xFF
-    if (name === 'FL') return this.FX & 0xFF
+    if (name === 'SIL') return this.SI & 0xFF
+    if (name === 'DIL') return this.DI & 0xFF
 
     // Word registers
     if (name in this) {
@@ -188,7 +194,7 @@ export class Registers {
 
   /**
    * Set register value by name
-   * Supports: AX, BX, CX, DX, EX, FX, AL, BL, CL, DL, EL, FL, SP, FP, BK, PC
+   * Supports: AX, BX, CX, DX, SI, DI, AL, BL, CL, DL, SIL, DIL, SP, BP, HP, IP
    */
   set(name, value) {
     name = name.toUpperCase()
@@ -210,12 +216,12 @@ export class Registers {
       this.DX = (this.DX & 0xFF00) | (value & 0xFF)
       return
     }
-    if (name === 'EL') {
-      this.EX = (this.EX & 0xFF00) | (value & 0xFF)
+    if (name === 'SIL') {
+      this.SI = (this.SI & 0xFF00) | (value & 0xFF)
       return
     }
-    if (name === 'FL') {
-      this.FX = (this.FX & 0xFF00) | (value & 0xFF)
+    if (name === 'DIL') {
+      this.DI = (this.DI & 0xFF00) | (value & 0xFF)
       return
     }
 
@@ -273,12 +279,12 @@ export class Registers {
     this.BX = 0
     this.CX = 0
     this.DX = 0
-    this.EX = 0
-    this.FX = 0
+    this.SI = 0
+    this.DI = 0
     this.SP = memorySize  // Stack starts at end of memory
-    this.FP = 0
-    this.BK = 0x0020      // Break pointer starts after header
-    this.PC = 0x0020      // Code starts at 0x0020
+    this.BP = 0
+    this.HP = 0x0020      // Heap pointer starts after header
+    this.IP = 0x0020      // Code starts at 0x0020
     this.CB = 0x0020      // Code boundary starts at same place
     this.IR = 0           // Instruction register
     this.DR = 0           // Data register
@@ -428,7 +434,7 @@ export class Memory {
     const memorySize = (binary[0x0009] << 8) | binary[0x000A]
     const sectionsOffset = (binary[0x000C] << 24) | (binary[0x000D] << 16) |
                           (binary[0x000E] << 8) | binary[0x000F]
-    const breakPointer = (binary[0x0010] << 8) | binary[0x0011]  // BK
+    const breakPointer = (binary[0x0010] << 8) | binary[0x0011]  // HP
     const codeBoundary = (binary[0x0012] << 8) | binary[0x0013]  // CB
 
     // Resize memory if needed
@@ -583,7 +589,7 @@ export class Memory {
   }
 
   /**
-   * Resize memory (preserves data below BK and stack data)
+   * Resize memory (preserves data below HP and stack data)
    */
   resize(newSize, breakPointer, stackPointer) {
     const validSizes = [1024, 2048, 4096, 8192, 16384]
@@ -675,7 +681,9 @@ export function decodeFromBytes(bytes) {
   // 2-byte instructions: NOP, HLT, RET, single-register ops
   if (opcode === Opcode.NOP || opcode === Opcode.HLT || opcode === Opcode.RET ||
       opcode === Opcode.INC_REG || opcode === Opcode.DEC_REG ||
-      opcode === Opcode.MUL || opcode === Opcode.DIV || opcode === Opcode.NOT ||
+      opcode === Opcode.MUL || opcode === Opcode.DIV || opcode === Opcode.NOT || opcode === Opcode.NEG ||
+      opcode === Opcode.SETE || opcode === Opcode.SETNE || opcode === Opcode.SETL ||
+      opcode === Opcode.SETG || opcode === Opcode.SETLE || opcode === Opcode.SETGE ||
       opcode === Opcode.PUSH || opcode === Opcode.POP || opcode === Opcode.SYSCALL) {
     const param = bytes[1] || 0
     return {
@@ -705,7 +713,7 @@ export function decodeFromBytes(bytes) {
   if (opcode === Opcode.MOV_REG_REG || opcode === Opcode.ADD_REG_REG ||
       opcode === Opcode.SUB_REG_REG || opcode === Opcode.AND_REG_REG ||
       opcode === Opcode.OR_REG_REG || opcode === Opcode.XOR_REG_REG ||
-      opcode === Opcode.CMP_REG_REG) {
+      opcode === Opcode.CMP_REG_REG || opcode === Opcode.TEST_REG_REG) {
     result.dst = byte1
     result.src = byte2
     return result
@@ -715,7 +723,8 @@ export function decodeFromBytes(bytes) {
   if (opcode === Opcode.MOV_REG_IMM || opcode === Opcode.ADD_REG_IMM ||
       opcode === Opcode.SUB_REG_IMM || opcode === Opcode.AND_REG_IMM ||
       opcode === Opcode.OR_REG_IMM || opcode === Opcode.XOR_REG_IMM ||
-      opcode === Opcode.CMP_REG_IMM || opcode === Opcode.SHL || opcode === Opcode.SHR) {
+      opcode === Opcode.CMP_REG_IMM || opcode === Opcode.SHL || opcode === Opcode.SHR ||
+      opcode === Opcode.TEST_REG_IMM) {
     result.dst = byte1
     result.imm = (byte2 << 8) | byte3  // Little-endian in instruction bytes
     return result
@@ -867,12 +876,17 @@ export function getInstructionName(opcode) {
     [Opcode.XOR_REG_REG]: 'XOR',
     [Opcode.XOR_REG_IMM]: 'XOR',
     [Opcode.NOT]: 'NOT',
+    [Opcode.NEG]: 'NEG',
     [Opcode.SHL]: 'SHL',
     [Opcode.SHR]: 'SHR',
+    [Opcode.TEST_REG_REG]: 'TEST',
+    [Opcode.TEST_REG_IMM]: 'TEST',
     [Opcode.CMP_REG_REG]: 'CMP',
     [Opcode.CMP_REG_IMM]: 'CMP',
     [Opcode.CMP_MEM]: 'CMP',
     [Opcode.CMP_MEMR]: 'CMP',
+    [Opcode.SETE]: 'SETE', [Opcode.SETNE]: 'SETNE', [Opcode.SETL]: 'SETL',
+    [Opcode.SETG]: 'SETG', [Opcode.SETLE]: 'SETLE', [Opcode.SETGE]: 'SETGE',
     [Opcode.JMP]: 'JMP',
     [Opcode.JE]: 'JE',
     [Opcode.JNE]: 'JNE',
@@ -985,29 +999,29 @@ export class CPU {
   }
 
   /**
-   * Set PC value
+   * Set IP value
    */
-  setPC(value) {
+  setIP(value) {
     if (this.currentUndoList) {
-      const oldValue = this.registers.PC
+      const oldValue = this.registers.IP
       this.currentUndoList.push(() => {
-        this.registers.PC = oldValue
+        this.registers.IP = oldValue
       })
     }
-    this.registers.PC = value & 0xFFFF
+    this.registers.IP = value & 0xFFFF
   }
 
   /**
-   * Increment PC by instruction size
+   * Increment IP by instruction size
    */
-  incPC(size) {
+  incIP(size) {
     if (this.currentUndoList) {
-      const oldValue = this.registers.PC
+      const oldValue = this.registers.IP
       this.currentUndoList.push(() => {
-        this.registers.PC = oldValue
+        this.registers.IP = oldValue
       })
     }
-    this.registers.PC = (this.registers.PC + size) & 0xFFFF
+    this.registers.IP = (this.registers.IP + size) & 0xFFFF
   }
 
   /**
@@ -1043,7 +1057,7 @@ export class CPU {
    * Returns the decoded instruction for caching
    */
   prefetchInstruction() {
-    const pc = this.registers.PC
+    const pc = this.registers.IP
     const instr = decodeInstruction(this.memory, pc)
 
     // Load IR with first word (opcode + param/byte1)
@@ -1064,7 +1078,7 @@ export class CPU {
   }
 
   /**
-   * Execute one instruction at current PC
+   * Execute one instruction at current IP
    * Returns false if halted, true if continuing
    */
   step() {
@@ -1073,7 +1087,7 @@ export class CPU {
     }
 
     // Use cached instruction if available, otherwise decode
-    const instr = this.cachedInstruction || decodeInstruction(this.memory, this.registers.PC)
+    const instr = this.cachedInstruction || decodeInstruction(this.memory, this.registers.IP)
     this.cachedInstruction = null
 
     // Execute instruction
@@ -1096,7 +1110,7 @@ export class CPU {
     switch (opcode) {
       // ========== System ==========
       case Opcode.NOP:
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
 
       case Opcode.HLT:
@@ -1107,27 +1121,27 @@ export class CPU {
       case Opcode.MOV_REG_REG: {
         const value = this.getReg(instr.src)
         this.setReg(instr.dst, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       case Opcode.MOV_REG_IMM: {
         this.setReg(instr.dst, instr.imm)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       case Opcode.LOAD: {
         const value = this.memory.readWord(instr.addr)
         this.setReg(instr.reg, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       case Opcode.STORE: {
         const value = this.getReg(instr.src)
         this.writeMemory(instr.addr, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1136,7 +1150,7 @@ export class CPU {
         const addr = (base + instr.offset) & 0xFFFF
         const value = this.memory.readWord(addr)
         this.setReg(instr.reg, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1145,21 +1159,21 @@ export class CPU {
         const addr = (base + instr.offset) & 0xFFFF
         const value = this.getReg(instr.src)
         this.writeMemory(addr, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       case Opcode.LOADB: {
         const value = this.memory.readByte(instr.addr)
         this.setReg(instr.reg, value)  // Zero-extended
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       case Opcode.STOREB: {
         const value = this.getReg(instr.src) & 0xFF
         this.writeMemoryByte(instr.addr, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1168,7 +1182,7 @@ export class CPU {
         const addr = (base + instr.offset) & 0xFFFF
         const value = this.memory.readByte(addr)
         this.setReg(instr.reg, value)  // Zero-extended
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1177,7 +1191,7 @@ export class CPU {
         const addr = (base + instr.offset) & 0xFFFF
         const value = this.getReg(instr.src) & 0xFF
         this.writeMemoryByte(addr, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1185,20 +1199,20 @@ export class CPU {
         const base = this.getReg(instr.base)
         const addr = (base + instr.offset) & 0xFFFF
         this.setReg(instr.reg, addr)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       case Opcode.STOREI: {
         const base = this.getReg(instr.base)
         this.writeMemory(base, instr.imm)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       case Opcode.STOREI_DIRECT: {
         this.writeMemory(instr.addr, instr.imm)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1213,7 +1227,7 @@ export class CPU {
         this.updateFlags(result, 16)
 
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1225,7 +1239,7 @@ export class CPU {
         this.updateFlags(result, 16)
 
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1238,7 +1252,7 @@ export class CPU {
         this.updateFlags(result, 16)
 
         this.setReg(instr.reg, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1253,7 +1267,7 @@ export class CPU {
         this.updateFlags(result, 16)
 
         this.setReg(instr.reg, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1266,7 +1280,7 @@ export class CPU {
         this.updateFlags(result, 16)
 
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1278,7 +1292,7 @@ export class CPU {
         this.updateFlags(result, 16)
 
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1291,7 +1305,7 @@ export class CPU {
         this.updateFlags(result, 16)
 
         this.setReg(instr.reg, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1306,7 +1320,7 @@ export class CPU {
         this.updateFlags(result, 16)
 
         this.setReg(instr.reg, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1315,7 +1329,7 @@ export class CPU {
         const result = value + 1
         this.updateFlags(result, 16)
         this.setReg(instr.reg, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1324,7 +1338,7 @@ export class CPU {
         const result = value - 1
         this.updateFlags(result, 16)
         this.setReg(instr.reg, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1333,7 +1347,7 @@ export class CPU {
         const result = (value + 1) & 0xFFFF
         this.writeMemory(instr.addr, result)
         this.updateFlags(result, 16)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1342,7 +1356,7 @@ export class CPU {
         const result = (value - 1) & 0xFFFF
         this.writeMemory(instr.addr, result)
         this.updateFlags(result, 16)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1353,7 +1367,7 @@ export class CPU {
         const result = (value + 1) & 0xFFFF
         this.writeMemory(addr, result)
         this.updateFlags(result, 16)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1364,7 +1378,7 @@ export class CPU {
         const result = (value - 1) & 0xFFFF
         this.writeMemory(addr, result)
         this.updateFlags(result, 16)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1374,7 +1388,7 @@ export class CPU {
         const addr = (base + index) & 0xFFFF
         const value = this.memory.readWord(addr)
         this.setReg(instr.reg, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1384,7 +1398,7 @@ export class CPU {
         const addr = (base + index) & 0xFFFF
         const value = this.getReg(instr.reg)
         this.writeMemory(addr, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1392,7 +1406,7 @@ export class CPU {
         const base = this.getReg(instr.base)
         const addr = (base + instr.offset) & 0xFFFF
         this.writeMemory(addr, instr.imm)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1402,7 +1416,7 @@ export class CPU {
         const result = a * b
         this.setReg(0, result & 0xFFFF)  // AX = 0
         this.updateFlags(this.registers.AX, 16)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1416,7 +1430,7 @@ export class CPU {
         this.setReg(0, quotient & 0xFFFF)  // AX = 0
         this.setReg(3, remainder & 0xFFFF)  // DX = 3
         this.updateFlags(this.registers.AX, 16)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1429,7 +1443,7 @@ export class CPU {
         this.setFlag('CF', b > a)
         this.updateFlags(result, 16)
 
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1440,7 +1454,7 @@ export class CPU {
         this.setFlag('CF', instr.imm > a)
         this.updateFlags(result, 16)
 
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1452,7 +1466,7 @@ export class CPU {
         this.setFlag('CF', b > a)
         this.updateFlags(result, 16)
 
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1466,60 +1480,60 @@ export class CPU {
         this.setFlag('CF', b > a)
         this.updateFlags(result, 16)
 
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       // ========== Jumps ==========
       case Opcode.JMP:
-        this.setPC(instr.addr)
+        this.setIP(instr.addr)
         break
 
       case Opcode.JE:
         if (this.registers.ZF === 1) {
-          this.setPC(instr.addr)
+          this.setIP(instr.addr)
         } else {
-          this.incPC(instr.size)
+          this.incIP(instr.size)
         }
         break
 
       case Opcode.JNE:
         if (this.registers.ZF === 0) {
-          this.setPC(instr.addr)
+          this.setIP(instr.addr)
         } else {
-          this.incPC(instr.size)
+          this.incIP(instr.size)
         }
         break
 
       case Opcode.JL:
         if (this.registers.SF !== this.registers.OF) {
-          this.setPC(instr.addr)
+          this.setIP(instr.addr)
         } else {
-          this.incPC(instr.size)
+          this.incIP(instr.size)
         }
         break
 
       case Opcode.JG:
         if (this.registers.ZF === 0 && this.registers.SF === this.registers.OF) {
-          this.setPC(instr.addr)
+          this.setIP(instr.addr)
         } else {
-          this.incPC(instr.size)
+          this.incIP(instr.size)
         }
         break
 
       case Opcode.JLE:
         if (this.registers.ZF === 1 || this.registers.SF !== this.registers.OF) {
-          this.setPC(instr.addr)
+          this.setIP(instr.addr)
         } else {
-          this.incPC(instr.size)
+          this.incIP(instr.size)
         }
         break
 
       case Opcode.JGE:
         if (this.registers.SF === this.registers.OF) {
-          this.setPC(instr.addr)
+          this.setIP(instr.addr)
         } else {
-          this.incPC(instr.size)
+          this.incIP(instr.size)
         }
         break
 
@@ -1527,9 +1541,9 @@ export class CPU {
         // Decrement CX and jump if CX != 0
         this.registers.CX = (this.registers.CX - 1) & 0xFFFF
         if (this.registers.CX !== 0) {
-          this.setPC(instr.addr)
+          this.setIP(instr.addr)
         } else {
-          this.incPC(instr.size)
+          this.incIP(instr.size)
         }
         break
 
@@ -1538,7 +1552,7 @@ export class CPU {
         this.setSP((this.registers.SP - 2) & 0xFFFF)
         const value = this.getReg(instr.reg)
         this.writeMemory(this.registers.SP, value)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1546,18 +1560,18 @@ export class CPU {
         const value = this.memory.readWord(this.registers.SP)
         this.setReg(instr.reg, value)
         this.setSP((this.registers.SP + 2) & 0xFFFF)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
       case Opcode.CALL: {
-        // Push return address (PC + 4)
-        const returnAddr = (this.registers.PC + instr.size) & 0xFFFF
+        // Push return address (IP + 4)
+        const returnAddr = (this.registers.IP + instr.size) & 0xFFFF
         this.setSP((this.registers.SP - 2) & 0xFFFF)
         this.writeMemory(this.registers.SP, returnAddr)
 
         // Jump to function
-        this.setPC(instr.addr)
+        this.setIP(instr.addr)
         break
       }
 
@@ -1565,7 +1579,7 @@ export class CPU {
         // Pop return address
         const returnAddr = this.memory.readWord(this.registers.SP)
         this.setSP((this.registers.SP + 2) & 0xFFFF)
-        this.setPC(returnAddr)
+        this.setIP(returnAddr)
         break
       }
 
@@ -1576,7 +1590,7 @@ export class CPU {
         const result = a & b
         this.updateFlags(result, 16)
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1585,7 +1599,24 @@ export class CPU {
         const result = a & instr.imm
         this.updateFlags(result, 16)
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
+        break
+      }
+
+      case Opcode.TEST_REG_REG: {
+        const a = this.getReg(instr.dst)
+        const b = this.getReg(instr.src)
+        const result = a & b
+        this.updateFlags(result, 16)
+        this.incIP(instr.size)
+        break
+      }
+
+      case Opcode.TEST_REG_IMM: {
+        const a = this.getReg(instr.dst)
+        const result = a & instr.imm
+        this.updateFlags(result, 16)
+        this.incIP(instr.size)
         break
       }
 
@@ -1595,7 +1626,7 @@ export class CPU {
         const result = a | b
         this.updateFlags(result, 16)
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1604,7 +1635,7 @@ export class CPU {
         const result = a | instr.imm
         this.updateFlags(result, 16)
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1614,7 +1645,7 @@ export class CPU {
         const result = a ^ b
         this.updateFlags(result, 16)
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1623,7 +1654,7 @@ export class CPU {
         const result = a ^ instr.imm
         this.updateFlags(result, 16)
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1632,7 +1663,47 @@ export class CPU {
         const result = (~value) & 0xFFFF
         this.updateFlags(result, 16)
         this.setReg(instr.reg, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
+        break
+      }
+
+      case Opcode.NEG: {
+        const value = this.getReg(instr.reg)
+        const result = (-value) & 0xFFFF
+        this.updateFlags(result, 16)
+        this.setReg(instr.reg, result)
+        this.incIP(instr.size)
+        break
+      }
+
+      case Opcode.SETE: {
+        this.setReg(instr.reg, this.registers.ZF === 1 ? 1 : 0)
+        this.incIP(instr.size)
+        break
+      }
+      case Opcode.SETNE: {
+        this.setReg(instr.reg, this.registers.ZF === 0 ? 1 : 0)
+        this.incIP(instr.size)
+        break
+      }
+      case Opcode.SETL: {
+        this.setReg(instr.reg, this.registers.SF !== this.registers.OF ? 1 : 0)
+        this.incIP(instr.size)
+        break
+      }
+      case Opcode.SETG: {
+        this.setReg(instr.reg, this.registers.ZF === 0 && this.registers.SF === this.registers.OF ? 1 : 0)
+        this.incIP(instr.size)
+        break
+      }
+      case Opcode.SETLE: {
+        this.setReg(instr.reg, this.registers.ZF === 1 || this.registers.SF !== this.registers.OF ? 1 : 0)
+        this.incIP(instr.size)
+        break
+      }
+      case Opcode.SETGE: {
+        this.setReg(instr.reg, this.registers.SF === this.registers.OF ? 1 : 0)
+        this.incIP(instr.size)
         break
       }
 
@@ -1642,7 +1713,7 @@ export class CPU {
         const result = (value << count) & 0xFFFF
         this.updateFlags(result, 16)
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1652,7 +1723,7 @@ export class CPU {
         const result = value >>> count
         this.updateFlags(result, 16)
         this.setReg(instr.dst, result)
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
       }
 
@@ -1661,11 +1732,11 @@ export class CPU {
         if (this.os) {
           this.os.syscall(instr.syscall)
         }
-        this.incPC(instr.size)
+        this.incIP(instr.size)
         break
 
       default:
-        throw new Error(`Unknown opcode: 0x${opcode.toString(16)} at PC=0x${this.registers.PC.toString(16)}`)
+        throw new Error(`Unknown opcode: 0x${opcode.toString(16)} at IP=0x${this.registers.IP.toString(16)}`)
     }
   }
 

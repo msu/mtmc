@@ -124,23 +124,23 @@ done:
 
   it('stack frame locals', () => {
     const { cpu } = runProgram(`
-  PUSH FP
-  MOV FP, SP
+  PUSH BP
+  MOV BP, SP
   SUB SP, 6
 
   MOV AX, 11
-  MOV [FP-2], AX
+  MOV [BP-2], AX
   MOV AX, 22
-  MOV [FP-4], AX
+  MOV [BP-4], AX
   MOV AX, 33
-  MOV [FP-6], AX
+  MOV [BP-6], AX
 
-  MOV AX, [FP-2]
-  MOV BX, [FP-4]
-  MOV CX, [FP-6]
+  MOV AX, [BP-2]
+  MOV BX, [BP-4]
+  MOV CX, [BP-6]
 
-  MOV SP, FP
-  POP FP
+  MOV SP, BP
+  POP BP
   HALT
     `)
     expect(cpu.registers.AX).toBe(11)
@@ -148,31 +148,31 @@ done:
     expect(cpu.registers.CX).toBe(33)
   })
 
-  it('BK is word-aligned after odd-sized data', () => {
+  it('HP is word-aligned after odd-sized data', () => {
     // DB "Hello", 0 is 6 bytes, DW 42 is 2 bytes = 8 bytes (already even)
-    // DB "Hi", 0 is 3 bytes (odd) — BK should round up to even
+    // DB "Hi", 0 is 3 bytes (odd) — HP should round up to even
     const bytecode = assemble(`
 msg: DB "Hi", 0
   HALT
     `)
-    // BK is at header offset 0x0010-0x0011 (big-endian)
-    const bk = (bytecode[0x10] << 8) | bytecode[0x11]
-    expect(bk % 2).toBe(0)
+    // HP is at header offset 0x0010-0x0011 (big-endian)
+    const hp = (bytecode[0x10] << 8) | bytecode[0x11]
+    expect(hp % 2).toBe(0)
   })
 
   it('simple heap allocation', () => {
     const { cpu } = runProgram(`
 .MEMORY 8K
   MOV AX, 10
-  MOV BX, BK
-  ADD BK, AX
+  MOV BX, HP
+  ADD HP, AX
   MOV AX, BX
   HALT
     `, 8192)
 
-    // BX held old BK, and BK advanced by 10
+    // BX held old HP, and HP advanced by 10
     expect(cpu.registers.AX).toBe(cpu.registers.BX)
-    expect(cpu.registers.BK).toBe(cpu.registers.BX + 10)
+    expect(cpu.registers.HP).toBe(cpu.registers.BX + 10)
   })
 
   it('malloc and fill', () => {
@@ -181,11 +181,11 @@ msg: DB "Hi", 0
   JMP main
 malloc:
   SHL AX, 1
-  MOV BX, BK
+  MOV BX, HP
   ADD AX, BX
   CMP AX, SP
   JGE failed
-  MOV BK, AX
+  MOV HP, AX
   MOV AX, BX
   RET
 failed:

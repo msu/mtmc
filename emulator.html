@@ -2,12 +2,23 @@
 <html>
 <head>
     <meta name="viewport" content="minimal-ui, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>MSU MTMC-16</title>
     <link rel="stylesheet" href="css/emulator.css">
 </head>
 <body>
+
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="loading-title">MTMC-16</div>
+        <div class="loading-subtitle">MonTana Mini-Computer</div>
+        <div class="loading-progress-bar">
+            <div id="loading-progress-fill" class="loading-progress-fill"></div>
+        </div>
+        <div id="loading-log" class="loading-log"></div>
+    </div>
+</div>
 
 <main>
     <!-- LEFT COLUMN: Controls, Registers, Memory -->
@@ -100,18 +111,18 @@
                         <td class="reg-value" id="dx-str"></td>
                     </tr>
                     <tr>
-                        <td>EX</td>
-                        <td id="ex-leds"></td>
-                        <td class="reg-value" id="ex-value">0x0000</td>
-                        <td class="reg-value" id="ex-dec">0</td>
-                        <td class="reg-value" id="ex-str"></td>
+                        <td>SI</td>
+                        <td id="si-leds"></td>
+                        <td class="reg-value" id="si-value">0x0000</td>
+                        <td class="reg-value" id="si-dec">0</td>
+                        <td class="reg-value" id="si-str"></td>
                     </tr>
                     <tr>
-                        <td>FX</td>
-                        <td id="fx-leds"></td>
-                        <td class="reg-value" id="fx-value">0x0000</td>
-                        <td class="reg-value" id="fx-dec">0</td>
-                        <td class="reg-value" id="fx-str"></td>
+                        <td>DI</td>
+                        <td id="di-leds"></td>
+                        <td class="reg-value" id="di-value">0x0000</td>
+                        <td class="reg-value" id="di-dec">0</td>
+                        <td class="reg-value" id="di-str"></td>
                     </tr>
                     <tr>
                         <td>SP</td>
@@ -121,11 +132,11 @@
                         <td class="reg-value" id="sp-str"></td>
                     </tr>
                     <tr>
-                        <td>FP</td>
-                        <td id="fp-leds"></td>
-                        <td class="reg-value" id="fp-value">0x0000</td>
-                        <td class="reg-value" id="fp-dec">0</td>
-                        <td class="reg-value" id="fp-str"></td>
+                        <td>BP</td>
+                        <td id="bp-leds"></td>
+                        <td class="reg-value" id="bp-value">0x0000</td>
+                        <td class="reg-value" id="bp-dec">0</td>
+                        <td class="reg-value" id="bp-str"></td>
                     </tr>
                     <tr>
                         <td colspan="5">
@@ -133,18 +144,18 @@
                         </td>
                     </tr>
                     <tr>
-                        <td>BK</td>
-                        <td id="bk-leds"></td>
-                        <td class="reg-value" id="bk-value">0x0000</td>
-                        <td class="reg-value" id="bk-dec">0</td>
-                        <td class="reg-value" id="bk-str"></td>
+                        <td>HP</td>
+                        <td id="hp-leds"></td>
+                        <td class="reg-value" id="hp-value">0x0000</td>
+                        <td class="reg-value" id="hp-dec">0</td>
+                        <td class="reg-value" id="hp-str"></td>
                     </tr>
                     <tr>
-                        <td>PC</td>
-                        <td id="pc-leds"></td>
-                        <td class="reg-value" id="pc-value">0x0020</td>
-                        <td class="reg-value" id="pc-dec">32</td>
-                        <td class="reg-value" id="pc-str"></td>
+                        <td>IP</td>
+                        <td id="ip-leds"></td>
+                        <td class="reg-value" id="ip-value">0x0020</td>
+                        <td class="reg-value" id="ip-dec">32</td>
+                        <td class="reg-value" id="ip-str"></td>
                     </tr>
                     <tr>
                         <td>CB</td>
@@ -283,7 +294,16 @@
 
         <!-- Editor View -->
         <div id="editor-view" class="view-container" style="display: none;">
-            <div id="editor"></div>
+            <div id="editor-panel" class="editor-panel">
+                <div id="cmm-editor-container" class="cmm-editor-container" style="display: none;">
+                    <div class="editor-label">C-- Source</div>
+                    <div id="cmm-editor" class="editor"></div>
+                </div>
+                <div id="asm-editor-container" class="asm-editor-container">
+                    <div class="editor-label" id="asm-editor-label" style="display: none;">Assembly</div>
+                    <div id="editor" class="editor"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Binary Viewer -->
@@ -302,6 +322,11 @@
 <script src="vendor/monaco-editor/vs/loader.js"></script>
 <script>
     require.config({ paths: { vs: 'vendor/monaco-editor/vs' } });
+    window.MonacoEnvironment = {
+        getWorkerUrl: function () {
+            return 'data:text/javascript;charset=utf-8,' + encodeURIComponent('self.MonacoEnvironment={baseUrl:"' + window.location.href.replace(/\/[^/]*$/, '/') + 'vendor/monaco-editor/"};importScripts(self.MonacoEnvironment.baseUrl + "vs/base/worker/workerMain.js");');
+        }
+    };
 </script>
 <script type="module" src="js/main.js"></script>
 </body>

@@ -20,11 +20,11 @@ SYSCALL PRINT_INT
 MOV AX, 10
 SYSCALL PRINT_CHAR
 
-; Test 3: Write and read with FP-relative using STORER/LOADR
-MOV FP, buffer
+; Test 3: Write and read with BP-relative using STORER/LOADR
+MOV BP, buffer
 MOV AX, 77
-MOV [FP+4], AX
-MOV AX, [FP+4]
+MOV [BP+4], AX
+MOV AX, [BP+4]
 SYSCALL PRINT_INT
 MOV AX, 10
 SYSCALL PRINT_CHAR

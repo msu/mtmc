@@ -5,16 +5,16 @@
 JMP main
 
 ; Function: add_nums - adds two parameters
-; Parameters: [FP+4]=p1, [FP+6]=p2
+; Parameters: [BP+4]=p1, [BP+6]=p2
 ; Returns: AX = sum
 add_nums:
-    PUSH FP
-    MOV FP, SP
+    PUSH BP
+    MOV BP, SP
 
-    MOV AX, [FP+4]   ; p1 (return address is at FP+2, old FP at FP+0)
-    ADD AX, [FP+6]   ; p2
+    MOV AX, [BP+4]   ; p1 (return address is at BP+2, old BP at BP+0)
+    ADD AX, [BP+6]   ; p2
 
-    POP FP
+    POP BP
     RET
 
 main:

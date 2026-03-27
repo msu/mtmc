@@ -318,7 +318,7 @@ function parseDataValue(item, directive, lineNum) {
 function parseRegister(operand) {
   const reg = operand.toUpperCase()
   if (reg in RegCode) {
-    const isByteReg = reg.endsWith('L')  // AL, BL, CL, DL, EL, FL are byte registers
+    const isByteReg = reg.endsWith('L')  // AL, BL, CL, DL, SIL, DIL are byte registers
     return { type: 'register', value: RegCode[reg], name: reg, isByte: isByteReg }
   }
   return null
@@ -389,7 +389,7 @@ function parseMemory(operand, lineNum) {
       }
     }
 
-    // Check for register+offset: [FP+4] or [FP-2]
+    // Check for register+offset: [BP+4] or [BP-2]
     const regOffsetMatch = inner.match(/^(\w+)\s*([+-])\s*(\d+)$/)
     if (regOffsetMatch) {
       const baseReg = parseRegister(regOffsetMatch[1])
@@ -588,7 +588,7 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
       const src = ops[1]
 
       if (dst.type === 'register' && src.type === 'memory_relative') {
-        // LEA AX, [FP+4] -> LEA
+        // LEA AX, [BP+4] -> LEA
         encode4Byte(Opcode.LEA, dst.value, src.base, src.offset & 0xFF)
       } else if (dst.type === 'register' && src.type === 'memory_indirect') {
         // LEA AX, [BX] -> LEA with offset 0
@@ -619,7 +619,7 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
         const addr = src.address & 0xFFFF
         encode4Byte(Opcode.ADD_MEM, dst.value, (addr >> 8) & 0xFF, addr & 0xFF)
       } else if (dst.type === 'register' && src.type === 'memory_relative') {
-        // ADD AX, [FP+4] -> ADD_MEMR
+        // ADD AX, [BP+4] -> ADD_MEMR
         encode4Byte(Opcode.ADD_MEMR, dst.value, src.base, src.offset & 0xFF)
       } else if (dst.type === 'register' && src.type === 'memory_indirect') {
         // ADD AX, [BX] -> ADD_MEMR with offset 0
@@ -650,7 +650,7 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
         const addr = src.address & 0xFFFF
         encode4Byte(Opcode.SUB_MEM, dst.value, (addr >> 8) & 0xFF, addr & 0xFF)
       } else if (dst.type === 'register' && src.type === 'memory_relative') {
-        // SUB AX, [FP+4] -> SUB_MEMR
+        // SUB AX, [BP+4] -> SUB_MEMR
         encode4Byte(Opcode.SUB_MEMR, dst.value, src.base, src.offset & 0xFF)
       } else if (dst.type === 'register' && src.type === 'memory_indirect') {
         // SUB AX, [BX] -> SUB_MEMR with offset 0
@@ -675,7 +675,7 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
         const addr = ops[0].address & 0xFFFF
         encode4Byte(Opcode.INC_MEM, 0, (addr >> 8) & 0xFF, addr & 0xFF)
       } else if (ops[0].type === 'memory_relative') {
-        // INC [FP+4] -> INC_MEMR
+        // INC [BP+4] -> INC_MEMR
         encode4Byte(Opcode.INC_MEMR, 0, ops[0].base, ops[0].offset & 0xFF)
       } else if (ops[0].type === 'memory_indirect') {
         // INC [BX] -> INC_MEMR with offset 0
@@ -700,7 +700,7 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
         const addr = ops[0].address & 0xFFFF
         encode4Byte(Opcode.DEC_MEM, 0, (addr >> 8) & 0xFF, addr & 0xFF)
       } else if (ops[0].type === 'memory_relative') {
-        // DEC [FP+4] -> DEC_MEMR
+        // DEC [BP+4] -> DEC_MEMR
         encode4Byte(Opcode.DEC_MEMR, 0, ops[0].base, ops[0].offset & 0xFF)
       } else if (ops[0].type === 'memory_indirect') {
         // DEC [BX] -> DEC_MEMR with offset 0
@@ -751,7 +751,7 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
         const addr = src.address & 0xFFFF
         encode4Byte(Opcode.CMP_MEM, dst.value, (addr >> 8) & 0xFF, addr & 0xFF)
       } else if (dst.type === 'register' && src.type === 'memory_relative') {
-        // CMP AX, [FP+4] -> CMP_MEMR
+        // CMP AX, [BP+4] -> CMP_MEMR
         encode4Byte(Opcode.CMP_MEMR, dst.value, src.base, src.offset & 0xFF)
       } else if (dst.type === 'register' && src.type === 'memory_indirect') {
         // CMP AX, [BX] -> CMP_MEMR with offset 0
@@ -860,6 +860,21 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
       break
     }
 
+    case 'TEST': {
+      const dst = ops[0]
+      const src = ops[1]
+
+      if (dst.type === 'register' && src.type === 'register') {
+        encode4Byte(Opcode.TEST_REG_REG, dst.value, src.value, 0)
+      } else if (dst.type === 'register' && src.type === 'immediate') {
+        const imm = src.value & 0xFFFF
+        encode4Byte(Opcode.TEST_REG_IMM, dst.value, (imm >> 8) & 0xFF, imm & 0xFF)
+      } else {
+        throwError(`Invalid TEST operands`)
+      }
+      break
+    }
+
     case 'OR': {
       const dst = ops[0]
       const src = ops[1]
@@ -895,6 +910,66 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
         encode2Byte(Opcode.NOT, ops[0].value)
       } else {
         throwError(`Invalid NOT operand`)
+      }
+      break
+    }
+
+    case 'NEG': {
+      if (ops[0].type === 'register') {
+        encode2Byte(Opcode.NEG, ops[0].value)
+      } else {
+        throwError(`Invalid NEG operand`)
+      }
+      break
+    }
+
+    case 'SETE':
+    case 'SETZ': {
+      if (ops[0].type === 'register') {
+        encode2Byte(Opcode.SETE, ops[0].value)
+      } else {
+        throwError(`Invalid SETE operand`)
+      }
+      break
+    }
+    case 'SETNE':
+    case 'SETNZ': {
+      if (ops[0].type === 'register') {
+        encode2Byte(Opcode.SETNE, ops[0].value)
+      } else {
+        throwError(`Invalid SETNE operand`)
+      }
+      break
+    }
+    case 'SETL': {
+      if (ops[0].type === 'register') {
+        encode2Byte(Opcode.SETL, ops[0].value)
+      } else {
+        throwError(`Invalid SETL operand`)
+      }
+      break
+    }
+    case 'SETG': {
+      if (ops[0].type === 'register') {
+        encode2Byte(Opcode.SETG, ops[0].value)
+      } else {
+        throwError(`Invalid SETG operand`)
+      }
+      break
+    }
+    case 'SETLE': {
+      if (ops[0].type === 'register') {
+        encode2Byte(Opcode.SETLE, ops[0].value)
+      } else {
+        throwError(`Invalid SETLE operand`)
+      }
+      break
+    }
+    case 'SETGE': {
+      if (ops[0].type === 'register') {
+        encode2Byte(Opcode.SETGE, ops[0].value)
+      } else {
+        throwError(`Invalid SETGE operand`)
       }
       break
     }
@@ -1004,7 +1079,8 @@ export function assemble(source, filename = null) {
         const hasMemoryOperand = ops[0].includes('[')
         size = hasMemoryOperand ? 4 : 2
       } else if (['NOP', 'HLT', 'HALT', 'RET', 'MUL', 'DIV',
-                  'PUSH', 'POP', 'NOT', 'SYSCALL'].includes(inst)) {
+                  'PUSH', 'POP', 'NOT', 'NEG', 'SYSCALL',
+                  'SETE', 'SETZ', 'SETNE', 'SETNZ', 'SETL', 'SETG', 'SETLE', 'SETGE'].includes(inst)) {
         size = 2
       } else {
         size = 4
@@ -1082,7 +1158,7 @@ export function assemble(source, filename = null) {
       bytecode[instr.address + i] = bytes[i]
     }
 
-    // Add to line map (PC → source line)
+    // Add to line map (IP → source line)
     lineMap.push({ pc: instr.address, line: instr.line })
   }
 
@@ -1136,7 +1212,7 @@ export function assemble(source, filename = null) {
   header[0x000E] = (sectionsOffset >> 8) & 0xFF
   header[0x000F] = sectionsOffset & 0xFF
 
-  // 0x0010-0x0011: Break pointer (BK) - word-aligned end of data segment (big-endian, 16-bit)
+  // 0x0010-0x0011: Heap pointer (HP) - word-aligned end of data segment (big-endian, 16-bit)
   header[0x0010] = (breakPointer >> 8) & 0xFF
   header[0x0011] = breakPointer & 0xFF
 
@@ -1189,7 +1265,7 @@ function generateDebugSection(lineMap, labels, filename) {
 
   // Write line map
   for (const entry of lineMap) {
-    // PC address (big-endian, 16-bit)
+    // IP address (big-endian, 16-bit)
     section.push((entry.pc >> 8) & 0xFF)
     section.push(entry.pc & 0xFF)
 

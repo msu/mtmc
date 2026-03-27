@@ -11,10 +11,10 @@ MOV CX, 3
 PUSH CX
 MOV DX, 4
 PUSH DX
-MOV EX, 5
-PUSH EX
-MOV FX, 6
-PUSH FX
+MOV SI, 5
+PUSH SI
+MOV DI, 6
+PUSH DI
 
 ; Pop and print in reverse order
 POP AX

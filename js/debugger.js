@@ -25,11 +25,11 @@ export class AsmDebugger {
     }
   }
 
-  // Check if current PC is at a breakpoint
+  // Check if current IP is at a breakpoint
   isAtBreakpoint() {
     if (!this.debugInfo || !this.debugInfo.lineMap) return false
 
-    const pc = this.cpu.registers.PC
+    const pc = this.cpu.registers.IP
     const lineInfo = this.debugInfo.lineMap.find(entry => entry.pc === pc)
 
     if (lineInfo && this.breakpoints.has(lineInfo.line)) {
@@ -39,11 +39,11 @@ export class AsmDebugger {
     return false
   }
 
-  // Get current source line from PC
+  // Get current source line from IP
   getCurrentLine() {
     if (!this.debugInfo || !this.debugInfo.lineMap) return null
 
-    const pc = this.cpu.registers.PC
+    const pc = this.cpu.registers.IP
     const lineInfo = this.debugInfo.lineMap.find(entry => entry.pc === pc)
     return lineInfo ? lineInfo.line : null
   }
@@ -53,8 +53,8 @@ export class AsmDebugger {
     const lines = code.split('\n')
     const highlighted = []
 
-    const keywords = /\b(MOV|ADD|SUB|MUL|DIV|INC|DEC|AND|OR|XOR|NOT|SHL|SHR|CMP|JMP|JE|JNE|JG|JL|JGE|JLE|JZ|JNZ|CALL|RET|PUSH|POP|SYSCALL|NOP|HLT)\b/gi
-    const registers = /\b(AX|BX|CX|DX|EX|FX|SP|FP|PC|IR|DR|BK|CB)\b/gi
+    const keywords = /\b(MOV|ADD|SUB|MUL|DIV|INC|DEC|AND|OR|XOR|NOT|NEG|SHL|SHR|CMP|TEST|SETE|SETNE|SETL|SETG|SETLE|SETGE|JMP|JE|JNE|JG|JL|JGE|JLE|JZ|JNZ|CALL|RET|PUSH|POP|SYSCALL|NOP|HLT)\b/gi
+    const registers = /\b(AX|BX|CX|DX|SI|DI|SP|BP|IP|IR|DR|HP|CB)\b/gi
     const numbers = /\b(0x[0-9A-Fa-f]+|\d+)\b/g
     const labels = /^([a-zA-Z_][a-zA-Z0-9_]*):$/gm
     const comments = /(;.*$)/gm

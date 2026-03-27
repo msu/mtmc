@@ -285,16 +285,16 @@ export class OS {
 
   // SYSCALL 8: SBRK (memory allocation)
   // Input: AX = number of bytes to allocate
-  // Output: AX = address of allocated memory (old BK value)
+  // Output: AX = address of allocated memory (old HP value)
   sysSbrk() {
     const size = this.cpu.registers.AX
-    const oldBK = this.cpu.registers.BK
+    const oldHP = this.cpu.registers.HP
 
-    // Move break pointer forward
-    this.cpu.setRegByName('BK', (oldBK + size) & 0xFFFF)
+    // Move heap pointer forward
+    this.cpu.setRegByName('HP', (oldHP + size) & 0xFFFF)
 
-    // Return old break (start of allocated region)
-    this.cpu.setRegByName('AX', oldBK)
+    // Return old heap pointer (start of allocated region)
+    this.cpu.setRegByName('AX', oldHP)
   }
 
   // ============================================================================
@@ -333,16 +333,16 @@ export class OS {
   }
 
   // SYSCALL 13: DRAW_RECT
-  // Input: AX = x, BX = y, CX = width, DX = height, EX = filled (0 = outline, non-zero = filled)
+  // Input: AX = x, BX = y, CX = width, DX = height, SI = filled (0 = outline, non-zero = filled)
   sysDrawRect() {
     if (!this.display) return
     const x = this.cpu.registers.AX & 0xFFFF
     const y = this.cpu.registers.BX & 0xFFFF
     const width = this.cpu.registers.CX & 0xFFFF
     const height = this.cpu.registers.DX & 0xFFFF
-    // If EX is 0, draw outline. If non-zero (including uninitialized), draw filled
-    // Since most code won't set EX, we interpret 0 as "outline" and anything else as "filled"
-    const filled = this.cpu.registers.EX === 0 ? false : true
+    // If SI is 0, draw outline. If non-zero (including uninitialized), draw filled
+    // Since most code won't set SI, we interpret 0 as "outline" and anything else as "filled"
+    const filled = this.cpu.registers.SI === 0 ? false : true
 
     this.display.drawRect(x, y, width, height, filled)
   }

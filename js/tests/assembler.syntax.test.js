@@ -71,25 +71,25 @@ HALT
   })
 
   describe('Register-Relative', () => {
-    it('should encode positive offset: MOV AX, [FP+4]', () => {
-      const bytecode = assemble('MOV AX, [FP+4]')
+    it('should encode positive offset: MOV AX, [BP+4]', () => {
+      const bytecode = assemble('MOV AX, [BP+4]')
       const mem = new Memory(1024)
       mem.load(bytecode)
 
       expect(mem.readByte(0x0020)).toBe(Opcode.LOADR)
       expect(mem.readByte(0x0021)).toBe(0)  // AX
-      expect(mem.readByte(0x0022)).toBe(7)  // FP
+      expect(mem.readByte(0x0022)).toBe(7)  // BP
       expect(mem.readByte(0x0023)).toBe(4)  // offset +4
     })
 
-    it('should encode negative offset: MOV AX, [FP-2]', () => {
-      const bytecode = assemble('MOV AX, [FP-2]')
+    it('should encode negative offset: MOV AX, [BP-2]', () => {
+      const bytecode = assemble('MOV AX, [BP-2]')
       const mem = new Memory(1024)
       mem.load(bytecode)
 
       expect(mem.readByte(0x0020)).toBe(Opcode.LOADR)
       expect(mem.readByte(0x0021)).toBe(0)  // AX
-      expect(mem.readByte(0x0022)).toBe(7)  // FP
+      expect(mem.readByte(0x0022)).toBe(7)  // BP
       expect(mem.readByte(0x0023)).toBe(254) // offset -2 (two's complement)
     })
 
@@ -112,25 +112,25 @@ MOV AX, 1
 MOV BX, 2
 MOV CX, 3
 MOV DX, 4
-MOV EX, 5
-MOV FX, 6
+MOV SI, 5
+MOV DI, 6
 MOV SP, 7
-MOV FP, 8
+MOV BP, 8
       `)
       const mem = new Memory(1024)
       mem.load(bytecode)
       const cpu = new CPU(mem)
 
-      while (cpu.step() && cpu.registers.PC < 0x0040) {}
+      while (cpu.step() && cpu.registers.IP < 0x0040) {}
 
       expect(cpu.registers.AX).toBe(1)
       expect(cpu.registers.BX).toBe(2)
       expect(cpu.registers.CX).toBe(3)
       expect(cpu.registers.DX).toBe(4)
-      expect(cpu.registers.EX).toBe(5)
-      expect(cpu.registers.FX).toBe(6)
+      expect(cpu.registers.SI).toBe(5)
+      expect(cpu.registers.DI).toBe(6)
       expect(cpu.registers.SP).toBe(7)
-      expect(cpu.registers.FP).toBe(8)
+      expect(cpu.registers.BP).toBe(8)
     })
   })
 })
@@ -178,27 +178,27 @@ describe('Character Literals', () => {
 })
 
 describe('Byte Registers', () => {
-  it('should support AL, BL, CL, DL, EL, FL', () => {
+  it('should support AL, BL, CL, DL, SIL, DIL', () => {
     const bytecode = assemble(`
 MOV AL, 1
 MOV BL, 2
 MOV CL, 3
 MOV DL, 4
-MOV EL, 5
-MOV FL, 6
+MOV SIL, 5
+MOV DIL, 6
     `)
     const mem = new Memory(1024)
     mem.load(bytecode)
     const cpu = new CPU(mem)
 
-    while (cpu.step() && cpu.registers.PC < 0x0040) {}
+    while (cpu.step() && cpu.registers.IP < 0x0040) {}
 
     expect(cpu.registers.AX & 0xFF).toBe(1)
     expect(cpu.registers.BX & 0xFF).toBe(2)
     expect(cpu.registers.CX & 0xFF).toBe(3)
     expect(cpu.registers.DX & 0xFF).toBe(4)
-    expect(cpu.registers.EX & 0xFF).toBe(5)
-    expect(cpu.registers.FX & 0xFF).toBe(6)
+    expect(cpu.registers.SI & 0xFF).toBe(5)
+    expect(cpu.registers.DI & 0xFF).toBe(6)
   })
 })
 
@@ -280,8 +280,8 @@ describe('All Instruction Types', () => {
     const bytecode = assemble(`
 ADD AX, BX
 ADD CX, 10
-SUB DX, EX
-SUB FX, 5
+SUB DX, SI
+SUB DI, 5
 INC AX
 DEC BX
 MUL CX
@@ -304,13 +304,13 @@ DIV DX
     const bytecode = assemble(`
 AND AX, BX
 AND CX, 0xFF
-OR DX, EX
-OR FX, 0xF0
+OR DX, SI
+OR DI, 0xF0
 XOR AX, BX
 XOR CX, 0x00FF
 NOT DX
-SHL EX, 4
-SHR FX, 2
+SHL SI, 4
+SHR DI, 2
     `)
     const mem = new Memory(1024)
     mem.load(bytecode)
@@ -378,7 +378,7 @@ func:
 
 describe('Edge Cases', () => {
   it('should handle maximum positive offset (+127)', () => {
-    const bytecode = assemble('MOV AX, [FP+127]')
+    const bytecode = assemble('MOV AX, [BP+127]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
@@ -386,7 +386,7 @@ describe('Edge Cases', () => {
   })
 
   it('should handle maximum negative offset (-128)', () => {
-    const bytecode = assemble('MOV AX, [FP-128]')
+    const bytecode = assemble('MOV AX, [BP-128]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 

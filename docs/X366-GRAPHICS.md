@@ -374,22 +374,22 @@ no_bounce_right:
 The graphics system is designed to work well with x366's six general-purpose registers:
 
 ```asm
-; Draw multiple diagonal lines using EX and FX
-MOV EX, 0              ; x counter
-MOV FX, 3              ; color
+; Draw multiple diagonal lines using SI and DI
+MOV SI, 0              ; x counter
+MOV DI, 3              ; color
 
 line_loop:
-    MOV AX, FX
+    MOV AX, DI
     SYSCALL SET_COLOR
 
-    MOV AX, EX         ; x1
+    MOV AX, SI         ; x1
     MOV BX, 0          ; y1
-    MOV CX, EX         ; x2
+    MOV CX, SI         ; x2
     MOV DX, 143        ; y2
     SYSCALL DRAW_LINE
 
-    ADD EX, 20         ; Next x position
-    CMP EX, 160
+    ADD SI, 20         ; Next x position
+    CMP SI, 160
     JL line_loop
 
 SYSCALL PAINT_DISPLAY
@@ -440,6 +440,6 @@ For best performance:
 
 ## Example Programs
 
-See these example programs in `disk/examples/`:
+See these example programs in `src/`:
 - `graphics.asm` - Graphics primitives demo
 - `gol.asm` - Conway's Game of Life implementation

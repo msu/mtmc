@@ -414,24 +414,24 @@ describe('MOV Instruction Variants', () => {
   })
 
   it('should encode MOV with register-relative positive offset', () => {
-    const bytecode = assemble('MOV AX, [FP+4]')
+    const bytecode = assemble('MOV AX, [BP+4]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.LOADR)
     expect(mem.readByte(0x0021)).toBe(0)  // AX
-    expect(mem.readByte(0x0022)).toBe(7)  // FP
+    expect(mem.readByte(0x0022)).toBe(7)  // BP
     expect(mem.readByte(0x0023)).toBe(4)  // offset +4
   })
 
   it('should encode MOV with register-relative negative offset', () => {
-    const bytecode = assemble('MOV AX, [FP-2]')
+    const bytecode = assemble('MOV AX, [BP-2]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.LOADR)
     expect(mem.readByte(0x0021)).toBe(0)  // AX
-    expect(mem.readByte(0x0022)).toBe(7)  // FP
+    expect(mem.readByte(0x0022)).toBe(7)  // BP
     expect(mem.readByte(0x0023)).toBe(254) // offset -2 (two's complement)
   })
 
@@ -498,8 +498,8 @@ MOV AL, 1
 MOV BL, 2
 MOV CL, 3
 MOV DL, 4
-MOV EL, 5
-MOV FL, 6
+MOV SIL, 5
+MOV DIL, 6
     `)
     const mem = new Memory(1024)
     mem.load(bytecode)
@@ -523,13 +523,13 @@ describe('Arithmetic Instructions', () => {
   })
 
   it('should encode ADD with register-relative', () => {
-    const bytecode = assemble('ADD AX, [FP+2]')
+    const bytecode = assemble('ADD AX, [BP+2]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.ADD_MEM_REL)
     expect(mem.readByte(0x0021)).toBe(0)  // AX
-    expect(mem.readByte(0x0022)).toBe(7)  // FP
+    expect(mem.readByte(0x0022)).toBe(7)  // BP
     expect(mem.readByte(0x0023)).toBe(2)  // offset
   })
 
@@ -551,7 +551,7 @@ describe('Arithmetic Instructions', () => {
   })
 
   it('should encode INC with register-relative', () => {
-    const bytecode = assemble('INC [FP+2]')
+    const bytecode = assemble('INC [BP+2]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
@@ -570,8 +570,8 @@ describe('Arithmetic Instructions', () => {
     const bytecode = assemble(`
 ADD AX, BX
 SUB CX, DX
-INC EX
-DEC FX
+INC SI
+DEC DI
 MUL BX
 DIV CX
     `)
@@ -609,7 +609,7 @@ describe('Logical & Bitwise Instructions', () => {
     const bytecode = assemble(`
 OR AX, BX
 XOR CX, DX
-NOT EX
+NOT SI
     `)
     const mem = new Memory(1024)
     mem.load(bytecode)
@@ -646,7 +646,7 @@ describe('Comparison & Jump Instructions', () => {
   })
 
   it('should encode CMP with register-relative', () => {
-    const bytecode = assemble('CMP BX, [FP+4]')
+    const bytecode = assemble('CMP BX, [BP+4]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
@@ -755,20 +755,20 @@ msg: DB "Test", 0
 
 describe('LEA Instruction', () => {
   it('should encode LEA with register-relative', () => {
-    const bytecode = assemble('LEA AX, [FP-4]')
+    const bytecode = assemble('LEA AX, [BP-4]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.LEA)
     expect(mem.readByte(0x0021)).toBe(0)  // AX
-    expect(mem.readByte(0x0022)).toBe(7)  // FP
+    expect(mem.readByte(0x0022)).toBe(7)  // BP
     expect(mem.readByte(0x0023)).toBe(252) // offset -4
   })
 })
 
 describe('Edge Cases', () => {
   it('should handle maximum positive offset (+127)', () => {
-    const bytecode = assemble('MOV AX, [FP+127]')
+    const bytecode = assemble('MOV AX, [BP+127]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
@@ -776,7 +776,7 @@ describe('Edge Cases', () => {
   })
 
   it('should handle maximum negative offset (-128)', () => {
-    const bytecode = assemble('MOV AX, [FP-128]')
+    const bytecode = assemble('MOV AX, [BP-128]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
@@ -798,10 +798,10 @@ MOV AX, AX
 MOV BX, BX
 MOV CX, CX
 MOV DX, DX
-MOV EX, EX
-MOV FX, FX
+MOV SI, SI
+MOV DI, DI
 MOV SP, SP
-MOV FP, FP
+MOV BP, BP
     `)
     const mem = new Memory(1024)
     mem.load(bytecode)
@@ -1131,7 +1131,7 @@ ADD AX, 20
     }
     offset++ // Skip null terminator
 
-    // First line map entry: PC=0x0020 (first instruction)
+    // First line map entry: IP=0x0020 (first instruction)
     const pc1 = (bytecode[offset] << 8) | bytecode[offset + 1]
     const line1 = (bytecode[offset + 2] << 8) | bytecode[offset + 3]
     expect(pc1).toBe(0x0020)
@@ -1139,7 +1139,7 @@ ADD AX, 20
 
     offset += 4
 
-    // Second line map entry: PC=0x0024 (second instruction, 4-byte MOV)
+    // Second line map entry: IP=0x0024 (second instruction, 4-byte MOV)
     const pc2 = (bytecode[offset] << 8) | bytecode[offset + 1]
     const line2 = (bytecode[offset + 2] << 8) | bytecode[offset + 3]
     expect(pc2).toBe(0x0024)
@@ -1408,43 +1408,43 @@ node2: DW 20, 0
 })
 
 // ============================================================================
-// BK Register Tests
+// HP Register Tests
 // ============================================================================
 
-describe('BK Register', () => {
-  it('should encode MOV BX, BK (register-to-register)', () => {
-    const bytecode = assemble('MOV BX, BK')
+describe('HP Register', () => {
+  it('should encode MOV BX, HP (register-to-register)', () => {
+    const bytecode = assemble('MOV BX, HP')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.MOV_REG_REG)
     expect(mem.readByte(0x0021)).toBe(1)  // BX
-    expect(mem.readByte(0x0022)).toBe(8)  // BK
+    expect(mem.readByte(0x0022)).toBe(8)  // HP
   })
 
-  it('should encode MOV BK, AX (register-to-register)', () => {
-    const bytecode = assemble('MOV BK, AX')
+  it('should encode MOV HP, AX (register-to-register)', () => {
+    const bytecode = assemble('MOV HP, AX')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.MOV_REG_REG)
-    expect(mem.readByte(0x0021)).toBe(8)  // BK
+    expect(mem.readByte(0x0021)).toBe(8)  // HP
     expect(mem.readByte(0x0022)).toBe(0)  // AX
   })
 
-  it('should encode ADD BK, AX', () => {
-    const bytecode = assemble('ADD BK, AX')
+  it('should encode ADD HP, AX', () => {
+    const bytecode = assemble('ADD HP, AX')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.ADD_REG_REG)
-    expect(mem.readByte(0x0021)).toBe(8)  // BK
+    expect(mem.readByte(0x0021)).toBe(8)  // HP
     expect(mem.readByte(0x0022)).toBe(0)  // AX
   })
 
-  it('should execute MOV BX, BK to read break pointer', () => {
+  it('should execute MOV BX, HP to read break pointer', () => {
     const source = `
-MOV BX, BK
+MOV BX, HP
 HALT
     `
     const bytecode = assemble(source)
@@ -1454,15 +1454,15 @@ HALT
 
     while (cpu.step()) {}
 
-    // BK should be set to end of data segment (no data, so same as code end)
-    expect(cpu.registers.BX).toBe(cpu.registers.BK)
+    // HP should be set to end of data segment (no data, so same as code end)
+    expect(cpu.registers.BX).toBe(cpu.registers.HP)
   })
 
-  it('should execute heap allocation pattern with BK', () => {
+  it('should execute heap allocation pattern with HP', () => {
     const source = `
-MOV BX, BK
+MOV BX, HP
 MOV AX, 20
-ADD BK, AX
+ADD HP, AX
 MOV [BX], 42
 HALT
     `
@@ -1471,12 +1471,12 @@ HALT
     mem.load(bytecode)
     const cpu = new CPU(mem)
 
-    const oldBK = cpu.registers.BK
+    const oldHP = cpu.registers.HP
     while (cpu.step()) {}
 
-    expect(cpu.registers.BX).toBe(oldBK)
-    expect(cpu.registers.BK).toBe(oldBK + 20)
-    expect(mem.readWord(oldBK)).toBe(42)
+    expect(cpu.registers.BX).toBe(oldHP)
+    expect(cpu.registers.HP).toBe(oldHP + 20)
+    expect(mem.readWord(oldHP)).toBe(42)
   })
 })
 
@@ -1496,13 +1496,13 @@ describe('STOREI_REL (MOV [reg+offset], imm)', () => {
     expect(mem.readByte(0x0023)).toBe(20)  // immediate
   })
 
-  it('should encode MOV [FP-2], 100', () => {
-    const bytecode = assemble('MOV [FP-2], 100')
+  it('should encode MOV [BP-2], 100', () => {
+    const bytecode = assemble('MOV [BP-2], 100')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.STOREI_REL)
-    expect(mem.readByte(0x0021)).toBe(7)    // FP
+    expect(mem.readByte(0x0021)).toBe(7)    // BP
     expect(mem.readByte(0x0022)).toBe(254)  // offset -2 (two's complement)
     expect(mem.readByte(0x0023)).toBe(100)  // immediate
   })
@@ -1574,13 +1574,13 @@ describe('Bracket Whitespace Handling', () => {
     expect(mem.readByte(0x0023)).toBe(4)  // offset
   })
 
-  it('should handle spaces in [FP - 2]', () => {
-    const bytecode = assemble('MOV AX, [FP - 2]')
+  it('should handle spaces in [BP - 2]', () => {
+    const bytecode = assemble('MOV AX, [BP - 2]')
     const mem = new Memory(1024)
     mem.load(bytecode)
 
     expect(mem.readByte(0x0020)).toBe(Opcode.LOADR)
-    expect(mem.readByte(0x0022)).toBe(7)    // FP
+    expect(mem.readByte(0x0022)).toBe(7)    // BP
     expect(mem.readByte(0x0023)).toBe(254)  // -2
   })
 
@@ -1714,17 +1714,17 @@ done:
   CALL function
   HALT
 function:
-  PUSH FP
-  MOV FP, SP
+  PUSH BP
+  MOV BP, SP
   SUB SP, 6
-  MOV [FP-2], AX
-  MOV [FP-4], BX
-  MOV [FP-6], CX
-  MOV AX, [FP-2]
-  MOV BX, [FP-4]
-  MOV CX, [FP-6]
+  MOV [BP-2], AX
+  MOV [BP-4], BX
+  MOV [BP-6], CX
+  MOV AX, [BP-2]
+  MOV BX, [BP-4]
+  MOV CX, [BP-6]
   ADD SP, 6
-  POP FP
+  POP BP
   RET
     `
     const bytecode = assemble(source)
@@ -1772,11 +1772,11 @@ cols: DW 4
   JMP main
 malloc:
   SHL AX, 1
-  MOV BX, BK
+  MOV BX, HP
   ADD AX, BX
   CMP AX, SP
   JGE failed
-  MOV BK, AX
+  MOV HP, AX
   MOV AX, BX
   RET
 failed:
@@ -1808,7 +1808,7 @@ done:
     let steps = 0
     while (cpu.step() && steps++ < 200) {}
 
-    // Find where the array was allocated (BK started at code end)
+    // Find where the array was allocated (HP started at code end)
     // BX advanced past the array, so subtract back
     const arrayStart = cpu.registers.BX - 10  // 5 words * 2 bytes
     expect(mem.readWord(arrayStart)).toBe(10)

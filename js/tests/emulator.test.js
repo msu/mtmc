@@ -70,18 +70,18 @@ describe('Registers', () => {
   })
 
   describe('Special Purpose Registers', () => {
-    it('should support SP, FP, BK, PC', () => {
+    it('should support SP, BP, HP, IP', () => {
       regs.set('SP', 0x0400)
       expect(regs.get('SP')).toBe(0x0400)
 
-      regs.set('FP', 0x0300)
-      expect(regs.get('FP')).toBe(0x0300)
+      regs.set('BP', 0x0300)
+      expect(regs.get('BP')).toBe(0x0300)
 
-      regs.set('BK', 0x0020)
-      expect(regs.get('BK')).toBe(0x0020)
+      regs.set('HP', 0x0020)
+      expect(regs.get('HP')).toBe(0x0020)
 
-      regs.set('PC', 0x0100)
-      expect(regs.get('PC')).toBe(0x0100)
+      regs.set('IP', 0x0100)
+      expect(regs.get('IP')).toBe(0x0100)
     })
   })
 
@@ -144,8 +144,8 @@ describe('Registers', () => {
       expect(regs.get('AX')).toBe(0)
       expect(regs.get('BX')).toBe(0)
       expect(regs.get('SP')).toBe(0x0400)
-      expect(regs.get('PC')).toBe(0x0020)
-      expect(regs.get('BK')).toBe(0x0020)
+      expect(regs.get('IP')).toBe(0x0020)
+      expect(regs.get('HP')).toBe(0x0020)
       expect(regs.ZF).toBe(0)
       expect(regs.SF).toBe(0)
     })
@@ -492,10 +492,10 @@ describe('Instruction Decoder', () => {
   })
 
   describe('4-Byte Instructions - Register-Relative', () => {
-    it('should decode LOADR AX, [FP+4]', () => {
+    it('should decode LOADR AX, [BP+4]', () => {
       mem.writeByte(0x0100, Opcode.LOADR)
       mem.writeByte(0x0101, 0)  // AX reg
-      mem.writeByte(0x0102, 5)  // FP base
+      mem.writeByte(0x0102, 5)  // BP base
       mem.writeByte(0x0103, 4)  // offset +4
 
       const instr = decodeInstruction(mem, 0x0100)
@@ -506,10 +506,10 @@ describe('Instruction Decoder', () => {
       expect(instr.size).toBe(4)
     })
 
-    it('should decode LOADR BX, [FP-2] (signed offset)', () => {
+    it('should decode LOADR BX, [BP-2] (signed offset)', () => {
       mem.writeByte(0x0100, Opcode.LOADR)
       mem.writeByte(0x0101, 1)    // BX reg
-      mem.writeByte(0x0102, 5)    // FP base
+      mem.writeByte(0x0102, 5)    // BP base
       mem.writeByte(0x0103, 0xFE) // offset -2 (two's complement)
 
       const instr = decodeInstruction(mem, 0x0100)
@@ -520,10 +520,10 @@ describe('Instruction Decoder', () => {
       expect(instr.size).toBe(4)
     })
 
-    it('should decode LEA AX, [FP-8]', () => {
+    it('should decode LEA AX, [BP-8]', () => {
       mem.writeByte(0x0100, Opcode.LEA)
       mem.writeByte(0x0101, 0)    // AX reg
-      mem.writeByte(0x0102, 5)    // FP base
+      mem.writeByte(0x0102, 5)    // BP base
       mem.writeByte(0x0103, 0xF8) // offset -8
 
       const instr = decodeInstruction(mem, 0x0100)
@@ -614,7 +614,7 @@ describe('CPU Execution', () => {
       cpu.step()
 
       expect(cpu.registers.AX).toBe(0x1234)
-      expect(cpu.registers.PC).toBe(0x0024)
+      expect(cpu.registers.IP).toBe(0x0024)
     })
 
     it('should execute MOV register-to-register', () => {
@@ -641,7 +641,7 @@ describe('CPU Execution', () => {
       cpu.step()
 
       expect(mem.readWord(0x0100)).toBe(42)
-      expect(cpu.registers.PC).toBe(0x0024)  // 4-byte instruction
+      expect(cpu.registers.IP).toBe(0x0024)  // 4-byte instruction
     })
 
     it('should execute HLT', () => {
@@ -713,7 +713,7 @@ describe('CPU Execution', () => {
 
       cpu.step()
 
-      expect(cpu.registers.PC).toBe(0x0100)
+      expect(cpu.registers.IP).toBe(0x0100)
     })
 
     it('should execute JE when ZF=1', () => {
@@ -727,7 +727,7 @@ describe('CPU Execution', () => {
 
       cpu.step()
 
-      expect(cpu.registers.PC).toBe(0x0100)
+      expect(cpu.registers.IP).toBe(0x0100)
     })
 
     it('should not jump on JE when ZF=0', () => {
@@ -741,7 +741,7 @@ describe('CPU Execution', () => {
 
       cpu.step()
 
-      expect(cpu.registers.PC).toBe(0x0024)  // Skipped
+      expect(cpu.registers.IP).toBe(0x0024)  // Skipped
     })
 
     it('should execute conditional jump after CMP', () => {
@@ -764,7 +764,7 @@ describe('CPU Execution', () => {
       expect(cpu.registers.ZF).toBe(1)
 
       cpu.step()  // JE
-      expect(cpu.registers.PC).toBe(0x0100)
+      expect(cpu.registers.IP).toBe(0x0100)
     })
   })
 
@@ -811,13 +811,13 @@ describe('CPU Execution', () => {
 
       cpu.step()  // CALL 0x0100
 
-      expect(cpu.registers.PC).toBe(0x0100)
+      expect(cpu.registers.IP).toBe(0x0100)
       expect(cpu.registers.SP).toBe(0x03FE)
       expect(mem.readWord(0x03FE)).toBe(0x0024)  // Return address
 
       cpu.step()  // RET
 
-      expect(cpu.registers.PC).toBe(0x0024)
+      expect(cpu.registers.IP).toBe(0x0024)
       expect(cpu.registers.SP).toBe(0x0400)
     })
   })
@@ -951,15 +951,15 @@ describe('CPU Execution', () => {
       const source = `
         main:
           MOV SP, 0x400
-          PUSH FP
-          MOV FP, SP
+          PUSH BP
+          MOV BP, SP
           SUB SP, 4
           MOV AX, 10
-          MOV [FP-2], AX
-          INC [FP-2]
-          MOV AX, [FP-2]
-          MOV SP, FP
-          POP FP
+          MOV [BP-2], AX
+          INC [BP-2]
+          MOV AX, [BP-2]
+          MOV SP, BP
+          POP BP
           SYSCALL EXIT
       `
       const bytecode = assemble(source)
@@ -977,15 +977,15 @@ describe('CPU Execution', () => {
       const source = `
         main:
           MOV SP, 0x400
-          PUSH FP
-          MOV FP, SP
+          PUSH BP
+          MOV BP, SP
           SUB SP, 4
           MOV AX, 20
-          MOV [FP-2], AX
-          DEC [FP-2]
-          MOV AX, [FP-2]
-          MOV SP, FP
-          POP FP
+          MOV [BP-2], AX
+          DEC [BP-2]
+          MOV AX, [BP-2]
+          MOV SP, BP
+          POP BP
           SYSCALL EXIT
       `
       const bytecode = assemble(source)
@@ -1049,23 +1049,23 @@ describe('CPU Execution', () => {
       const source = `
         main:
           MOV SP, 0x400
-          PUSH FP
-          MOV FP, SP
+          PUSH BP
+          MOV BP, SP
           SUB SP, 6
           MOV AX, 1
-          MOV [FP-2], AX
+          MOV [BP-2], AX
           MOV AX, 2
-          MOV [FP-4], AX
+          MOV [BP-4], AX
           MOV AX, 3
-          MOV [FP-6], AX
-          INC [FP-2]
-          INC [FP-4]
-          INC [FP-6]
-          MOV AX, [FP-2]
-          ADD AX, [FP-4]
-          ADD AX, [FP-6]
-          MOV SP, FP
-          POP FP
+          MOV [BP-6], AX
+          INC [BP-2]
+          INC [BP-4]
+          INC [BP-6]
+          MOV AX, [BP-2]
+          ADD AX, [BP-4]
+          ADD AX, [BP-6]
+          MOV SP, BP
+          POP BP
           SYSCALL EXIT
       `
       const bytecode = assemble(source)
@@ -1146,9 +1146,9 @@ describe('CPU Execution', () => {
         JMP main
         data: DW 100, 200, 300
         main:
-          MOV FP, data
+          MOV BP, data
           MOV AX, 5
-          ADD AX, [FP+0]
+          ADD AX, [BP+0]
           SYSCALL EXIT
       `
       const bytecode = assemble(source)
@@ -1167,10 +1167,10 @@ describe('CPU Execution', () => {
         JMP main
         data: DW 50
         main:
-          MOV FP, data
-          ADD FP, 4
+          MOV BP, data
+          ADD BP, 4
           MOV AX, 10
-          ADD AX, [FP-4]
+          ADD AX, [BP-4]
           SYSCALL EXIT
       `
       const bytecode = assemble(source)
@@ -1209,9 +1209,9 @@ describe('CPU Execution', () => {
         JMP main
         data: DW 20
         main:
-          MOV FP, data
+          MOV BP, data
           MOV AX, 100
-          SUB AX, [FP+0]
+          SUB AX, [BP+0]
           SYSCALL EXIT
       `
       const bytecode = assemble(source)
@@ -1270,9 +1270,9 @@ describe('CPU Execution', () => {
         JMP main
         data: DW 30
         main:
-          MOV FP, data
+          MOV BP, data
           MOV AX, 30
-          CMP AX, [FP+0]
+          CMP AX, [BP+0]
           SYSCALL EXIT
       `
       const bytecode = assemble(source)
@@ -1302,11 +1302,11 @@ describe('CPU Execution', () => {
       const os = new OS(cpu, mem)
       cpu.os = os
 
-      const initialBK = cpu.registers.BK
+      const initialHP = cpu.registers.HP
       while (cpu.step()) { }
 
-      expect(cpu.registers.AX).toBe(initialBK)
-      expect(cpu.registers.BK).toBe(initialBK + 16)
+      expect(cpu.registers.AX).toBe(initialHP)
+      expect(cpu.registers.HP).toBe(initialHP + 16)
     })
 
     it('should handle multiple SBRK calls', () => {
@@ -1327,12 +1327,12 @@ describe('CPU Execution', () => {
       const os = new OS(cpu, mem)
       cpu.os = os
 
-      const initialBK = cpu.registers.BK
+      const initialHP = cpu.registers.HP
       while (cpu.step()) { }
 
-      expect(cpu.registers.BX).toBe(initialBK)
-      expect(cpu.registers.CX).toBe(initialBK + 10)
-      expect(cpu.registers.BK).toBe(initialBK + 30)
+      expect(cpu.registers.BX).toBe(initialHP)
+      expect(cpu.registers.CX).toBe(initialHP + 10)
+      expect(cpu.registers.HP).toBe(initialHP + 30)
     })
 
     it('should work with existing data segment', () => {
@@ -1351,11 +1351,11 @@ describe('CPU Execution', () => {
       const os = new OS(cpu, mem)
       cpu.os = os
 
-      const initialBK = cpu.registers.BK
+      const initialHP = cpu.registers.HP
       while (cpu.step()) { }
 
-      expect(cpu.registers.AX).toBe(initialBK)
-      expect(cpu.registers.BK).toBe(initialBK + 32)
+      expect(cpu.registers.AX).toBe(initialHP)
+      expect(cpu.registers.HP).toBe(initialHP + 32)
     })
   })
 

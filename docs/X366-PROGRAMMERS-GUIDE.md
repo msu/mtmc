@@ -6,7 +6,7 @@ A practical guide to assembly programming for the MTMC-16 computer system.
 
 This guide teaches x366 assembly through working examples that run in the MTMC-16 emulator. We'll build from simple programs to more complex ones, introducing concepts progressively.
 
-For complete instruction reference, see [X366-ARCHITECTURE.md](X366-ARCHITECTURE.md).
+For complete instruction reference, see [x366-arch.md](x366-arch.md).
 
 ## Your First Program
 
@@ -155,20 +155,20 @@ LOOP automatically decrements CX and jumps if CX != 0. This prints 10 down to 1.
 Generates the first 10 Fibonacci numbers:
 
 ```asm
-MOV EX, 0      ; previous
-MOV FX, 1      ; current
+MOV SI, 0      ; previous
+MOV DI, 1      ; current
 MOV CX, 0      ; counter
 
 fib_loop:
-    MOV AX, EX
+    MOV AX, SI
     SYSCALL PRINT_INT
     MOV AX, '\n'
     SYSCALL PRINT_CHAR
 
-    MOV AX, EX
-    ADD AX, FX
-    MOV EX, FX
-    MOV FX, AX
+    MOV AX, SI
+    ADD AX, DI
+    MOV SI, DI
+    MOV DI, AX
 
     INC CX
     CMP CX, 10
@@ -210,14 +210,14 @@ CALL pushes the return address on the stack and jumps to the function. RET pops 
 ```asm
 ; factorial(n) in AX, returns n! in AX
 factorial:
-    MOV EX, AX
+    MOV SI, AX
     MOV AX, 1
 
 fact_loop:
-    CMP EX, 1
+    CMP SI, 1
     JLE fact_done
-    MUL EX
-    DEC EX
+    MUL SI
+    DEC SI
     JMP fact_loop
 
 fact_done:
@@ -241,8 +241,8 @@ factorial:
     RET
 
 recursive:
-    PUSH FP
-    MOV FP, SP
+    PUSH BP
+    MOV BP, SP
     PUSH AX
 
     DEC AX
@@ -251,7 +251,7 @@ recursive:
     POP BX
     MUL BX
 
-    POP FP
+    POP BP
     RET
 
 MOV AX, 5
@@ -407,19 +407,19 @@ Complex functions need local variables stored on the stack.
 
 ```asm
 my_function:
-    PUSH FP             ; Save caller's frame pointer
-    MOV FP, SP          ; Set up our frame pointer
+    PUSH BP             ; Save caller's base pointer
+    MOV BP, SP          ; Set up our base pointer
     SUB SP, 4           ; Allocate 2 local variables (words)
 
     ; Use locals:
-    ; [FP-2] is local variable 1
-    ; [FP-4] is local variable 2
+    ; [BP-2] is local variable 1
+    ; [BP-4] is local variable 2
 
-    MOV [FP-2], AX      ; Store in local
-    MOV AX, [FP-2]      ; Load from local
+    MOV [BP-2], AX      ; Store in local
+    MOV AX, [BP-2]      ; Load from local
 
-    MOV SP, FP          ; Deallocate locals
-    POP FP              ; Restore frame pointer
+    MOV SP, BP          ; Deallocate locals
+    POP BP              ; Restore base pointer
     RET
 ```
 
@@ -429,27 +429,27 @@ my_function:
 ; compute(a, b) - returns (a*2 + b*3)
 ; Parameters: AX=a, BX=b
 compute:
-    PUSH FP
-    MOV FP, SP
+    PUSH BP
+    MOV BP, SP
     SUB SP, 4           ; 2 locals
 
     ; temp1 = a * 2
     MOV CX, AX
     ADD CX, AX
-    MOV [FP-2], CX
+    MOV [BP-2], CX
 
     ; temp2 = b * 3
     MOV CX, BX
     ADD CX, BX
     ADD CX, BX
-    MOV [FP-4], CX
+    MOV [BP-4], CX
 
     ; result = temp1 + temp2
-    MOV AX, [FP-2]
-    ADD AX, [FP-4]
+    MOV AX, [BP-2]
+    ADD AX, [BP-4]
 
-    MOV SP, FP
-    POP FP
+    MOV SP, BP
+    POP BP
     RET
 
 MOV AX, 5
@@ -525,21 +525,21 @@ fibonacci:
     RET
 
 recursive:
-    PUSH FP
-    MOV FP, SP
+    PUSH BP
+    MOV BP, SP
     PUSH AX             ; Save n
 
     DEC AX
     CALL fibonacci      ; fib(n-1)
-    MOV [FP-2], AX      ; Save result
+    MOV [BP-2], AX      ; Save result
 
-    MOV AX, [FP+0]      ; Load n
+    MOV AX, [BP+0]      ; Load n
     SUB AX, 2
     CALL fibonacci      ; fib(n-2)
 
-    ADD AX, [FP-2]      ; fib(n-1) + fib(n-2)
+    ADD AX, [BP-2]      ; fib(n-1) + fib(n-2)
 
-    POP FP
+    POP BP
     RET
 
 MOV AX, 10
@@ -603,7 +603,7 @@ HALT
 
 ### Register Usage
 
-* Use AX-FX for parameters and temporaries
+* Use AX-DI for parameters and temporaries
 * Use CX for loop counters
 * Save registers you need across function calls
 
@@ -616,7 +616,7 @@ HALT
 ### Functions
 
 * Document parameters and return values in comments
-* Use FP for functions with locals
+* Use BP for functions with locals
 * Keep functions focused on one task
 
 ### Debugging
@@ -643,7 +643,7 @@ fill_loop:
 ### Parameter Passing
 
 ```asm
-; Pass up to 6 parameters in AX, BX, CX, DX, EX, FX
+; Pass up to 6 parameters in AX, BX, CX, DX, SI, DI
 MOV AX, param1
 MOV BX, param2
 MOV CX, param3
@@ -651,12 +651,31 @@ CALL function
 ; Result in AX
 ```
 
+### Zero Check with TEST
+
+```asm
+TEST AX, AX              ; Sets ZF if AX is 0
+JZ handle_zero            ; Branch if zero
+; AX is non-zero, continue
+```
+
+TEST performs a bitwise AND and sets flags but does not store the result. `TEST AX, AX` is the idiomatic way to check if a register is zero, equivalent to `CMP AX, 0` but more concise.
+
+### Boolean Result with SETcc
+
+```asm
+CMP AX, BX
+SETL AX              ; AX = 1 if AX < BX, else 0
+```
+
+SETcc sets a register to 1 or 0 based on flags from a prior CMP. This is useful when you need a boolean value rather than a branch. Available variants: SETE, SETNE, SETL, SETG, SETLE, SETGE.
+
 ### Error Checking
 
 ```asm
 SYSCALL MALLOC
-CMP AX, -1
-JE allocation_failed
+TEST AX, AX
+JZ allocation_failed
 ; Continue with valid pointer
 ```
 
@@ -664,8 +683,8 @@ JE allocation_failed
 
 You now have the foundation for x366 assembly programming. To deepen your knowledge:
 
-* Study the example programs in `disk/examples/`
-* Read [X366-ARCHITECTURE.md](X366-ARCHITECTURE.md) for complete instruction reference
+* Study the example programs in `src/`
+* Read [x366-arch.md](x366-arch.md) for complete instruction reference
 * Experiment with modifying programs in the emulator
 * Try implementing your own algorithms
 

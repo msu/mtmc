@@ -1160,7 +1160,7 @@ main.fs-fullscreen #fs {
 }
 
 /* Mobile responsive layout */
-@media (max-width: 950px) {
+@media (max-width: 768px) {
     html, body {
         overflow-y: auto !important;
         overflow-x: hidden !important;
@@ -1168,16 +1168,7 @@ main.fs-fullscreen #fs {
         margin: 0 !important;
         padding: 0 !important;
     }
-
-    main {
-        grid-template-columns: 1fr !important;
-        grid-template-rows: auto auto auto;
-        height: auto !important;
-        min-height: auto !important;
-        overflow: visible !important;
-        grid-gap: 2px !important;
-        padding: 2px !important;
-    }
+    
 
     #left {
         min-width: 100% !important;
@@ -1208,7 +1199,7 @@ main.fs-fullscreen #fs {
 
     .panel {
         overflow: visible !important;
-        padding: 2px !important;
+        padding: 2px;
         border-radius: 2px !important;
     }
 

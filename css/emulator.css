@@ -1219,12 +1219,5 @@ main.fs-fullscreen #fs {
 
     #console-panel {
         display: flex;
-        overflow: hidden;
-        transform: translateX(0);
-    }
-
-    #memory-panel {
-        display: flex;
-        flex-direction: column;
     }
 }

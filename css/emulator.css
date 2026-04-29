@@ -683,7 +683,6 @@ select {
     flex-grow: 1;
     border: 2px solid;
     border-color: #808080 #ffffff #ffffff #808080;
-    margin: 4px;
 }
 
 .explorer-header {
@@ -1065,11 +1064,6 @@ select {
     overflow: visible !important;
 }
 
-/* Remove padding from panel when editor is shown */
-#fs.panel {
-    padding: 0;
-}
-
 /* Restore padding for header */
 #fs-header {
     margin: 4px;
@@ -1166,7 +1160,7 @@ main.fs-fullscreen #fs {
         overflow-x: hidden !important;
         height: auto !important;
         margin: 0 !important;
-        padding: 0 !important;
+        padding: 0;
     }
     
 
@@ -1199,8 +1193,8 @@ main.fs-fullscreen #fs {
 
     .panel {
         overflow: visible !important;
-        padding: 2px;
-        border-radius: 2px !important;
+        padding: 4px;
+        border-radius: 4px !important;
     }
 
     .panel > div {
@@ -1217,7 +1211,9 @@ main.fs-fullscreen #fs {
         max-width: 320px;
     }
 
-    #console-panel {
+    #console-panel {":htyrfgdewq    aAWERTYUIOP;['
+                    "?>,Z
+                   |]"
         display: flex;
     }
 }

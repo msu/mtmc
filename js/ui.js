@@ -681,7 +681,7 @@ function updateMemoryView(scrollToAddr = null) {
     console.log(`Element with id 'mem-addr-${scrollToAddr}':`, element)
     if (element) {
       console.log('Found element, scrolling...')
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      element.scrollIntoView({ behavior: 'smooth', container: 'nearest' })
     } else {
       // If exact address not found, scroll to nearest even address (for word-aligned views)
       const nearestEven = scrollToAddr & ~1

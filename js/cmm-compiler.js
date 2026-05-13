@@ -1,1 +1,1238 @@
-const e=new Set(["int","char","if","else","while","return"]);function n(e){let n=0;function t(){return e[n]}function r(){return e[n++]}function a(t){return e[n].type===t}function i(e){if(!a(e))throw new Error(`Line ${t().line}: Expected '${e}' but got '${t().type}' ('${t().value}')`);return r()}function o(e){return!!a(e)&&(r(),!0)}function l(){return a("INT")||a("CHAR")}function s(){let e;if(o("INT"))e="int";else{if(!o("CHAR"))throw new Error(`Line ${t().line}: Expected type`);e="char"}return a("*")&&(r(),e+="*"),e}function c(){const e=t().line,n=s(),l=i("IDENTIFIER").value;return a("(")?function(e,n,t){i("(");const r=[];if(!a(")"))do{const e=s(),n=i("IDENTIFIER").value;r.push({type:e,name:n})}while(o(","));i(")");const l=f();return{type:"func_def",returnType:e,name:n,params:r,body:l,line:t}}(n,l,e):function(e,n,l){let s=null,c=e;o("[")&&(s=a("NUMBER")?r().value:0,i("]"),c=e.replace("*","")+"[]");let u=null,f=null,p=null;if(o("="))if(a("{")){if(r(),f=[],!a("}"))do{f.push(h())}while(o(","));i("}")}else a("STRING_LITERAL")&&c.endsWith("[]")?(p=t().value,u=h()):u=h();return i(";"),{type:"global_decl",varType:c,name:n,arraySize:s,init:u,arrayInit:f,stringInit:p,line:l}}(n,l,e)}function u(e,n,t){let l=null,s=e;o("[")&&(l=a("NUMBER")?r().value:0,i("]"),s=e.replace("*","")+"[]");let c=null;return o("=")&&(c=h()),i(";"),{type:"local_decl",varType:s,name:n,arraySize:l,init:c,line:t}}function f(){const e=t().line;i("{");const n=[];for(;!a("}");)if(l()){const e=t().line,r=s(),a=i("IDENTIFIER").value;n.push(u(r,a,e))}else n.push(p());return i("}"),{type:"block",items:n,line:e}}function p(){return a("IF")?function(){const e=t().line;i("IF"),i("(");const n=h();i(")");const r=p();let a=null;o("ELSE")&&(a=p());return{type:"if",condition:n,thenBranch:r,elseBranch:a,line:e}}():a("WHILE")?function(){const e=t().line;i("WHILE"),i("(");const n=h();i(")");const r=p();return{type:"while",condition:n,body:r,line:e}}():a("RETURN")?function(){const e=t().line;i("RETURN");let n=null;a(";")||(n=h());return i(";"),{type:"return",value:n,line:e}}():a("{")?f():function(){const e=t().line,n=h();if(a("=")&&("var_ref"===n.type||"array_index"===n.type||"unary"===n.type)){r();const t=h();return i(";"),{type:"assign",target:n,value:t,line:e}}return i(";"),{type:"expr_stmt",expr:n,line:e}}()}function h(){return function(){let e=X();for(;a("||");){r();e={type:"logical",op:"||",left:e,right:X()}}return e}()}function X(){let e=A();for(;a("&&");){r();e={type:"logical",op:"&&",left:e,right:A()}}return e}function A(){let e=y();for(;a("==")||a("!=");){e={type:"binary",op:r().value,left:e,right:y()}}return e}function y(){let e=g();for(;a("<")||a(">")||a("<=")||a(">=");){e={type:"binary",op:r().value,left:e,right:g()}}return e}function g(){let e=b();for(;a("+")||a("-");){e={type:"binary",op:r().value,left:e,right:b()}}return e}function b(){let e=m();for(;a("*")||a("/")||a("%");){e={type:"binary",op:r().value,left:e,right:m()}}return e}function m(){if(a("-")||a("!")||a("&")){return{type:"unary",op:r().value,operand:m()}}if(a("*")){const e=n;r();try{return{type:"unary",op:"*",operand:m()}}catch(t){n=e}}return function(){if(a("NUMBER")){const e=r();return{type:"number",value:e.value,line:e.line}}if(a("CHAR_LITERAL")){const e=r();return{type:"char",value:e.value,line:e.line}}if(a("STRING_LITERAL")){const e=r();return{type:"string",value:e.value,line:e.line}}if(a("IDENTIFIER")){const e=r(),n=e.value;if(a("(")){r();const t=[];if(!a(")"))do{t.push(h())}while(o(","));return i(")"),{type:"call",name:n,args:t,line:e.line}}if(a("[")){r();const t=h();return i("]"),{type:"array_index",name:n,index:t,line:e.line}}return{type:"var_ref",name:n,line:e.line}}if(a("(")){r();const e=h();return i(")"),e}throw new Error(`Line ${t().line}: Unexpected token '${t().value}'`)}()}return function(){const e=[];for(;!a("EOF");)l()?e.push(c()):e.push({type:"top_stmt",stmt:p()});return{type:"program",items:e}}()}function t(e){let n=[],t=0;const r=new Map;let a=0;const i=new Map;let o=null,l=-2;function s(e){n.push(e)}function c(e){return e+"_"+t++}function u(e){if(o&&o.has(e))return o.get(e);if(i.has(e))return i.get(e);throw new Error("Undefined variable: "+e)}function f(e,n,t,r){return{name:n,varType:e,global:t,bpOffset:r,arraySize:0,stringInit:null}}function p(e){return"char"===e||"char*"===e||"char[]"===e}function h(e){return"int*"===e||"char*"===e}function X(e){return"int[]"===e||"char[]"===e}function A(e){return p(e)?1:2}function y(e){return e>=0?"+"+e:""+e}function g(e){null!=e&&s("; @LINE "+e)}function b(e){e.global?s("    MOV ["+e.name+"], AX"):s("    MOV [BP"+y(e.bpOffset)+"], AX")}for(const n of e.items)"global_decl"===n.type&&d(n);const m=[],P=n;n=m;for(const n of e.items)"global_decl"===n.type?E(n):"top_stmt"===n.type&&S(n.stmt);e.items.some(e=>"func_def"===e.type&&"main"===e.name)&&s("    CALL main"),s("    SYSCALL EXIT");for(const n of e.items)"func_def"===n.type&&(s(""),O(n));n=P,function(){for(const[e,n]of i)if(s(n.name+":"),null!=n.stringInit){for(let e=0;e<n.stringInit.length;e++)s("    DB "+n.stringInit.charCodeAt(e));s("    DB 0")}else if(X(n.varType)){s("    "+(p(n.varType)?"DB":"DW")+" "+n.arraySize+" DUP(0)  ; "+n.name+"["+n.arraySize+"]")}else if("char"===n.varType)s("    DB 0  ; char "+n.name);else{s("    DW 0  ; "+(h(n.varType)?p(n.varType)?"char*":"int*":"int")+" "+n.name)}for(const[e,n]of r){s(e+":");for(let e=0;e<n.length;e++)s(0===e?"    DB "+n.charCodeAt(e)+'  ; "'+n.replace(/\n/g,"\\n")+'"':"    DB "+n.charCodeAt(e));s("    DB 0")}}(),s("");for(const e of m)n.push(e);return n.join("\n")+"\n";function d(e){const n=f(e.varType,e.name,!0,0);null!=e.arraySize&&(n.arraySize=e.arraySize),X(e.varType)&&p(e.varType)&&null!=e.stringInit&&(n.stringInit=e.stringInit,0===n.arraySize&&(n.arraySize=e.stringInit.length+1)),i.set(n.name,n)}function E(e){const n=i.get(e.name);if(null==n.stringInit)if(null!=e.arrayInit){g(e.line);for(let t=0;t<e.arrayInit.length;t++)_(e.arrayInit[t]),s("    MOV BX, "+n.name),s("    MOV CX, "+t*A(n.varType)),s("    ADD BX, CX"),s("    MOV [BX+0], AX")}else null!=e.init&&(g(e.line),_(e.init),b(n))}function B(e){let n=0;for(const t of e.items)"local_decl"===t.type?n++:"block"===t.type?n+=B(t):"if"===t.type?(n+=M(t.thenBranch),t.elseBranch&&(n+=M(t.elseBranch))):"while"===t.type&&(n+=M(t.body));return n}function M(e){if("block"===e.type)return B(e);if("if"===e.type){let n=M(e.thenBranch);return e.elseBranch&&(n+=M(e.elseBranch)),n}return"while"===e.type?M(e.body):0}function O(e){g(e.line),s(e.name+":"),o=new Map,l=-2;const n=["AX","BX","CX","DX","SI","DI"];if(e.params.length>6)throw new Error("Function "+e.name+" has more than 6 parameters");for(const n of e.params){const e=f(n.type,n.name,!1,l);l-=2,o.set(e.name,e)}const t=e.params.length+B(e.body);s("    PUSH BP"),s("    MOV BP, SP"),t>0&&s("    SUB SP, "+2*t);for(let t=0;t<e.params.length;t++){s("    MOV [BP"+y(o.get(e.params[t].name).bpOffset)+"], "+n[t])}w(e.body),s("    MOV SP, BP"),s("    POP BP"),s("    RET"),o=null}function w(e){for(const n of e.items)"local_decl"===n.type?I(n):S(n)}function I(e){const n=f(e.varType,e.name,!1,l);null!=e.arraySize&&(n.arraySize=e.arraySize),l-=2,o.set(n.name,n),null!=e.init&&(g(e.line),_(e.init),b(n))}function S(e){switch(e.type){case"if":!function(e){const n=c("if_else"),t=c("if_end");g(e.line),s(""),s("; If statement"),_(e.condition),s("    CMP AX, 0"),s("    JE "+n),s("; Then block"),S(e.thenBranch),s("    JMP "+t),s(n+":"),e.elseBranch&&(s("; Else block"),S(e.elseBranch));s(t+":")}(e);break;case"while":!function(e){const n=c("while_start"),t=c("while_end");g(e.line),s(""),s("; While loop"),s(n+":"),_(e.condition),s("    CMP AX, 0"),s("    JE "+t),S(e.body),s("    JMP "+n),s(t+":")}(e);break;case"return":!function(e){g(e.line),s(""),s("; Return statement"),null!=e.value&&_(e.value);s("    MOV SP, BP"),s("    POP BP"),s("    RET")}(e);break;case"assign":!function(e){g(e.line),s(""),s("; Assignment"),_(e.value);const n=e.target;if("var_ref"===n.type){const e=u(n.name);e.global?s("    MOV ["+e.name+"], AX"):s("    MOV [BP"+y(e.bpOffset)+"], AX")}else if("array_index"===n.type){const e=u(n.name);s("    PUSH AX"),_(n.index),2===A(e.varType)&&s("    ADD AX, AX"),e.global?s("    MOV BX, "+n.name):s("    LEA BX, [BP"+y(e.bpOffset)+"]"),s("    ADD BX, AX"),s("    POP AX"),s("    MOV [BX+0], AX")}else{if("unary"!==n.type||"*"!==n.op)throw new Error("Invalid assignment target");s("    PUSH AX"),_(n.operand),s("    MOV BX, AX"),s("    POP AX"),s("    MOV [BX+0], AX")}}(e);break;case"block":w(e);break;case"expr_stmt":g(e.line),_(e.expr);break;default:throw new Error("Unknown statement type: "+e.type)}}function _(e){switch(e.type){case"binary":!function(e){switch(e.op){case"+":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    ADD AX, BX");break;case"-":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    SUB AX, BX");break;case"*":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    MUL BX");break;case"/":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    DIV BX");break;case"%":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    DIV BX"),s("    MOV AX, DX");break;case"==":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    CMP AX, BX"),s("    SETE AX");break;case"!=":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    CMP AX, BX"),s("    SETNE AX");break;case"<":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    CMP AX, BX"),s("    SETL AX");break;case">":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    CMP AX, BX"),s("    SETG AX");break;case"<=":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    CMP AX, BX"),s("    SETLE AX");break;case">=":_(e.left),s("    PUSH AX"),_(e.right),s("    MOV BX, AX"),s("    POP AX"),s("    CMP AX, BX"),s("    SETGE AX");break;default:throw new Error("Unknown binary operator: "+e.op)}}(e);break;case"logical":!function(e){if("||"===e.op){const n=c("or_true"),t=c("or_end");_(e.left),s("    CMP AX, 0"),s("    JNE "+n),_(e.right),s("    CMP AX, 0"),s("    JNE "+n),s("    MOV AX, 0"),s("    JMP "+t),s(n+":"),s("    MOV AX, 1"),s(t+":")}else if("&&"===e.op){const n=c("and_false"),t=c("and_end");_(e.left),s("    CMP AX, 0"),s("    JE "+n),_(e.right),s("    CMP AX, 0"),s("    JE "+n),s("    MOV AX, 1"),s("    JMP "+t),s(n+":"),s("    MOV AX, 0"),s(t+":")}}(e);break;case"unary":!function(e){switch(e.op){case"-":_(e.operand),s("    NEG AX");break;case"!":{const n=c("not_zero"),t=c("not_end");_(e.operand),s("    CMP AX, 0"),s("    JE "+n),s("    MOV AX, 0"),s("    JMP "+t),s(n+":"),s("    MOV AX, 1"),s(t+":");break}case"*":_(e.operand),s("    MOV BX, AX"),s("    MOV AX, [BX+0]");break;case"&":if("var_ref"===e.operand.type){const n=u(e.operand.name);n.global?s("    MOV AX, "+e.operand.name):s("    LEA AX, [BP"+y(n.bpOffset)+"]")}else{if("array_index"!==e.operand.type)throw new Error("Can only take address of variables or array elements");k(e.operand)}break;default:throw new Error("Unknown unary operator: "+e.op)}}(e);break;case"call":!function(e){if(s(""),s("; Call "+e.name),function(e){return"print_int"===e||"print_char"===e||"print_string"===e||"read_int"===e||"read_char"===e||"exit"===e}(e.name))!function(e){switch(e.name){case"print_int":if(1!==e.args.length)throw new Error("print_int expects 1 argument");_(e.args[0]),s("    SYSCALL PRINT_INT");break;case"print_char":if(1!==e.args.length)throw new Error("print_char expects 1 argument");_(e.args[0]),s("    SYSCALL PRINT_CHAR");break;case"print_string":if(1!==e.args.length)throw new Error("print_string expects 1 argument");_(e.args[0]),s("    SYSCALL PRINT_STRING");break;case"read_int":if(0!==e.args.length)throw new Error("read_int expects 0 arguments");s("    SYSCALL READ_INT");break;case"read_char":if(0!==e.args.length)throw new Error("read_char expects 0 arguments");s("    SYSCALL READ_CHAR");break;case"exit":s("    SYSCALL EXIT");break;default:throw new Error("Unknown syscall: "+e.name)}}(e);else{if(e.args.length>6)throw new Error("Cannot pass more than 6 arguments");for(let n=0;n<e.args.length;n++)_(e.args[n]),s("    PUSH AX");const n=["AX","BX","CX","DX","SI","DI"];for(let t=e.args.length-1;t>=0;t--)s("    POP "+n[t]);s("    CALL "+e.name)}}(e);break;case"var_ref":!function(e){const n=u(e.name);n.global?s("    MOV AX, ["+n.name+"]"):s("    MOV AX, [BP"+y(n.bpOffset)+"]")}(e);break;case"array_index":!function(e){k(e),s("    MOV BX, AX"),s("    MOV AX, [BX+0]")}(e);break;case"number":case"char":s("    MOV AX, "+e.value);break;case"string":s("    MOV AX, "+function(e){const n="str_"+a++;return r.set(n,e),n}(e.value));break;default:throw new Error("Unknown expression type: "+e.type)}}function k(e){const n=u(e.name);_(e.index),2===A(n.varType)&&s("    ADD AX, AX"),n.global?s("    MOV BX, "+e.name):s("    LEA BX, [BP"+y(n.bpOffset)+"]"),s("    ADD AX, BX")}}export function compileCmm(r){try{const a=function(n){const t=[];let r=0,a=1;for(;r<n.length;){if("\n"===n[r]){a++,r++;continue}if(/\s/.test(n[r])){r++;continue}if("/"===n[r]&&r+1<n.length&&"/"===n[r+1]){for(;r<n.length&&"\n"!==n[r];)r++;continue}const i=a;if(/[0-9]/.test(n[r])){let e=r;if("0"===n[r]&&r+1<n.length&&("x"===n[r+1]||"X"===n[r+1])){for(r+=2;r<n.length&&/[0-9a-fA-F]/.test(n[r]);)r++;t.push({type:"NUMBER",value:parseInt(n.substring(e,r),16),line:i})}else{for(;r<n.length&&/[0-9]/.test(n[r]);)r++;t.push({type:"NUMBER",value:parseInt(n.substring(e,r),10),line:i})}continue}if(/[a-zA-Z_]/.test(n[r])){let a=r;for(;r<n.length&&/[a-zA-Z0-9_]/.test(n[r]);)r++;const o=n.substring(a,r);e.has(o)?t.push({type:o.toUpperCase(),value:o,line:i}):t.push({type:"IDENTIFIER",value:o,line:i});continue}if("'"===n[r]){let e;if(r++,"\\"===n[r]){switch(r++,n[r]){case"n":e=10;break;case"t":e=9;break;case"r":e=13;break;case"\\":e=92;break;case"'":e=39;break;case"0":e=0;break;default:e=n.charCodeAt(r)}r++}else e=n.charCodeAt(r),r++;if("'"!==n[r])throw new Error(`Line ${i}: Expected closing quote for char literal`);r++,t.push({type:"CHAR_LITERAL",value:e,line:i});continue}if('"'===n[r]){r++;let e="";for(;r<n.length&&'"'!==n[r];){if("\\"===n[r])switch(r++,n[r]){case"n":e+="\n";break;case"t":e+="\t";break;case"r":e+="\r";break;case"\\":e+="\\";break;case'"':e+='"';break;case"0":e+="\0";break;default:e+=n[r]}else"\n"===n[r]&&a++,e+=n[r];r++}if(r>=n.length)throw new Error(`Line ${i}: Unterminated string literal`);r++,t.push({type:"STRING_LITERAL",value:e,line:i});continue}const o=n.substring(r,r+2);if("=="===o||"!="===o||"<="===o||">="===o||"&&"===o||"||"===o){t.push({type:o,value:o,line:i}),r+=2;continue}const l=n[r];if("+-*/%=<>!&".includes(l))t.push({type:l,value:l,line:i}),r++;else{if(!"{}()[];,".includes(l))throw new Error(`Line ${i}: Unexpected character '${l}'`);t.push({type:l,value:l,line:i}),r++}}return t.push({type:"EOF",value:null,line:a}),t}(r),i=n(a);return{assembly:t(i),error:null}}catch(e){return{assembly:null,error:e.message}}}
+// C-- to x366 Assembly Compiler
+// Three phases: Lexer, Parser (recursive descent), Code Generator
+
+// ======================== LEXER ========================
+
+const KEYWORDS = new Set(['int', 'char', 'if', 'else', 'while', 'return']);
+
+function lex(source) {
+    const tokens = [];
+    let pos = 0;
+    let line = 1;
+
+    while (pos < source.length) {
+        // skip whitespace
+        if (source[pos] === '\n') { line++; pos++; continue; }
+        if (/\s/.test(source[pos])) { pos++; continue; }
+
+        // skip // comments
+        if (source[pos] === '/' && pos + 1 < source.length && source[pos + 1] === '/') {
+            while (pos < source.length && source[pos] !== '\n') pos++;
+            continue;
+        }
+
+        const startLine = line;
+
+        // number literal (decimal or 0x hex)
+        if (/[0-9]/.test(source[pos])) {
+            let start = pos;
+            if (source[pos] === '0' && pos + 1 < source.length && (source[pos + 1] === 'x' || source[pos + 1] === 'X')) {
+                pos += 2;
+                while (pos < source.length && /[0-9a-fA-F]/.test(source[pos])) pos++;
+                tokens.push({ type: 'NUMBER', value: parseInt(source.substring(start, pos), 16), line: startLine });
+            } else {
+                while (pos < source.length && /[0-9]/.test(source[pos])) pos++;
+                tokens.push({ type: 'NUMBER', value: parseInt(source.substring(start, pos), 10), line: startLine });
+            }
+            continue;
+        }
+
+        // identifier or keyword
+        if (/[a-zA-Z_]/.test(source[pos])) {
+            let start = pos;
+            while (pos < source.length && /[a-zA-Z0-9_]/.test(source[pos])) pos++;
+            const text = source.substring(start, pos);
+            if (KEYWORDS.has(text)) {
+                tokens.push({ type: text.toUpperCase(), value: text, line: startLine });
+            } else {
+                tokens.push({ type: 'IDENTIFIER', value: text, line: startLine });
+            }
+            continue;
+        }
+
+        // char literal
+        if (source[pos] === "'") {
+            pos++; // skip opening quote
+            let charVal;
+            if (source[pos] === '\\') {
+                pos++;
+                switch (source[pos]) {
+                    case 'n':  charVal = 10; break;
+                    case 't':  charVal = 9;  break;
+                    case 'r':  charVal = 13; break;
+                    case '\\': charVal = 92; break;
+                    case "'":  charVal = 39; break;
+                    case '0':  charVal = 0;  break;
+                    default:   charVal = source.charCodeAt(pos); break;
+                }
+                pos++;
+            } else {
+                charVal = source.charCodeAt(pos);
+                pos++;
+            }
+            if (source[pos] !== "'") throw new Error(`Line ${startLine}: Expected closing quote for char literal`);
+            pos++; // skip closing quote
+            tokens.push({ type: 'CHAR_LITERAL', value: charVal, line: startLine });
+            continue;
+        }
+
+        // string literal
+        if (source[pos] === '"') {
+            pos++; // skip opening quote
+            let str = '';
+            while (pos < source.length && source[pos] !== '"') {
+                if (source[pos] === '\\') {
+                    pos++;
+                    switch (source[pos]) {
+                        case 'n':  str += '\n'; break;
+                        case 't':  str += '\t'; break;
+                        case 'r':  str += '\r'; break;
+                        case '\\': str += '\\'; break;
+                        case '"':  str += '"';  break;
+                        case '0':  str += '\0'; break;
+                        default:   str += source[pos]; break;
+                    }
+                } else {
+                    if (source[pos] === '\n') line++;
+                    str += source[pos];
+                }
+                pos++;
+            }
+            if (pos >= source.length) throw new Error(`Line ${startLine}: Unterminated string literal`);
+            pos++; // skip closing quote
+            tokens.push({ type: 'STRING_LITERAL', value: str, line: startLine });
+            continue;
+        }
+
+        // two-character operators
+        const two = source.substring(pos, pos + 2);
+        if (two === '==' || two === '!=' || two === '<=' || two === '>=' || two === '&&' || two === '||') {
+            tokens.push({ type: two, value: two, line: startLine });
+            pos += 2;
+            continue;
+        }
+
+        // single-character operators and punctuation
+        const ch = source[pos];
+        if ('+-*/%=<>!&'.includes(ch)) {
+            tokens.push({ type: ch, value: ch, line: startLine });
+            pos++;
+            continue;
+        }
+        if ('{}()[];,'.includes(ch)) {
+            tokens.push({ type: ch, value: ch, line: startLine });
+            pos++;
+            continue;
+        }
+
+        throw new Error(`Line ${startLine}: Unexpected character '${ch}'`);
+    }
+
+    tokens.push({ type: 'EOF', value: null, line: line });
+    return tokens;
+}
+
+// ======================== PARSER ========================
+
+function parse(tokens) {
+    let pos = 0;
+
+    function peek() { return tokens[pos]; }
+    function advance() { return tokens[pos++]; }
+    function check(type) { return tokens[pos].type === type; }
+
+    function expect(type) {
+        if (!check(type)) {
+            throw new Error(`Line ${peek().line}: Expected '${type}' but got '${peek().type}' ('${peek().value}')`);
+        }
+        return advance();
+    }
+
+    function match(type) {
+        if (check(type)) { advance(); return true; }
+        return false;
+    }
+
+    function isType() {
+        return check('INT') || check('CHAR');
+    }
+
+    function parseType() {
+        let kind;
+        if (match('INT')) kind = 'int';
+        else if (match('CHAR')) kind = 'char';
+        else throw new Error(`Line ${peek().line}: Expected type`);
+        if (check('*')) { advance(); kind += '*'; }
+        return kind;
+    }
+
+    function parseProgram() {
+        const items = [];
+        while (!check('EOF')) {
+            if (isType()) {
+                items.push(parseTypeLeading());
+            } else {
+                items.push({ type: 'top_stmt', stmt: parseStatement() });
+            }
+        }
+        return { type: 'program', items };
+    }
+
+    // After seeing a type, determine if it's a global_decl, func_def, or local_decl
+    function parseTypeLeading() {
+        const line = peek().line;
+        const varType = parseType();
+        const name = expect('IDENTIFIER').value;
+
+        // function definition: type name '(' ...
+        if (check('(')) {
+            return parseFunctionDef(varType, name, line);
+        }
+
+        // global declaration
+        return parseGlobalDecl(varType, name, line);
+    }
+
+    function parseFunctionDef(returnType, name, line) {
+        expect('(');
+        const params = [];
+        if (!check(')')) {
+            do {
+                const pType = parseType();
+                const pName = expect('IDENTIFIER').value;
+                params.push({ type: pType, name: pName });
+            } while (match(','));
+        }
+        expect(')');
+        const body = parseBlock();
+        return { type: 'func_def', returnType, name, params, body, line };
+    }
+
+    function parseGlobalDecl(varType, name, line) {
+        let arraySize = null;
+        let adjustedType = varType;
+        if (match('[')) {
+            if (check('NUMBER')) {
+                arraySize = advance().value;
+            } else {
+                arraySize = 0;
+            }
+            expect(']');
+            // convert type to array type
+            adjustedType = varType.replace('*', '') + '[]';
+        }
+
+        let init = null;
+        let arrayInit = null;
+        let stringInit = null;
+        if (match('=')) {
+            if (check('{')) {
+                // brace-list init
+                advance();
+                arrayInit = [];
+                if (!check('}')) {
+                    do {
+                        arrayInit.push(parseExpression());
+                    } while (match(','));
+                }
+                expect('}');
+            } else if (check('STRING_LITERAL') && adjustedType.endsWith('[]')) {
+                stringInit = peek().value;
+                init = parseExpression();
+            } else {
+                init = parseExpression();
+            }
+        }
+        expect(';');
+        return { type: 'global_decl', varType: adjustedType, name, arraySize, init, arrayInit, stringInit, line };
+    }
+
+    function parseLocalDecl(varType, name, line) {
+        let arraySize = null;
+        let adjustedType = varType;
+        if (match('[')) {
+            if (check('NUMBER')) {
+                arraySize = advance().value;
+            } else {
+                arraySize = 0;
+            }
+            expect(']');
+            adjustedType = varType.replace('*', '') + '[]';
+        }
+
+        let init = null;
+        if (match('=')) {
+            init = parseExpression();
+        }
+        expect(';');
+        return { type: 'local_decl', varType: adjustedType, name, arraySize, init, line };
+    }
+
+    function parseBlock() {
+        const line = peek().line;
+        expect('{');
+        const items = [];
+        while (!check('}')) {
+            if (isType()) {
+                const declLine = peek().line;
+                const vType = parseType();
+                const vName = expect('IDENTIFIER').value;
+                items.push(parseLocalDecl(vType, vName, declLine));
+            } else {
+                items.push(parseStatement());
+            }
+        }
+        expect('}');
+        return { type: 'block', items, line };
+    }
+
+    function parseStatement() {
+        if (check('IF')) return parseIf();
+        if (check('WHILE')) return parseWhile();
+        if (check('RETURN')) return parseReturn();
+        if (check('{')) return parseBlock();
+        return parseExpressionStatement();
+    }
+
+    function parseIf() {
+        const line = peek().line;
+        expect('IF');
+        expect('(');
+        const condition = parseExpression();
+        expect(')');
+        const thenBranch = parseStatement();
+        let elseBranch = null;
+        if (match('ELSE')) {
+            elseBranch = parseStatement();
+        }
+        return { type: 'if', condition, thenBranch, elseBranch, line };
+    }
+
+    function parseWhile() {
+        const line = peek().line;
+        expect('WHILE');
+        expect('(');
+        const condition = parseExpression();
+        expect(')');
+        const body = parseStatement();
+        return { type: 'while', condition, body, line };
+    }
+
+    function parseReturn() {
+        const line = peek().line;
+        expect('RETURN');
+        let value = null;
+        if (!check(';')) {
+            value = parseExpression();
+        }
+        expect(';');
+        return { type: 'return', value, line };
+    }
+
+    function parseExpressionStatement() {
+        const line = peek().line;
+        const expr = parseExpression();
+        // Check if this is an assignment
+        if (check('=') && (expr.type === 'var_ref' || expr.type === 'array_index' || expr.type === 'unary')) {
+            advance(); // consume '='
+            const value = parseExpression();
+            expect(';');
+            return { type: 'assign', target: expr, value, line };
+        }
+        expect(';');
+        return { type: 'expr_stmt', expr, line };
+    }
+
+    function parseExpression() {
+        return parseLogicalOr();
+    }
+
+    function parseLogicalOr() {
+        let left = parseLogicalAnd();
+        while (check('||')) {
+            advance();
+            const right = parseLogicalAnd();
+            left = { type: 'logical', op: '||', left, right };
+        }
+        return left;
+    }
+
+    function parseLogicalAnd() {
+        let left = parseEquality();
+        while (check('&&')) {
+            advance();
+            const right = parseEquality();
+            left = { type: 'logical', op: '&&', left, right };
+        }
+        return left;
+    }
+
+    function parseEquality() {
+        let left = parseComparison();
+        while (check('==') || check('!=')) {
+            const op = advance().value;
+            const right = parseComparison();
+            left = { type: 'binary', op, left, right };
+        }
+        return left;
+    }
+
+    function parseComparison() {
+        let left = parseAdditive();
+        while (check('<') || check('>') || check('<=') || check('>=')) {
+            const op = advance().value;
+            const right = parseAdditive();
+            left = { type: 'binary', op, left, right };
+        }
+        return left;
+    }
+
+    function parseAdditive() {
+        let left = parseMultiplicative();
+        while (check('+') || check('-')) {
+            const op = advance().value;
+            const right = parseMultiplicative();
+            left = { type: 'binary', op, left, right };
+        }
+        return left;
+    }
+
+    function parseMultiplicative() {
+        let left = parseUnary();
+        while (check('*') || check('/') || check('%')) {
+            const op = advance().value;
+            const right = parseUnary();
+            left = { type: 'binary', op, left, right };
+        }
+        return left;
+    }
+
+    function parseUnary() {
+        if (check('-') || check('!') || check('&')) {
+            const op = advance().value;
+            const operand = parseUnary();
+            return { type: 'unary', op, operand };
+        }
+        // '*' as dereference (unary) - only if not in a multiplicative context
+        if (check('*')) {
+            // Look ahead: if next token after * looks like a primary (identifier, number, paren, etc.)
+            // and the current context is unary, treat as dereference
+            const saved = pos;
+            advance();
+            // Try parsing as unary operand
+            try {
+                const operand = parseUnary();
+                return { type: 'unary', op: '*', operand };
+            } catch (e) {
+                pos = saved;
+            }
+        }
+        return parsePrimary();
+    }
+
+    function parsePrimary() {
+        // number
+        if (check('NUMBER')) {
+            const tok = advance();
+            return { type: 'number', value: tok.value, line: tok.line };
+        }
+
+        // char literal
+        if (check('CHAR_LITERAL')) {
+            const tok = advance();
+            return { type: 'char', value: tok.value, line: tok.line };
+        }
+
+        // string literal
+        if (check('STRING_LITERAL')) {
+            const tok = advance();
+            return { type: 'string', value: tok.value, line: tok.line };
+        }
+
+        // identifier: variable ref, array index, or function call
+        if (check('IDENTIFIER')) {
+            const tok = advance();
+            const name = tok.value;
+
+            // function call
+            if (check('(')) {
+                advance();
+                const args = [];
+                if (!check(')')) {
+                    do {
+                        args.push(parseExpression());
+                    } while (match(','));
+                }
+                expect(')');
+                return { type: 'call', name, args, line: tok.line };
+            }
+
+            // array index
+            if (check('[')) {
+                advance();
+                const index = parseExpression();
+                expect(']');
+                return { type: 'array_index', name, index, line: tok.line };
+            }
+
+            return { type: 'var_ref', name, line: tok.line };
+        }
+
+        // parenthesized expression
+        if (check('(')) {
+            advance();
+            const expr = parseExpression();
+            expect(')');
+            return expr;
+        }
+
+        throw new Error(`Line ${peek().line}: Unexpected token '${peek().value}'`);
+    }
+
+    return parseProgram();
+}
+
+// ======================== CODE GENERATOR ========================
+
+function generate(ast) {
+    let currentOutput = [];
+    let labelCounter = 0;
+    const stringLiterals = new Map(); // label -> decoded string
+    let stringCounter = 0;
+    const globals = new Map(); // name -> variable info
+    let locals = null; // null when outside function
+    let nextLocalOffset = -2;
+
+    function appendLine(line) {
+        currentOutput.push(line);
+    }
+
+    function newLabel(prefix) {
+        return prefix + '_' + labelCounter++;
+    }
+
+    function registerStringLiteral(value) {
+        const label = 'str_' + stringCounter++;
+        stringLiterals.set(label, value);
+        return label;
+    }
+
+    function lookupVar(name) {
+        if (locals && locals.has(name)) return locals.get(name);
+        if (globals.has(name)) return globals.get(name);
+        throw new Error('Undefined variable: ' + name);
+    }
+
+    function makeVariable(varType, name, isGlobal, bpOffset) {
+        return {
+            name,
+            varType,
+            global: isGlobal,
+            bpOffset,
+            arraySize: 0,
+            stringInit: null
+        };
+    }
+
+    function isCharType(varType) {
+        return varType === 'char' || varType === 'char*' || varType === 'char[]';
+    }
+
+    function isPointerType(varType) {
+        return varType === 'int*' || varType === 'char*';
+    }
+
+    function isArrayType(varType) {
+        return varType === 'int[]' || varType === 'char[]';
+    }
+
+    function elementSize(varType) {
+        return isCharType(varType) ? 1 : 2;
+    }
+
+    function formatBpOffset(offset) {
+        return offset >= 0 ? '+' + offset : '' + offset;
+    }
+
+    function emitLineMarker(line) {
+        if (line != null) appendLine('; @LINE ' + line);
+    }
+
+    function emitStore(v) {
+        if (v.global) {
+            appendLine('    MOV [' + v.name + '], AX  ; store ' + v.name);
+        } else {
+            appendLine('    MOV [BP' + formatBpOffset(v.bpOffset) + '], AX  ; store ' + v.name);
+        }
+    }
+
+    // Phase 1: register all globals
+    for (const item of ast.items) {
+        if (item.type === 'global_decl') {
+            registerGlobal(item);
+        }
+    }
+
+    // Phase 2: generate code into a temporary buffer (so string literals are discovered)
+    const codeOutput = [];
+    const savedOutput = currentOutput;
+    currentOutput = codeOutput;
+
+    // emit global initializers and top-level statements
+    for (const item of ast.items) {
+        if (item.type === 'global_decl') {
+            emitGlobalInit(item);
+        } else if (item.type === 'top_stmt') {
+            compileStatement(item.stmt);
+        }
+    }
+
+    // check for main
+    const hasMain = ast.items.some(item => item.type === 'func_def' && item.name === 'main');
+    if (hasMain) appendLine('    CALL main');
+    appendLine('    SYSCALL EXIT');
+
+    // emit function definitions
+    for (const item of ast.items) {
+        if (item.type === 'func_def') {
+            appendLine('');
+            compileFunctionDef(item);
+        }
+    }
+
+    // Phase 3: switch back to main output, emit data section, then append code
+    currentOutput = savedOutput;
+    emitDataSection();
+    appendLine('');
+    for (const line of codeOutput) {
+        currentOutput.push(line);
+    }
+
+    return currentOutput.join('\n') + '\n';
+
+    function registerGlobal(decl) {
+        const v = makeVariable(decl.varType, decl.name, true, 0);
+
+        if (decl.arraySize != null) {
+            v.arraySize = decl.arraySize;
+        }
+
+        // char[] = "string" pattern
+        if (isArrayType(decl.varType) && isCharType(decl.varType) && decl.stringInit != null) {
+            v.stringInit = decl.stringInit;
+            if (v.arraySize === 0) v.arraySize = decl.stringInit.length + 1;
+        }
+
+        globals.set(v.name, v);
+    }
+
+    function emitGlobalInit(decl) {
+        const g = globals.get(decl.name);
+        if (g.stringInit != null) return;
+
+        if (decl.arrayInit != null) {
+            emitLineMarker(decl.line);
+            for (let i = 0; i < decl.arrayInit.length; i++) {
+                compileExpression(decl.arrayInit[i]);
+                appendLine('    MOV BX, ' + g.name);
+                appendLine('    MOV CX, ' + (i * elementSize(g.varType)));
+                appendLine('    ADD BX, CX');
+                appendLine('    MOV [BX+0], AX');
+            }
+        } else if (decl.init != null) {
+            emitLineMarker(decl.line);
+            compileExpression(decl.init);
+            emitStore(g);
+        }
+    }
+
+    function emitDataSection() {
+        // Emit read-only data first (string literals, char[] string inits)
+        appendLine('.RODATA');
+        for (const [name, g] of globals) {
+            if (g.stringInit != null) {
+                appendLine(g.name + ':');
+                for (let i = 0; i < g.stringInit.length; i++) {
+                    appendLine('    DB ' + g.stringInit.charCodeAt(i));
+                }
+                appendLine('    DB 0');
+            }
+        }
+        for (const [label, value] of stringLiterals) {
+            appendLine(label + ':');
+            for (let i = 0; i < value.length; i++) {
+                if (i === 0) {
+                    appendLine('    DB ' + value.charCodeAt(i) + '  ; "' + value.replace(/\n/g, '\\n') + '"');
+                } else {
+                    appendLine('    DB ' + value.charCodeAt(i));
+                }
+            }
+            appendLine('    DB 0');
+        }
+
+        // Emit mutable global data
+        appendLine('.DATA');
+        for (const [name, g] of globals) {
+            if (g.stringInit != null) continue; // already emitted in rodata
+            appendLine(g.name + ':');
+            if (isArrayType(g.varType)) {
+                const directive = isCharType(g.varType) ? 'DB' : 'DW';
+                appendLine('    ' + directive + ' ' + g.arraySize + ' DUP(0)  ; ' + g.name + '[' + g.arraySize + ']');
+            } else if (g.varType === 'char') {
+                appendLine('    DB 0  ; char ' + g.name);
+            } else {
+                const typeStr = isPointerType(g.varType) ? (isCharType(g.varType) ? 'char*' : 'int*') : 'int';
+                appendLine('    DW 0  ; ' + typeStr + ' ' + g.name);
+            }
+        }
+    }
+
+    function countLocalsInBlock(block) {
+        let count = 0;
+        for (const item of block.items) {
+            if (item.type === 'local_decl') {
+                if (item.arraySize != null) {
+                    const bytes = item.arraySize * elementSize(item.varType);
+                    count += Math.ceil(bytes / 2);
+                } else {
+                    count++;
+                }
+            } else if (item.type === 'block') {
+                count += countLocalsInBlock(item);
+            } else if (item.type === 'if') {
+                count += countLocalsInStmt(item.thenBranch);
+                if (item.elseBranch) count += countLocalsInStmt(item.elseBranch);
+            } else if (item.type === 'while') {
+                count += countLocalsInStmt(item.body);
+            }
+        }
+        return count;
+    }
+
+    function countLocalsInStmt(stmt) {
+        if (stmt.type === 'block') return countLocalsInBlock(stmt);
+        if (stmt.type === 'if') {
+            let n = countLocalsInStmt(stmt.thenBranch);
+            if (stmt.elseBranch) n += countLocalsInStmt(stmt.elseBranch);
+            return n;
+        }
+        if (stmt.type === 'while') return countLocalsInStmt(stmt.body);
+        return 0;
+    }
+
+    function compileFunctionDef(func) {
+        emitLineMarker(func.line);
+        appendLine(func.name + ':');
+
+        locals = new Map();
+        nextLocalOffset = -2;
+
+        const paramRegs = ['AX', 'BX', 'CX', 'DX', 'SI', 'DI'];
+
+        if (func.params.length > 6) {
+            throw new Error('Function ' + func.name + ' has more than 6 parameters');
+        }
+
+        for (const p of func.params) {
+            const v = makeVariable(p.type, p.name, false, nextLocalOffset);
+            nextLocalOffset -= 2;
+            locals.set(v.name, v);
+        }
+
+        const totalSlots = func.params.length + countLocalsInBlock(func.body);
+
+        // Function prolog: save caller's frame, set up local stack
+        appendLine('    PUSH BP           ; save caller\'s base pointer');
+        appendLine('    MOV BP, SP        ; set up new stack frame');
+        if (totalSlots > 0)
+            appendLine('    SUB SP, ' + (totalSlots * 2) + '        ; allocate ' + totalSlots + ' local slots');
+
+        for (let i = 0; i < func.params.length; i++) {
+            const v = locals.get(func.params[i].name);
+            appendLine('    MOV [BP' + formatBpOffset(v.bpOffset) + '], ' + paramRegs[i] + '  ; param ' + v.name);
+        }
+
+        compileBlock(func.body);
+
+        // Function epilog: tear down stack frame and return
+        appendLine('    MOV SP, BP        ; deallocate locals');
+        appendLine('    POP BP            ; restore caller\'s base pointer');
+        appendLine('    RET');
+
+        locals = null;
+    }
+
+    function compileBlock(block) {
+        for (const item of block.items) {
+            if (item.type === 'local_decl') {
+                compileLocalDecl(item);
+            } else {
+                compileStatement(item);
+            }
+        }
+    }
+
+    function compileLocalDecl(decl) {
+        if (decl.arraySize != null) {
+            const bytes = decl.arraySize * elementSize(decl.varType);
+            const slots = Math.ceil(bytes / 2);
+            nextLocalOffset -= (slots - 1) * 2;
+            const v = makeVariable(decl.varType, decl.name, false, nextLocalOffset);
+            v.arraySize = decl.arraySize;
+            nextLocalOffset -= 2;
+            locals.set(v.name, v);
+        } else {
+            const v = makeVariable(decl.varType, decl.name, false, nextLocalOffset);
+            nextLocalOffset -= 2;
+            locals.set(v.name, v);
+
+            if (decl.init != null) {
+                emitLineMarker(decl.line);
+                compileExpression(decl.init);
+                emitStore(v);
+            }
+        }
+    }
+
+    function compileStatement(stmt) {
+        switch (stmt.type) {
+            case 'if':       compileIf(stmt); break;
+            case 'while':    compileWhile(stmt); break;
+            case 'return':   compileReturn(stmt); break;
+            case 'assign':   compileAssign(stmt); break;
+            case 'block':    compileBlock(stmt); break;
+            case 'expr_stmt':
+                emitLineMarker(stmt.line);
+                compileExpression(stmt.expr);
+                break;
+            default:
+                throw new Error('Unknown statement type: ' + stmt.type);
+        }
+    }
+
+    function compileIf(stmt) {
+        const elseLabel = newLabel('if_else');
+        const endLabel = newLabel('if_end');
+
+        emitLineMarker(stmt.line);
+        appendLine('');
+        appendLine('; If statement');
+        compileExpression(stmt.condition);
+        appendLine('    CMP AX, 0');
+        appendLine('    JE ' + elseLabel);
+
+        appendLine('; Then block');
+        compileStatement(stmt.thenBranch);
+        appendLine('    JMP ' + endLabel);
+
+        appendLine(elseLabel + ':');
+        if (stmt.elseBranch) {
+            appendLine('; Else block');
+            compileStatement(stmt.elseBranch);
+        }
+
+        appendLine(endLabel + ':');
+    }
+
+    function compileWhile(stmt) {
+        const startLabel = newLabel('while_start');
+        const endLabel = newLabel('while_end');
+
+        emitLineMarker(stmt.line);
+        appendLine('');
+        appendLine('; While loop');
+        appendLine(startLabel + ':');
+        compileExpression(stmt.condition);
+        appendLine('    CMP AX, 0');
+        appendLine('    JE ' + endLabel);
+        compileStatement(stmt.body);
+        appendLine('    JMP ' + startLabel);
+        appendLine(endLabel + ':');
+    }
+
+    function compileReturn(stmt) {
+        emitLineMarker(stmt.line);
+        appendLine('');
+        appendLine('; Return statement');
+        if (stmt.value != null) {
+            compileExpression(stmt.value);
+        }
+        // Early return epilog
+        appendLine('    MOV SP, BP        ; deallocate locals');
+        appendLine('    POP BP            ; restore caller\'s base pointer');
+        appendLine('    RET');
+    }
+
+    function compileAssign(stmt) {
+        emitLineMarker(stmt.line);
+        appendLine('');
+        appendLine('; Assignment');
+
+        // Evaluate RHS first
+        compileExpression(stmt.value);
+
+        // Store to LHS
+        const target = stmt.target;
+
+        if (target.type === 'var_ref') {
+            const v = lookupVar(target.name);
+            if (v.global) {
+                appendLine('    MOV [' + v.name + '], AX  ; store ' + v.name);
+            } else {
+                appendLine('    MOV [BP' + formatBpOffset(v.bpOffset) + '], AX  ; store ' + v.name);
+            }
+        } else if (target.type === 'array_index') {
+            const v = lookupVar(target.name);
+            appendLine('    PUSH AX');
+            compileExpression(target.index);
+            if (elementSize(v.varType) === 2) {
+                appendLine('    ADD AX, AX');
+            }
+            if (v.global) {
+                appendLine('    MOV BX, ' + target.name + '  ; &' + target.name);
+            } else if (isArrayType(v.varType)) {
+                appendLine('    LEA BX, [BP' + formatBpOffset(v.bpOffset) + ']');
+            } else {
+                appendLine('    MOV BX, [BP' + formatBpOffset(v.bpOffset) + ']  ; load ' + v.name);
+            }
+            appendLine('    ADD BX, AX');
+            appendLine('    POP AX');
+            if (isCharType(v.varType)) {
+                appendLine('    MOV [BX+0], AL');
+            } else {
+                appendLine('    MOV [BX+0], AX');
+            }
+        } else if (target.type === 'unary' && target.op === '*') {
+            // dereference assignment: *ptr = value
+            appendLine('    PUSH AX');
+            compileExpression(target.operand);
+            appendLine('    MOV BX, AX');
+            appendLine('    POP AX');
+            appendLine('    MOV [BX+0], AX');
+        } else {
+            throw new Error('Invalid assignment target');
+        }
+    }
+
+    function compileExpression(expr) {
+        switch (expr.type) {
+            case 'binary':  return compileBinary(expr);
+            case 'logical': compileLogical(expr); return 'int';
+            case 'unary':   return compileUnary(expr);
+            case 'call':    compileCall(expr); return 'int';
+            case 'var_ref': return compileVarRef(expr);
+            case 'array_index': return compileArrayIndex(expr);
+            case 'number':  appendLine('    MOV AX, ' + expr.value); return 'int';
+            case 'char':    appendLine('    MOV AX, ' + expr.value); return 'char';
+            case 'string': {
+                const label = registerStringLiteral(expr.value);
+                appendLine('    MOV AX, ' + label);
+                return 'char*';
+            }
+            default:
+                throw new Error('Unknown expression type: ' + expr.type);
+        }
+    }
+
+    function isLeaf(expr) {
+        return expr.type === 'number' || expr.type === 'char' || expr.type === 'var_ref';
+    }
+
+    function compileLeafIntoBX(expr) {
+        if (expr.type === 'number') {
+            appendLine('    MOV BX, ' + expr.value);
+        } else if (expr.type === 'char') {
+            appendLine('    MOV BX, ' + expr.value);
+        } else if (expr.type === 'var_ref') {
+            const v = lookupVar(expr.name);
+            if (isArrayType(v.varType)) {
+                if (v.global) {
+                    appendLine('    MOV BX, ' + v.name + '  ; &' + v.name);
+                } else {
+                    appendLine('    LEA BX, [BP' + formatBpOffset(v.bpOffset) + ']  ; &' + v.name);
+                }
+            } else if (v.global) {
+                appendLine('    MOV BX, [' + v.name + ']  ; load ' + v.name);
+            } else {
+                appendLine('    MOV BX, [BP' + formatBpOffset(v.bpOffset) + ']  ; load ' + v.name);
+            }
+        }
+    }
+
+    function compileRightIntoBX(right) {
+        if (isLeaf(right)) {
+            compileLeafIntoBX(right);
+        } else {
+            appendLine('    PUSH AX');
+            compileExpression(right);
+            appendLine('    MOV BX, AX');
+            appendLine('    POP AX');
+        }
+    }
+
+    function compileBinary(expr) {
+        const cmps = {
+            '==': 'SETE AX',  '!=': 'SETNE AX',
+            '<':  'SETL AX',  '>':  'SETG AX',
+            '<=': 'SETLE AX', '>=': 'SETGE AX',
+        };
+
+        // Pointer arithmetic: ptr + int or ptr - int
+        if (expr.op === '+' || expr.op === '-') {
+            const leftType = compileExpression(expr.left);
+            if (isPointerType(leftType)) {
+                // Scale the integer operand by element size
+                if (isLeaf(expr.right)) {
+                    compileLeafIntoBX(expr.right);
+                } else {
+                    appendLine('    PUSH AX');
+                    compileExpression(expr.right);
+                    appendLine('    MOV BX, AX');
+                    appendLine('    POP AX');
+                }
+                if (elementSize(leftType) === 2) {
+                    appendLine('    ADD BX, BX');  // scale by sizeof(int)
+                }
+                appendLine(expr.op === '+' ? '    ADD AX, BX' : '    SUB AX, BX');
+                return leftType;
+            }
+            compileRightIntoBX(expr.right);
+            appendLine(expr.op === '+' ? '    ADD AX, BX' : '    SUB AX, BX');
+            return 'int';
+        }
+
+        if (expr.op === '*') {
+            compileExpression(expr.left);
+            compileRightIntoBX(expr.right);
+            appendLine('    MUL BX');
+            return 'int';
+        } else if (expr.op === '/') {
+            compileExpression(expr.left);
+            compileRightIntoBX(expr.right);
+            appendLine('    DIV BX');
+            return 'int';
+        } else if (expr.op === '%') {
+            compileExpression(expr.left);
+            compileRightIntoBX(expr.right);
+            appendLine('    DIV BX');
+            appendLine('    MOV AX, DX');
+            return 'int';
+        } else if (cmps[expr.op]) {
+            compileExpression(expr.left);
+            compileRightIntoBX(expr.right);
+            appendLine('    CMP AX, BX');
+            appendLine('    ' + cmps[expr.op]);
+            return 'int';
+        } else {
+            throw new Error('Unknown binary operator: ' + expr.op);
+        }
+    }
+
+    function compileLogical(expr) {
+        if (expr.op === '||') {
+            const trueLabel = newLabel('or_true');
+            const endLabel = newLabel('or_end');
+            compileExpression(expr.left);
+            appendLine('    CMP AX, 0');
+            appendLine('    JNE ' + trueLabel);
+            compileExpression(expr.right);
+            appendLine('    CMP AX, 0');
+            appendLine('    JNE ' + trueLabel);
+            appendLine('    MOV AX, 0');
+            appendLine('    JMP ' + endLabel);
+            appendLine(trueLabel + ':');
+            appendLine('    MOV AX, 1');
+            appendLine(endLabel + ':');
+        } else if (expr.op === '&&') {
+            const falseLabel = newLabel('and_false');
+            const endLabel = newLabel('and_end');
+            compileExpression(expr.left);
+            appendLine('    CMP AX, 0');
+            appendLine('    JE ' + falseLabel);
+            compileExpression(expr.right);
+            appendLine('    CMP AX, 0');
+            appendLine('    JE ' + falseLabel);
+            appendLine('    MOV AX, 1');
+            appendLine('    JMP ' + endLabel);
+            appendLine(falseLabel + ':');
+            appendLine('    MOV AX, 0');
+            appendLine(endLabel + ':');
+        }
+    }
+
+    function compileUnary(expr) {
+        switch (expr.op) {
+            case '-':
+                compileExpression(expr.operand);
+                appendLine('    NEG AX');
+                return 'int';
+            case '!': {
+                const zeroLabel = newLabel('not_zero');
+                const endLabel = newLabel('not_end');
+                compileExpression(expr.operand);
+                appendLine('    CMP AX, 0');
+                appendLine('    JE ' + zeroLabel);
+                appendLine('    MOV AX, 0');
+                appendLine('    JMP ' + endLabel);
+                appendLine(zeroLabel + ':');
+                appendLine('    MOV AX, 1');
+                appendLine(endLabel + ':');
+                return 'int';
+            }
+            case '*': {
+                // dereference
+                const ptrType = compileExpression(expr.operand);
+                appendLine('    MOV BX, AX');
+                if (ptrType === 'char*') {
+                    appendLine('    MOV AL, [BX+0]');
+                    return 'char';
+                } else {
+                    appendLine('    MOV AX, [BX+0]');
+                    return 'int';
+                }
+            }
+            case '&': {
+                // address-of
+                if (expr.operand.type === 'var_ref') {
+                    const v = lookupVar(expr.operand.name);
+                    if (v.global) {
+                        appendLine('    MOV AX, ' + expr.operand.name + '  ; &' + expr.operand.name);
+                    } else {
+                        appendLine('    LEA AX, [BP' + formatBpOffset(v.bpOffset) + ']  ; &' + v.name);
+                    }
+                    return isCharType(v.varType) ? 'char*' : 'int*';
+                } else if (expr.operand.type === 'array_index') {
+                    const v = lookupVar(expr.operand.name);
+                    compileArrayAddress(expr.operand);
+                    return isCharType(v.varType) ? 'char*' : 'int*';
+                } else {
+                    throw new Error('Can only take address of variables or array elements');
+                }
+            }
+            default:
+                throw new Error('Unknown unary operator: ' + expr.op);
+        }
+    }
+
+    function compileCall(expr) {
+        appendLine('');
+        appendLine('; Call ' + expr.name);
+
+        if (isSysCall(expr.name)) {
+            compileSysCall(expr);
+        } else {
+            if (expr.args.length > 6) {
+                throw new Error('Cannot pass more than 6 arguments');
+            }
+
+            for (let i = 0; i < expr.args.length; i++) {
+                compileExpression(expr.args[i]);
+                appendLine('    PUSH AX');
+            }
+
+            const regs = ['AX', 'BX', 'CX', 'DX', 'SI', 'DI'];
+            for (let i = expr.args.length - 1; i >= 0; i--) {
+                appendLine('    POP ' + regs[i]);
+            }
+
+            appendLine('    CALL ' + expr.name);
+        }
+    }
+
+    function isSysCall(name) {
+        return name === 'print_int' || name === 'print_char' || name === 'print_string' ||
+               name === 'read_int' || name === 'read_char' || name === 'exit';
+    }
+
+    function compileSysCall(call) {
+        switch (call.name) {
+            case 'print_int':
+                if (call.args.length !== 1) throw new Error('print_int expects 1 argument');
+                compileExpression(call.args[0]);
+                appendLine('    SYSCALL PRINT_INT');
+                break;
+            case 'print_char':
+                if (call.args.length !== 1) throw new Error('print_char expects 1 argument');
+                compileExpression(call.args[0]);
+                appendLine('    SYSCALL PRINT_CHAR');
+                break;
+            case 'print_string':
+                if (call.args.length !== 1) throw new Error('print_string expects 1 argument');
+                compileExpression(call.args[0]);
+                appendLine('    SYSCALL PRINT_STRING');
+                break;
+            case 'read_int':
+                if (call.args.length !== 0) throw new Error('read_int expects 0 arguments');
+                appendLine('    SYSCALL READ_INT');
+                break;
+            case 'read_char':
+                if (call.args.length !== 0) throw new Error('read_char expects 0 arguments');
+                appendLine('    SYSCALL READ_CHAR');
+                break;
+            case 'exit':
+                appendLine('    SYSCALL EXIT');
+                break;
+            default:
+                throw new Error('Unknown syscall: ' + call.name);
+        }
+    }
+
+    function compileVarRef(expr) {
+        const v = lookupVar(expr.name);
+        if (isArrayType(v.varType)) {
+            if (v.global) {
+                appendLine('    MOV AX, ' + v.name + '  ; &' + v.name);
+            } else {
+                appendLine('    LEA AX, [BP' + formatBpOffset(v.bpOffset) + ']  ; &' + v.name);
+            }
+            return isCharType(v.varType) ? 'char*' : 'int*';
+        } else if (v.global) {
+            appendLine('    MOV AX, [' + v.name + ']  ; load ' + v.name);
+        } else {
+            appendLine('    MOV AX, [BP' + formatBpOffset(v.bpOffset) + ']  ; load ' + v.name);
+        }
+        return v.varType;
+    }
+
+    function compileArrayIndex(expr) {
+        const v = lookupVar(expr.name);
+        compileArrayAddress(expr);
+        appendLine('    MOV BX, AX');
+        if (isCharType(v.varType)) {
+            appendLine('    MOV AL, [BX+0]');
+            return 'char';
+        } else {
+            appendLine('    MOV AX, [BX+0]');
+            return 'int';
+        }
+    }
+
+    function compileArrayAddress(expr) {
+        const v = lookupVar(expr.name);
+        compileExpression(expr.index);
+        if (elementSize(v.varType) === 2) {
+            appendLine('    ADD AX, AX');
+        }
+        if (v.global) {
+            appendLine('    MOV BX, ' + expr.name + '  ; &' + expr.name);
+        } else if (isArrayType(v.varType)) {
+            appendLine('    LEA BX, [BP' + formatBpOffset(v.bpOffset) + ']');
+        } else {
+            appendLine('    MOV BX, [BP' + formatBpOffset(v.bpOffset) + ']  ; load ' + v.name);
+        }
+        appendLine('    ADD AX, BX');
+    }
+}
+
+// ======================== EXPORTS ========================
+
+export function compileCmm(source) {
+    try {
+        const tokens = lex(source);
+        const ast = parse(tokens);
+        const assembly = generate(ast);
+        return { assembly, error: null };
+    } catch (e) {
+        return { assembly: null, error: e.message };
+    }
+}

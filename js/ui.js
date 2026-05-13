@@ -7,6 +7,7 @@ import { FileSystem } from './filesystem.js'
 import { OS } from './os.js'
 import { Display } from './display.js'
 import { initializeMonaco, getEditor, setExecutionLine, clearExecutionLine, getBreakpoints, setBreakpointChangeCallback, createCmmEditor, getCmmEditor, setCmmExecutionLine, clearCmmExecutionLine } from './monaco-setup.js'
+import { initRemote } from './remote.js'
 
 // ============================================================================
 // State
@@ -3550,6 +3551,18 @@ export async function initUI() {
 
   // Create memory with display reference
   memory = new Memory(1024, display)
+
+  // Create a minimal CPU for remote mode to set register values on
+  cpu = new CPU(memory, null)
+
+  // Check for remote mode (served by IntelliJ plugin)
+  if (initRemote(updateUI, consolePrint, display, memory, cpu)) {
+    // Remote mode is active — skip local filesystem, monaco, etc.
+    // Wire memory mode button
+    const memBtn = document.getElementById('memory-mode-btn')
+    if (memBtn) memBtn.addEventListener('click', toggleMemoryDisplayMode)
+    return
+  }
 
   // Initialize file system
   fs = new FileSystem()

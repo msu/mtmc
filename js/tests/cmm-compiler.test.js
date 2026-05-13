@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { compileCmm } from '../cmm-compiler.src.js'
+import { compileCmm } from '../cmm-compiler.js'
 import { assemble } from '../assembler.js'
 import { CPU, Memory } from '../emulator.js'
 import { OS } from '../os.js'
@@ -298,5 +298,216 @@ describe('C-- Compiler: Advanced', () => {
       }
     `)
     expect(intOutput).toEqual([6, 3, 10, 5, 16, 8, 4, 2, 1])
+  })
+})
+
+// ==================== Tier 5: Local Arrays & Array Decay ====================
+
+describe('C-- Compiler: Local Arrays & Array Decay', () => {
+  it('should support local arrays', () => {
+    const { intOutput } = run(`
+      int main() {
+        int arr[3];
+        arr[0] = 10; arr[1] = 20; arr[2] = 30;
+        print_int(arr[0]); print_int(arr[1]); print_int(arr[2]);
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([10, 20, 30])
+  })
+
+  it('should support local arrays with loops', () => {
+    const { intOutput } = run(`
+      int main() {
+        int arr[5]; int i;
+        i = 0;
+        while (i < 5) { arr[i] = i * 10; i = i + 1; }
+        i = 0;
+        while (i < 5) { print_int(arr[i]); i = i + 1; }
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([0, 10, 20, 30, 40])
+  })
+
+  it('should not clobber adjacent locals', () => {
+    const { intOutput } = run(`
+      int main() {
+        int before; int arr[4]; int after;
+        before = 111; after = 222;
+        arr[0] = 1; arr[1] = 2; arr[2] = 3; arr[3] = 4;
+        print_int(before); print_int(arr[0]); print_int(arr[3]); print_int(after);
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([111, 1, 4, 222])
+  })
+
+  it('should decay global array to pointer parameter', () => {
+    const { intOutput } = run(`
+      int arr[3] = {10, 20, 30};
+      int printArray(int* p, int len) {
+        int i; i = 0;
+        while (i < len) { print_int(p[i]); i = i + 1; }
+        return 0;
+      }
+      int main() { printArray(arr, 3); return 0; }
+    `)
+    expect(intOutput).toEqual([10, 20, 30])
+  })
+
+  it('should decay local array to pointer parameter', () => {
+    const { intOutput } = run(`
+      int printArray(int* p, int len) {
+        int i; i = 0;
+        while (i < len) { print_int(p[i]); i = i + 1; }
+        return 0;
+      }
+      int main() {
+        int arr[4];
+        arr[0] = 100; arr[1] = 200; arr[2] = 300; arr[3] = 400;
+        printArray(arr, 4);
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([100, 200, 300, 400])
+  })
+
+  it('should assign array to pointer and index through it', () => {
+    const { intOutput } = run(`
+      int main() {
+        int arr[3]; int* p;
+        arr[0] = 7; arr[1] = 8; arr[2] = 9;
+        p = arr;
+        print_int(*p); print_int(p[1]); print_int(p[2]);
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([7, 8, 9])
+  })
+
+  it('should support local char arrays', () => {
+    const { strOutput } = run(`
+      int main() {
+        char buf[4];
+        buf[0] = 'H'; buf[1] = 'i'; buf[2] = '!'; buf[3] = 0;
+        print_string(buf);
+        return 0;
+      }
+    `)
+    expect(strOutput).toEqual(['Hi!'])
+  })
+})
+
+// ==================== Tier 6: Memory Protection ====================
+
+describe('C-- Compiler: Memory Protection', () => {
+  it('should segfault on write to string literal', () => {
+    expect(() => run(`
+      int main() {
+        char* s; s = "hello";
+        s[0] = 'H';
+        return 0;
+      }
+    `)).toThrow(/Segmentation fault/)
+  })
+
+  it('should allow reading string literals', () => {
+    const { strOutput } = run(`
+      int main() { print_string("hello"); return 0; }
+    `)
+    expect(strOutput).toEqual(['hello'])
+  })
+
+  it('should allow writing to mutable globals', () => {
+    const { intOutput } = run(`
+      int x;
+      int main() { x = 42; print_int(x); return 0; }
+    `)
+    expect(intOutput).toEqual([42])
+  })
+})
+
+// ==================== Tier 7: Pointer Arithmetic ====================
+
+describe('C-- Compiler: Pointer Arithmetic', () => {
+  it('should scale int pointer addition', () => {
+    const { intOutput } = run(`
+      int arr[3] = {10, 20, 30};
+      int main() {
+        int* p; p = arr;
+        print_int(*(p + 0)); print_int(*(p + 1)); print_int(*(p + 2));
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([10, 20, 30])
+  })
+
+  it('should scale int pointer addition on local arrays', () => {
+    const { intOutput } = run(`
+      int main() {
+        int arr[4];
+        arr[0] = 100; arr[1] = 200; arr[2] = 300; arr[3] = 400;
+        int* p; p = arr;
+        print_int(*(p + 2)); print_int(*(p + 3));
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([300, 400])
+  })
+
+  it('should scale int pointer subtraction', () => {
+    const { intOutput } = run(`
+      int arr[5] = {10, 20, 30, 40, 50};
+      int main() {
+        int* p; p = arr;
+        p = p + 4; print_int(*p);
+        p = p - 2; print_int(*p);
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([50, 30])
+  })
+
+  it('should not scale char pointer addition', () => {
+    const { strOutput } = run(`
+      int main() {
+        char buf[4];
+        buf[0] = 'A'; buf[1] = 'B'; buf[2] = 'C'; buf[3] = 0;
+        char* p; p = buf;
+        print_char(*(p + 0)); print_char(*(p + 1)); print_char(*(p + 2));
+        return 0;
+      }
+    `)
+    expect(strOutput).toEqual(['A', 'B', 'C'])
+  })
+
+  it('should walk an array with pointer arithmetic in a loop', () => {
+    const { intOutput } = run(`
+      int arr[5] = {2, 4, 6, 8, 10};
+      int main() {
+        int* p; p = arr;
+        int sum; sum = 0;
+        int i; i = 0;
+        while (i < 5) { sum = sum + *(p + i); i = i + 1; }
+        print_int(sum);
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([30])
+  })
+
+  it('should support pointer increment pattern', () => {
+    const { intOutput } = run(`
+      int arr[3] = {11, 22, 33};
+      int main() {
+        int* p; p = arr;
+        print_int(*p);
+        p = p + 1; print_int(*p);
+        p = p + 1; print_int(*p);
+        return 0;
+      }
+    `)
+    expect(intOutput).toEqual([11, 22, 33])
   })
 })

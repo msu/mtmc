@@ -45,6 +45,7 @@ export const Opcode = {
   LOAD_INDEXED: 0x2D,  // MOV reg, [base+index]
   STORE_INDEXED: 0x2E, // MOV [base+index], reg
   STOREI_REL: 0x2F,    // MOV [base+offset], imm8
+  LEA_INDEXED: 0x3C,   // LEA reg, [base+index]
 
   // Logical & Bitwise
   AND_REG_REG: 0x30,
@@ -318,8 +319,21 @@ export class Memory {
     this.vramStart = 0x4000
     this.vramEnd = 0x567F
 
+    // Memory protection: segment boundaries
+    this.cs = 0   // code segment end (= rodata start)
+    this.ro = 0   // rodata end (= mutable data start)
+
     // Note: Runtime memory 0x0000-0x001F is reserved and stays zero
     // The binary header is NOT loaded into runtime memory
+  }
+
+  /**
+   * Set memory protection boundaries.
+   * Writes to .text (0x0020..cs) and .rodata (cs..ro) will throw.
+   */
+  setProtection(cs, ro) {
+    this.cs = cs
+    this.ro = ro
   }
 
   /**
@@ -371,7 +385,15 @@ export class Memory {
     }
 
     if (address < 0 || address >= this.size) {
-      throw new Error(`Memory write out of bounds: 0x${address.toString(16)}`)
+      throw new Error(`Segmentation fault: write at 0x${address.toString(16).padStart(4, '0')}: out of bounds`)
+    }
+    if (this.cs > 0) {
+      if (address >= 0x0020 && address < this.cs) {
+        throw new Error(`Segmentation fault: write at 0x${address.toString(16).padStart(4, '0')}: code segment is read-only (.text)`)
+      }
+      if (this.ro > this.cs && address >= this.cs && address < this.ro) {
+        throw new Error(`Segmentation fault: write at 0x${address.toString(16).padStart(4, '0')}: read-only data segment (.rodata)`)
+      }
     }
     this.data[address] = value & 0xFF
   }
@@ -436,6 +458,7 @@ export class Memory {
                           (binary[0x000E] << 8) | binary[0x000F]
     const breakPointer = (binary[0x0010] << 8) | binary[0x0011]  // HP
     const codeBoundary = (binary[0x0012] << 8) | binary[0x0013]  // CB
+    const rodataEnd = (binary[0x0014] << 8) | binary[0x0015]     // RO
 
     // Resize memory if needed
     if (memorySize !== this.size) {
@@ -478,11 +501,17 @@ export class Memory {
       this.data[commandLineAddr + argBytes.length] = 0
     }
 
+    // Set memory protection boundaries
+    const csAddr = codeBoundary || 0
+    const roAddr = rodataEnd || csAddr
+    this.setProtection(csAddr, roAddr)
+
     return {
       codeEnd: codeBoundary || codeEnd,
       dataEnd: breakPointer || codeEnd,
       breakPointer: breakPointer || 0x0020,
       codeBase: codeBoundary || 0x0020,
+      rodataEnd: roAddr,
       commandLineAddr,
       debugInfo
     }
@@ -787,7 +816,7 @@ export function decodeFromBytes(bytes) {
   }
 
   // Indexed addressing (reg, base, index)
-  if (opcode === Opcode.LOAD_INDEXED || opcode === Opcode.STORE_INDEXED) {
+  if (opcode === Opcode.LOAD_INDEXED || opcode === Opcode.STORE_INDEXED || opcode === Opcode.LEA_INDEXED) {
     result.reg = byte1
     result.base = byte2
     result.index = byte3
@@ -845,6 +874,7 @@ export function getInstructionName(opcode) {
     [Opcode.STORER]: 'MOV',
     [Opcode.LOADB]: 'MOV',
     [Opcode.LEA]: 'LEA',
+    [Opcode.LEA_INDEXED]: 'LEA',
     [Opcode.STOREB]: 'MOV',
     [Opcode.LOADBR]: 'MOV',
     [Opcode.STOREBR]: 'MOV',
@@ -1198,6 +1228,15 @@ export class CPU {
       case Opcode.LEA: {
         const base = this.getReg(instr.base)
         const addr = (base + instr.offset) & 0xFFFF
+        this.setReg(instr.reg, addr)
+        this.incIP(instr.size)
+        break
+      }
+
+      case Opcode.LEA_INDEXED: {
+        const base = this.getReg(instr.base)
+        const index = this.getReg(instr.index)
+        const addr = (base + index) & 0xFFFF
         this.setReg(instr.reg, addr)
         this.incIP(instr.size)
         break

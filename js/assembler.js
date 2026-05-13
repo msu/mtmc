@@ -92,6 +92,16 @@ export function tokenize(source) {
       continue
     }
 
+    // Check for .RODATA / .DATA section directives
+    if (/^\.RODATA$/i.test(line)) {
+      tokens.push({ type: 'SECTION', value: 'RODATA', line: lineNum + 1 })
+      continue
+    }
+    if (/^\.DATA$/i.test(line)) {
+      tokens.push({ type: 'SECTION', value: 'DATA', line: lineNum + 1 })
+      continue
+    }
+
     // Check for data directive (DB or DW)
     const directiveMatch = line.match(/^(DB|DW)\s+(.+)$/i)
     if (directiveMatch) {
@@ -593,8 +603,11 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
       } else if (dst.type === 'register' && src.type === 'memory_indirect') {
         // LEA AX, [BX] -> LEA with offset 0
         encode4Byte(Opcode.LEA, dst.value, src.base, 0)
+      } else if (dst.type === 'register' && src.type === 'memory_indexed') {
+        // LEA AX, [BX+CX] -> LEA_INDEXED
+        encode4Byte(Opcode.LEA_INDEXED, dst.value, src.base, src.index)
       } else {
-        throwError(`Invalid LEA operands (must be: LEA reg, [reg+offset])`)
+        throwError(`Invalid LEA operands (must be: LEA reg, [reg+offset] or LEA reg, [reg+reg])`)
       }
       break
     }
@@ -1093,27 +1106,28 @@ export function assemble(source, filename = null) {
   // Data segment starts after code
   let dataAddress = codeAddress
 
-  // Now process directives and labels
+  // Now process directives and labels, tracking which section they belong to
   let pendingLabels = []
+  let inRodata = false
+  const rodataDirectives = []
+  const mutableDirectives = []
+
   for (const token of tokens) {
-    if (token.type === 'LABEL') {
+    if (token.type === 'SECTION') {
+      inRodata = token.value === 'RODATA'
+    } else if (token.type === 'LABEL') {
       pendingLabels.push(token.value)
     } else if (token.type === 'DIRECTIVE') {
-      // This is a data directive - place in data segment
       const bytes = parseDataDirective(token.directive, token.data, token.line)
-
-      // If there are pending labels, assign them all to this data address
-      for (const label of pendingLabels) {
-        labels[label] = dataAddress
+      const dir = { ...token, bytes, labels: [...pendingLabels], readOnly: inRodata }
+      if (inRodata) {
+        rodataDirectives.push(dir)
+      } else {
+        mutableDirectives.push(dir)
       }
       pendingLabels = []
-
-      directives.push({ ...token, address: dataAddress, bytes })
-      dataAddress += bytes.length
     } else if (token.type === 'INSTRUCTION') {
-      // This is an instruction - labels go to code address
       if (pendingLabels.length > 0) {
-        // Find this instruction in our instructions array
         const instr = instructions.find(i => i.line === token.line)
         if (instr) {
           for (const label of pendingLabels) {
@@ -1123,6 +1137,27 @@ export function assemble(source, filename = null) {
         pendingLabels = []
       }
     }
+  }
+
+  // Assign addresses: rodata first, then mutable data
+  for (const dir of rodataDirectives) {
+    for (const label of dir.labels) {
+      labels[label] = dataAddress
+    }
+    dir.address = dataAddress
+    directives.push(dir)
+    dataAddress += dir.bytes.length
+  }
+
+  const rodataEndAddress = dataAddress
+
+  for (const dir of mutableDirectives) {
+    for (const label of dir.labels) {
+      labels[label] = dataAddress
+    }
+    dir.address = dataAddress
+    directives.push(dir)
+    dataAddress += dir.bytes.length
   }
 
   // Pass 2: Generate bytecode
@@ -1220,8 +1255,12 @@ export function assemble(source, filename = null) {
   header[0x0012] = (codeEnd >> 8) & 0xFF
   header[0x0013] = codeEnd & 0xFF
 
-  // 0x0014-0x001F: Reserved (zeros)
-  for (let i = 0x0014; i < 0x0020; i++) {
+  // 0x0014-0x0015: Read-only data end (RO) - boundary between rodata and mutable data
+  header[0x0014] = (rodataEndAddress >> 8) & 0xFF
+  header[0x0015] = rodataEndAddress & 0xFF
+
+  // 0x0016-0x001F: Reserved (zeros)
+  for (let i = 0x0016; i < 0x0020; i++) {
     header[i] = 0x00
   }
 

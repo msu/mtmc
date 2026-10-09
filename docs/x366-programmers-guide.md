@@ -457,6 +457,20 @@ HALT
 
 This prints `a`, because the `MOV AX, 'b'` instruction is skipped over by the `JMP` instruction.
 
+`JMP` can also take a register.  Then it jumps to the address _in_ the register:
+
+```asm
+MOV AX, 'a'
+MOV DI, skip
+JMP DI              ; jumps to skip
+MOV AX, 'b'         ; never runs
+skip:
+SYSCALL PRINT_CHAR
+HALT
+```
+
+This is handy when the place to jump to isn't known until the program runs.
+
 ### Conditional Jumps
 
 OK, that's all fine but life wouldn't be very interesting if we just unconditionally jumped every time.  To
@@ -866,22 +880,28 @@ double:
     RET
 ```
 
-This prints 42, and then 2.  We wanted 7!  `double` grabbed `BX` for scratch space and never gave it back.
+This prints 42, and then 2.  We wanted 7!  `double` grabbed `BX` for scratch space.
 
-To deal with this, we should push all registers we want to survive a function call onto the stack:
+That's allowed: on x366 a function can change `AX`, `BX`, `CX`, `DX`, `SI` and `DI`.  So if you need a register to
+survive a function call, push it onto the stack before the `CALL` and pop it back after:
 
 ```asm
-double:
-    PUSH BX         ; we are about to clobber BX
-    MOV BX, 2
-    MUL BX
-    POP BX          ; put it back
-    RET
+MOV AX, 21
+MOV BX, 7
+PUSH BX         ; we need BX after the call
+CALL double
+POP BX          ; put it back
+SYSCALL PRINT_INT
+MOV AX, '\n'
+SYSCALL PRINT_CHAR
+MOV AX, BX
+SYSCALL PRINT_INT
+HALT
 ```
 
-Now it prints 42 and then 7, and the caller never notices that `BX` was borrowed.
+Now it prints 42 and then 7.
 
-This is the calling convention on x366 and we'll talk more about it later.
+This is the calling convention on x366: the _caller_ saves the registers it needs.  We'll talk more about it later.
 
 ## Conclusion
 

@@ -319,12 +319,15 @@
 </main>
 
 <script src="vendor/jszip.min.js"></script>
-<script src="vendor/monaco-editor/vs/loader.js"></script>
+<!-- Monaco loads from a pinned CDN copy so the 13 MB editor is not checked in. The editor needs a network connection. -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
 <script>
-    require.config({ paths: { vs: 'vendor/monaco-editor/vs' } });
+    const MONACO_BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/';
+    require.config({ paths: { vs: MONACO_BASE + 'vs' } });
+    // Browsers refuse a cross-origin worker script, so the worker is a same-origin data: URL that imports the CDN copy.
     window.MonacoEnvironment = {
         getWorkerUrl: function () {
-            return 'data:text/javascript;charset=utf-8,' + encodeURIComponent('self.MonacoEnvironment={baseUrl:"' + window.location.href.replace(/\/[^/]*$/, '/') + 'vendor/monaco-editor/"};importScripts(self.MonacoEnvironment.baseUrl + "vs/base/worker/workerMain.js");');
+            return 'data:text/javascript;charset=utf-8,' + encodeURIComponent('self.MonacoEnvironment={baseUrl:"' + MONACO_BASE + '"};importScripts("' + MONACO_BASE + 'vs/base/worker/workerMain.js");');
         }
     };
 </script>

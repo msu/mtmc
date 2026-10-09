@@ -781,6 +781,10 @@ function encodeInstruction(instruction, operands, labels, currentAddress, lineNu
 
     // Jumps
     case 'JMP': {
+      if (ops[0].type === 'register' && !ops[0].isByte) {
+        encode2Byte(Opcode.JMPR, ops[0].value)  // JMP reg
+        break
+      }
       const target = ops[0].type === 'label' ? resolveLabel(ops[0].name) : ops[0].value
       encode4Byte(Opcode.JMP, 0, (target >> 8) & 0xFF, target & 0xFF)
       break
@@ -1080,6 +1084,10 @@ export function assemble(source, filename = null) {
         // Check if operand is memory reference (contains '[')
         const hasMemoryOperand = ops[0].includes('[')
         size = hasMemoryOperand ? 4 : 2
+      } else if (inst === 'JMP' && ops.length > 0) {
+        // JMP reg is 2 bytes, JMP addr is 4 bytes
+        const r = ops[0].toUpperCase()
+        size = (r in RegCode && !r.endsWith('L')) ? 2 : 4
       } else if (['NOP', 'HLT', 'HALT', 'RET', 'MUL', 'DIV',
                   'PUSH', 'POP', 'NOT', 'NEG', 'SYSCALL',
                   'SETE', 'SETZ', 'SETNE', 'SETNZ', 'SETL', 'SETG', 'SETLE', 'SETGE'].includes(inst)) {
@@ -1244,9 +1252,11 @@ export function assemble(source, filename = null) {
   header[0x0012] = (codeEnd >> 8) & 0xFF
   header[0x0013] = codeEnd & 0xFF
 
-  // 0x0014-0x0015: Read-only data end (RO) - boundary between rodata and mutable data
-  header[0x0014] = (rodataEndAddress >> 8) & 0xFF
-  header[0x0015] = rodataEndAddress & 0xFF
+  // 0x0014-0x0015: Read-only data end (RO) - boundary between rodata and mutable data.
+  // The field is 0 when there is no rodata; the loader then defaults RO to CB.
+  const roField = rodataDirectives.length > 0 ? rodataEndAddress : 0
+  header[0x0014] = (roField >> 8) & 0xFF
+  header[0x0015] = roField & 0xFF
 
   // 0x0016-0x001F: Reserved (zeros)
   for (let i = 0x0016; i < 0x0020; i++) {

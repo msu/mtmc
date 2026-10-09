@@ -86,6 +86,7 @@ export const Opcode = {
   JLE: 0x55,
   JGE: 0x56,
   LOOP: 0x57,
+  JMPR: 0x58,          // JMP reg
 
   // Stack & Functions
   PUSH: 0x60,
@@ -727,7 +728,8 @@ export function decodeFromBytes(bytes) {
       opcode === Opcode.MUL || opcode === Opcode.DIV || opcode === Opcode.NOT || opcode === Opcode.NEG ||
       opcode === Opcode.SETE || opcode === Opcode.SETNE || opcode === Opcode.SETL ||
       opcode === Opcode.SETG || opcode === Opcode.SETLE || opcode === Opcode.SETGE ||
-      opcode === Opcode.PUSH || opcode === Opcode.POP || opcode === Opcode.SYSCALL) {
+      opcode === Opcode.PUSH || opcode === Opcode.POP || opcode === Opcode.SYSCALL ||
+      opcode === Opcode.JMPR) {
     const param = bytes[1] || 0
     return {
       opcode,
@@ -943,6 +945,7 @@ export function getInstructionName(opcode) {
     [Opcode.JLE]: 'JLE',
     [Opcode.JGE]: 'JGE',
     [Opcode.LOOP]: 'LOOP',
+    [Opcode.JMPR]: 'JMP',
     [Opcode.PUSH]: 'PUSH',
     [Opcode.POP]: 'POP',
     [Opcode.CALL]: 'CALL',
@@ -1545,6 +1548,10 @@ export class CPU {
       // ========== Jumps ==========
       case Opcode.JMP:
         this.setIP(instr.addr)
+        break
+
+      case Opcode.JMPR:
+        this.setIP(this.getReg(instr.reg))
         break
 
       case Opcode.JE:

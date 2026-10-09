@@ -386,6 +386,7 @@ function disassembleInstruction(addr) {
     if (opcode === Opcode.HLT) return 'HALT'
     if (opcode === Opcode.RET) return 'RET'
 
+    if (opcode === Opcode.JMPR) return `JMP ${reg(instr.reg)}`
     if (opcode === Opcode.PUSH) return `PUSH ${reg(instr.reg)}`
     if (opcode === Opcode.POP) return `POP ${reg(instr.reg)}`
     if (opcode === Opcode.INC_REG) return `INC ${reg(instr.reg)}`
@@ -471,7 +472,7 @@ function getOpcodeName(opcode) {
     0x38: 'SHR',
     0x40: 'CMP', 0x41: 'CMP',
     0x50: 'JMP', 0x51: 'JE', 0x52: 'JNE', 0x53: 'JL',
-    0x54: 'JG', 0x55: 'JLE', 0x56: 'JGE',
+    0x54: 'JG', 0x55: 'JLE', 0x56: 'JGE', 0x58: 'JMP',
     0x60: 'PUSH', 0x61: 'POP',
     0x70: 'CALL', 0x71: 'RET',
     0x90: 'SYSCALL'

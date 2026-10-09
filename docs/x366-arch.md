@@ -182,7 +182,7 @@ In contrast with x86, X366 uses fixed-length instructions: all instructions are 
 | 0    | Opcode                     |
 | 1    | Register code or parameter |
 
-Used for: `NOP`, `HLT`, `RET`, `SYSCALL`, single-register operations (`INC`, `DEC`, `PUSH`, `POP`, `MUL`, `DIV`, `NOT`, `NEG`)
+Used for: `NOP`, `HLT`, `RET`, `SYSCALL`, single-register operations (`INC`, `DEC`, `PUSH`, `POP`, `MUL`, `DIV`, `NOT`, `NEG`, `JMP reg`)
 
 ### 4-Byte Instructions
 
@@ -291,6 +291,7 @@ equivalent to `0 - reg`. It sets ZF, SF, CF and OF the same way `SUB` does.
 | `CMP dst, [addr]`         | 0x42   | `[0x42][op1][addr_hi][addr_lo]`  | Compare with memory (absolute)          | `CMP AX, [0x100]` |
 | `CMP dst, [base+offset]`  | 0x43   | `[0x43][op1][base][offset]`      | Compare with memory (register-relative) | `CMP AX, [BP+4]`  |
 | `JMP addr`                | 0x50   | `[0x50][0x00][addr_hi][addr_lo]` | Unconditional jump                      | `JMP loop`        |
+| `JMP reg`                 | 0x58   | `[0x58][reg]`                    | Jump to the address in reg              | `JMP DI`          |
 | `JE addr` / `JZ addr`     | 0x51   | `[0x51][0x00][addr_hi][addr_lo]` | Jump if equal or zero (ZF=1)            | `JE done`         |
 | `JNE addr` / `JNZ addr`   | 0x52   | `[0x52][0x00][addr_hi][addr_lo]` | Jump if not equal or not zero (ZF=0)    | `JNE loop`        |
 | `JL addr`                 | 0x53   | `[0x53][0x00][addr_hi][addr_lo]` | Jump if less (signed, SF!=OF)           | `JL negative`     |
@@ -306,6 +307,8 @@ equivalent to `0 - reg`. It sets ZF, SF, CF and OF the same way `SUB` does.
 | `SETGE reg`               | 0x49   | `[0x49][reg]`                    | Set to 1 if SF=OF, else 0               | `SETGE AX`        |
 
 Note that X366 uses absolute addresses for jumps and calls, where x86 primarily uses relative offsets
+
+`JMP reg` jumps to the address in a 16-bit register, like the x86 `JMP reg`
 
 ### Stack & Functions Instructions
 
@@ -474,7 +477,7 @@ The symbol table is a run of variable-length entries that ends with
 | [Calling convention](https://en.wikipedia.org/wiki/X86_calling_conventions)   | Registers, 6 parameters                          | Stack                                                | Stack                                          | Registers, 6 in System V, 4 in Microsoft x64     |
 | [Addressing modes](https://en.wikipedia.org/wiki/Addressing_mode)             | Absolute, register-relative, indexed, indirect   | Segment plus offset                                  | Base, index, scale, displacement               | Adds RIP-relative                                |
 | [Syscalls](https://en.wikipedia.org/wiki/System_call)                         | `SYSCALL` with a code operand                    | `INT`                                                | `INT` or `SYSENTER`                            | `SYSCALL`                                        |
-| Jumps                                                                         | Absolute                                         | Relative or absolute                                 | Relative or absolute                           | Relative or absolute                             |
+| Jumps                                                                         | Absolute or register                             | Relative or absolute                                 | Relative or absolute                           | Relative or absolute                             |
 | [Segmentation](https://en.wikipedia.org/wiki/X86_memory_segmentation)         | None                                             | Required                                             | Present, flat model normal                     | Mostly removed                                   |
 | [Floating point](https://en.wikipedia.org/wiki/X87)                           | None                                             | Optional 8087                                        | x87 and SSE                                    | x87 and SSE                                      |
 | [Flags](https://en.wikipedia.org/wiki/FLAGS_register)                         | 4: `ZF`, `SF`, `CF`, `OF`                        | FLAGS                                                | EFLAGS                                         | RFLAGS                                           |

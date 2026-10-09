@@ -1125,14 +1125,19 @@ function generate(ast) {
                 throw new Error('Cannot pass more than 6 arguments');
             }
 
-            for (let i = 0; i < expr.args.length; i++) {
-                compileExpression(expr.args[i]);
-                appendLine('    PUSH AX');
-            }
+            // one argument goes straight to AX, so no PUSH/POP is necessary
+            if (expr.args.length === 1) {
+                compileExpression(expr.args[0]);
+            } else {
+                for (let i = 0; i < expr.args.length; i++) {
+                    compileExpression(expr.args[i]);
+                    appendLine('    PUSH AX');
+                }
 
-            const regs = ['AX', 'BX', 'CX', 'DX', 'SI', 'DI'];
-            for (let i = expr.args.length - 1; i >= 0; i--) {
-                appendLine('    POP ' + regs[i]);
+                const regs = ['AX', 'BX', 'CX', 'DX', 'SI', 'DI'];
+                for (let i = expr.args.length - 1; i >= 0; i--) {
+                    appendLine('    POP ' + regs[i]);
+                }
             }
 
             appendLine('    CALL ' + expr.name);

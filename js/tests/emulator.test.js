@@ -716,6 +716,27 @@ describe('CPU Execution', () => {
       expect(cpu.registers.IP).toBe(0x0100)
     })
 
+    it('should jump to the address in a register', () => {
+      const source = `
+          MOV DI, skip
+          JMP DI
+          MOV BX, 99
+        skip:
+          MOV CX, 2
+          SYSCALL EXIT
+      `
+      const bytecode = assemble(source)
+      const memSize = (bytecode[0x09] << 8) | bytecode[0x0A]
+      const mem = new Memory(memSize)
+      mem.loadBinary(bytecode)
+      const cpu = new CPU(mem)
+      const os = new OS(cpu, mem)
+      cpu.os = os
+      while (cpu.step()) { }
+      expect(cpu.registers.BX).toBe(0)
+      expect(cpu.registers.CX).toBe(2)
+    })
+
     it('should execute JE when ZF=1', () => {
       cpu.registers.ZF = 1
 

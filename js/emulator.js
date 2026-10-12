@@ -402,6 +402,14 @@ export class Memory {
     if (address < 0 || address >= this.size) {
       throw new Error(`Segmentation fault: write at 0x${address.toString(16).padStart(4, '0')}: out of bounds`)
     }
+    this.checkWriteAccess(address)
+    this.data[address] = value & 0xFF
+  }
+
+  /**
+   * Throw if the address is in .text or .rodata
+   */
+  checkWriteAccess(address) {
     if (this.cs > 0) {
       if (address >= 0x0020 && address < this.cs) {
         throw new Error(`Segmentation fault: write at 0x${address.toString(16).padStart(4, '0')}: code segment is read-only (.text)`)
@@ -410,7 +418,6 @@ export class Memory {
         throw new Error(`Segmentation fault: write at 0x${address.toString(16).padStart(4, '0')}: read-only data segment (.rodata)`)
       }
     }
-    this.data[address] = value & 0xFF
   }
 
   /**
@@ -448,6 +455,8 @@ export class Memory {
     if (address < 0 || address >= this.size - 1) {
       throw new Error(`Memory write out of bounds: 0x${address.toString(16)}`)
     }
+    this.checkWriteAccess(address)
+    this.checkWriteAccess(address + 1)
     value = value & 0xFFFF
     // Big-endian: high byte first, then low byte
     this.data[address] = (value >> 8) & 0xFF
@@ -1110,6 +1119,9 @@ export class CPU {
    */
   prefetchInstruction() {
     const pc = this.registers.IP
+    if (pc + 1 >= this.memory.size) {
+      throw new Error(`Segmentation fault: fetch at 0x${pc.toString(16).padStart(4, '0')}: out of bounds`)
+    }
     const instr = decodeInstruction(this.memory, pc)
 
     // Load IR with first word (opcode + param/byte1)
@@ -1139,6 +1151,9 @@ export class CPU {
     }
 
     // Use cached instruction if available, otherwise decode
+    if (!this.cachedInstruction && this.registers.IP + 1 >= this.memory.size) {
+      throw new Error(`Segmentation fault: fetch at 0x${this.registers.IP.toString(16).padStart(4, '0')}: out of bounds`)
+    }
     const instr = this.cachedInstruction || decodeInstruction(this.memory, this.registers.IP)
     this.cachedInstruction = null
 

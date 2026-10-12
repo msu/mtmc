@@ -173,6 +173,29 @@ describe('Memory', () => {
     mem = new Memory(1024)
   })
 
+  describe('Write Protection', () => {
+    it('should segfault on a word write to .text', () => {
+      mem.setProtection(0x40, 0x40)
+      expect(() => mem.writeWord(0x30, 0x1234)).toThrow(/code segment is read-only/)
+    })
+
+    it('should segfault on a word write that ends in .text', () => {
+      mem.setProtection(0x40, 0x40)
+      expect(() => mem.writeWord(0x1F, 0x1234)).toThrow(/code segment is read-only/)
+    })
+
+    it('should segfault on a word write to .rodata', () => {
+      mem.setProtection(0x40, 0x50)
+      expect(() => mem.writeWord(0x44, 0x1234)).toThrow(/read-only data segment/)
+    })
+
+    it('should allow a word write after .rodata', () => {
+      mem.setProtection(0x40, 0x50)
+      mem.writeWord(0x50, 0x1234)
+      expect(mem.readWord(0x50)).toBe(0x1234)
+    })
+  })
+
   describe('Initialization', () => {
     it('should create memory with specified size', () => {
       expect(mem.size).toBe(1024)
